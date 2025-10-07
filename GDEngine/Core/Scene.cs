@@ -1,12 +1,16 @@
 ﻿
 namespace GDEngine.Core
 {
+    /// <summary>
+    /// Store for all systems and game objects
+    /// </summary>
     public class Scene
     {
         private EngineContext _context;
         private readonly List<SystemBase> _systems;
-        private Camera _activeCamera;
+        private List<GameObject> _objects;
 
+        private Camera _activeCamera;
         public EngineContext Context
         {
             get
@@ -23,6 +27,7 @@ namespace GDEngine.Core
         {
             _context = context;
             _systems = new List<SystemBase>();
+            _objects = new List<GameObject>();
         }
     
         public void AddSystem(SystemBase system)
@@ -42,6 +47,20 @@ namespace GDEngine.Core
         {
             foreach (var system in _systems)
                 system.Update();
+
+            //update
+            foreach(var obj in _objects)
+            {
+                //for each component
+                    //update 
+            }
+
+            //late update
+            foreach (var obj in _objects)
+            {
+                //for each component
+                    //lateupdate 
+            }
         }
         public void Draw()  //rendering, UI
         {

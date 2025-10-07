@@ -7,7 +7,8 @@ namespace GDEngine.Core
     /// Base class for most game entities (not systems)
     /// e.g. Camera, Transform, Rotator, CameraRotator
     /// Enemy [patrol, animation, sound, activation]
-    /// Pickup [transform, meshfilter, meshrenderer, opacityCycle, pickup]
+    /// Pickup [transform, meshfilter, meshrenderer, 
+    //                  opacityCycle, rotation, translation]
     /// </summary>
     public class Component
     {
