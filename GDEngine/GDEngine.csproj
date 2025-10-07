@@ -10,4 +10,10 @@
     <PackageReference Include="MonoGame.Framework.WindowsDX" Version="3.8.4" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Systems\" />
+    <Folder Include="Input\" />
+    <Folder Include="Components\" />
+  </ItemGroup>
+
 </Project>
