@@ -20,8 +20,9 @@ namespace GDGame
         protected override void Initialize()
         {
             //initialize context
-            _engineContext = new EngineContext(_graphics.GraphicsDevice,
-                Content);
+            EngineContext.Initialize(_graphics.GraphicsDevice, Content);
+
+           
 
             //initialize systems (input, rendering, UI, sound, physics)
 

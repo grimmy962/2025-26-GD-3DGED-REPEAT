@@ -1,69 +1,55 @@
 ﻿using Microsoft.Xna.Framework;
-using System;
 
 namespace GDEngine.Core
 {
     /// <summary>
-    /// Base class for most game entities (not systems)
-    /// e.g. Camera, Transform, Rotator, CameraRotator
-    /// Enemy [patrol, animation, sound, activation]
-    /// Pickup [transform, meshfilter, meshrenderer, 
-    //                  opacityCycle, rotation, translation]
+    /// Base class for the components found in a game object (e.g. Camera, Transform, Rotator, CameraRotator)
+    /// In an Enemy we have: transform, meshfilter, meshrenderer, patrol controller
+    /// In a Pickup we have: transform, camera controller
     /// </summary>
     public class Component
     {
-        public bool HasStarted { get; private set; }
-        public bool IsDestroyed { get; private set; }
+        public GameObject GameObject { get; set; }
+        public Transform Transform => GameObject.Transform;
         public bool Enabled { get; set; } = true;
+        private bool _hasStarted = false;
+        private bool _isDestroyed = false;
 
-        protected virtual void Awake()
-        {
-        }
-        protected virtual void Start()
-        {
-        }
-        protected virtual void Update(GameTime gameTime)
-        {
-        }
-        protected virtual void LateUpdate(GameTime gameTime)
-        {
-        }
-        protected virtual void OnDestroy()
-        {
-        }
+        protected virtual void Awake() { }
+        protected virtual void Start() { }
+        protected virtual void Update(GameTime gameTime) { }
+        protected virtual void LateUpdate(GameTime gameTime) { }
+        protected virtual void OnDestroy() { }
 
-        public void InternalAwake() {
-            if (!Enabled)
-            {
-                Enabled = true;
-                Awake();
-            }
+        public void InternalAwake()
+        {
+            Awake();
         }
-        public void InternalStart() 
-        { 
-            if(Enabled && !HasStarted)
+        public void InternalStart()
+        {
+            if (!_hasStarted)
             {
-                HasStarted = true;
                 Start();
+                _hasStarted = true;
             }
         }
         public void InternalUpdate(GameTime gameTime) 
-        {
-            if (Enabled && HasStarted)
-                Update(gameTime);
+        { 
+            if (Enabled && !_isDestroyed) 
+                Update(gameTime); 
         }
         public void InternalLateUpdate(GameTime gameTime) 
-        {
-            if (Enabled && HasStarted)
-                LateUpdate(gameTime);
+        { 
+            if (Enabled && !_isDestroyed) 
+                LateUpdate(gameTime); 
         }
-        public void InternalOnDestroy() 
+        public void InternalDestroy()
         {
-            if (Enabled && HasStarted)
+            if (!_isDestroyed)
+            {
                 OnDestroy();
+                _isDestroyed = true;
+            }
         }
-
-
-        //TODO - add code to do internal start etc
     }
 }

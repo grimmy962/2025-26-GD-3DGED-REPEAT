@@ -1,7 +1,7 @@
 ﻿namespace GDEngine.Core
 {
     /// <summary>
-    /// Engine that calls update and draw on all systems
+    /// Base class that calls update and draw on the system
     /// </summary>
     public class SystemBase
     {

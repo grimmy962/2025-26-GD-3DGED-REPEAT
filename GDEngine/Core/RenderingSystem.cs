@@ -1,6 +1,6 @@
 ﻿namespace GDEngine.Core
 {
-    internal class RenderingSystem
+    public class RenderingSystem : SystemBase
     {
     }
 }
