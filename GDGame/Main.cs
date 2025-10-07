@@ -8,7 +8,6 @@ namespace GDGame
     public class Main : Game
     {
         private GraphicsDeviceManager _graphics;
-        private EngineContext _engineContext;
 
         public Main()
         {
