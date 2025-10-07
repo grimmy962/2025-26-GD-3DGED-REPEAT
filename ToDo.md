@@ -21,9 +21,10 @@ This document contains a step-by-step development plan of MonoGame content cover
 
 ## Week 4
 - [ ] Create clean MonoGame Game + Engine project.
-- [ ] Add `Camera` with position, forward, up; FOV/aspect/near/far.
 - [ ] Add `EngineContext` with `GraphicsDevice`, `Content`, `GameTime`, `SpriteBatch`.
 - [ ] Add `SystemBase` (Update/Draw hooks).
+- [ ] Refactor `EngineContext` to make it a singleton and implement `IDisposable`
+- [ ] - [ ] Add `Camera` with position, forward, up; FOV/aspect/near/far.
 - [ ] Add `Component` base with `Enabled`, lifecycle hooks, internals for `Awake/Start`.
 - [ ] Add `GameObject` with `AddComponent<T>()`, `GetComponent<T>()`.
 - [ ] Implement `Transform` (LocalPosition/Rotation/Scale; LocalMatrix; WorldMatrix).

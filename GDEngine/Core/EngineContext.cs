@@ -4,12 +4,12 @@ using Microsoft.Xna.Framework.Graphics;
 namespace GDEngine.Core
 {
     /// <summary>
-    /// Stores references to core engine related components
+    /// Service hub to store references to core engine related components
     /// </summary>
     /// <example>
     /// </example>
     /// <see cref="Scene"/>
-    public class EngineContext
+    public class EngineContext        //TODO - ensure singleton, add thread lock, implement IDisposable
     {
         public GraphicsDevice GraphicsDevice { get; }
         public ContentManager Content { get; }
@@ -23,5 +23,6 @@ namespace GDEngine.Core
             SpriteBath = new SpriteBatch(graphicsDevice);
         }
 
+        //TODO - add, remove
     }
 }

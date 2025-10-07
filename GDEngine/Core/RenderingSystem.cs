@@ -1,6 +1,6 @@
 ﻿namespace GDEngine.Core
 {
-    public class GameObject
+    internal class RenderingSystem
     {
     }
 }
