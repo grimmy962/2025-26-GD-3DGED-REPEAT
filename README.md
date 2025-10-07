@@ -178,5 +178,9 @@ classDiagram
 - [Design Patterns](https://refactoring.guru/design-patterns)
 - [Game Programming Patterns](https://gameprogrammingpatterns.com/contents.html)  
 
+## To Do 
+
+- [Weekly Development Plan](ToDo.md)
+
 
 
