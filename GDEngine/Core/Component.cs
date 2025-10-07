@@ -1,6 +1,6 @@
 ﻿namespace GDEngine.Core
 {
-    internal class Component
+    public class Component
     {
     }
 }

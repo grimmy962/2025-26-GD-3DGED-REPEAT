@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace GDEngine.Core
 {
-    internal class GameObject
+    public class GameObject
     {
     }
 }

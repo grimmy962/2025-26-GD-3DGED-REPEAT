@@ -1,7 +1,7 @@
 ﻿
 namespace GDEngine.Core
 {
-    internal class Transform
+    public class Transform
     {
     }
 }

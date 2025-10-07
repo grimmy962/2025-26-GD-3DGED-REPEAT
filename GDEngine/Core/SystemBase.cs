@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace GDEngine.Core
+﻿namespace GDEngine.Core
 {
-    internal class SystemBase
+    public class SystemBase
     {
+        public Scene Scene { get; set; }
+        public EngineContext Context => Scene.Context;
+
+        public virtual void Update() { }
+        public virtual void Draw() { }
     }
 }

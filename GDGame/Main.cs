@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using GDEngine.Core;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
@@ -7,7 +8,7 @@ namespace GDGame
     public class Main : Game
     {
         private GraphicsDeviceManager _graphics;
-        private SpriteBatch _spriteBatch;
+        private EngineContext _engineContext;
 
         public Main()
         {
@@ -18,16 +19,30 @@ namespace GDGame
 
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
+            //initialize context
+            _engineContext = new EngineContext(_graphics.GraphicsDevice,
+                Content);
+
+            //initialize systems (input, rendering, UI, sound, physics)
+
+            //initialize dictionaries (ContentDictionary)
+
+            //initialize all primitives (vertices, FBX)
+
+            //instantiate our game objects (camera, player)
+
+            //add game objects to scene
+
+            //add scene to scenemanager
+
+            //start scene (setting camera, set spawn point)
 
             base.Initialize();
         }
 
         protected override void LoadContent()
         {
-            _spriteBatch = new SpriteBatch(GraphicsDevice);
-
-            // TODO: use this.Content to load your game content here
+            //load assets?
         }
 
         protected override void Update(GameTime gameTime)
