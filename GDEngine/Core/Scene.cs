@@ -1,4 +1,6 @@
 ﻿
+using Microsoft.Xna.Framework;
+
 namespace GDEngine.Core
 {
     /// <summary>
@@ -29,7 +31,30 @@ namespace GDEngine.Core
             _systems = new List<SystemBase>();
             _objects = new List<GameObject>();
         }
-    
+
+        public GameObject AddGameObject(string name)
+        {
+            name = name.Trim().ToLower(); // "dylan"
+            var gameObject = new GameObject(name);
+            _objects.Add(gameObject);
+
+            foreach(var c in gameObject.Components)
+            {
+                if (!c.Enabled)
+                    c.InternalAwake(); //TODO - check awake?
+            }
+
+            return gameObject;
+        }
+
+        public void DestroyGameObject(GameObject gameObject)
+        {
+
+        }
+
+
+
+
         public void AddSystem(SystemBase system)
         {
             system.Scene = this;
@@ -43,7 +68,7 @@ namespace GDEngine.Core
                 //TODO - set the scene ref in system to null
             }
         }
-        public void Update()  //camera, sound, physics, CD/CR
+        public void Update(GameTime gameTime)  //camera, sound, physics, CD/CR
         {
             foreach (var system in _systems)
                 system.Update();
@@ -52,18 +77,27 @@ namespace GDEngine.Core
             foreach(var obj in _objects)
             {
                 //for each component
-                    //update 
+                foreach(var c in obj.Components)
+                {
+                    if(c.Enabled)
+                        c.InternalUpdate(gameTime);
+                }
             }
 
             //late update
             foreach (var obj in _objects)
             {
                 //for each component
-                    //lateupdate 
+                foreach (var c in obj.Components)
+                {
+                    if (c.Enabled)
+                        c.InternalLateUpdate(gameTime);
+                }
             }
         }
         public void Draw()  //rendering, UI
         {
+            //call Draw on RenderingSystem -> draws all MeshRenderers
             foreach (var system in _systems)
                 system.Draw();
         }

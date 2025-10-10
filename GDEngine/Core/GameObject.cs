@@ -6,17 +6,21 @@
     /// </summary>
     public class GameObject
     {
-        private readonly List<Component> _components;
+        #region Fields
+        private readonly List<Component> _components; 
+        #endregion
 
+        #region Properties
         public string Name { get; set; }
         public bool Enabled { get; set; } = true;
         public Transform Transform { get; }
-        public IEnumerable<Component> Components => _components;
+        public IEnumerable<Component> Components => _components; 
+        #endregion
 
         public GameObject(string name)
         {
             _components = new List<Component>();
-            Name = name.Trim();
+           // Name = name.Trim();
             Transform = new Transform();
             AddComponent(Transform);
         }
