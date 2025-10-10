@@ -49,7 +49,11 @@ namespace GDEngine.Core
 
         public void DestroyGameObject(GameObject gameObject)
         {
-
+            if(_objects.Remove(gameObject))
+            {
+                foreach (var c in gameObject.Components)
+                    c.InternalDestroy();
+            }
         }
 
 
