@@ -47,8 +47,14 @@ namespace GDEngine.Core.Rendering.Factories
             verts[3] = new VertexPositionColor(
                new Vector3(hl, hl, 0), Color.Yellow);  //3 - TR
 
+            var indices = new short[] { 
+                2, 1, 0, //bottom triangle - winding order (LEFT HAND) clockwise
+                3, 1, 2  //top triangle  - winding order (LEFT HAND) clockwise
+            };
+
             var meshFilter = new MeshFilter();
-           // meshFilter.SetGeometry();
+            meshFilter.SetGeometry(device, verts, indices, 
+                PrimitiveType.TriangleList);
             return meshFilter;
         }
 

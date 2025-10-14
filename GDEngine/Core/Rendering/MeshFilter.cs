@@ -49,6 +49,25 @@ namespace GDEngine.Core
             where T : struct, IVertexType
         {
             //TODO - Wk5 
+            _vertexCount = vertices.Length;
+            _indexCount = indices.Length;
+            _primitiveType = primitiveType;
+            _primitiveCount = CalculatePrimitiveCount(_indexCount, primitiveType);
+
+            //make reservation on GFX card in VRAM
+            _vertexBuffer = new VertexBuffer(device,
+                typeof(T), _vertexCount, BufferUsage.WriteOnly);
+            //move vertices to VRAM
+            _vertexBuffer.SetData(vertices);
+
+            //make reservation on GFX card in VRAM
+            _indexBuffer = new IndexBuffer(device,
+                IndexElementSize.SixteenBits, _indexCount,
+                BufferUsage.WriteOnly);
+            //move indiced to VRAM
+            _indexBuffer.SetData(indices);
+
+
         }
 
         /// <summary>
