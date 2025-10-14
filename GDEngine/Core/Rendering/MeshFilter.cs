@@ -66,8 +66,6 @@ namespace GDEngine.Core
                 BufferUsage.WriteOnly);
             //move indiced to VRAM
             _indexBuffer.SetData(indices);
-
-
         }
 
         /// <summary>

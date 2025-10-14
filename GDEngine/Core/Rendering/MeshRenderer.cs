@@ -3,7 +3,6 @@ using GDEngine.Core.Components;
 using GDEngine.Core.Entities;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using System;
 
 namespace GDEngine.Core
 {
@@ -16,8 +15,9 @@ namespace GDEngine.Core
     /// <see cref="Camera"/>
     public sealed class MeshRenderer : Component
     {
+        private BasicEffect _effect;
         #region Fields
-        //TODO - Wk5
+        private MeshFilter _meshFilter;
         #endregion
 
         #region Properties
@@ -34,7 +34,31 @@ namespace GDEngine.Core
         /// </summary>
         public void Render(GraphicsDevice device, Camera camera)
         {
-            //TODO - Wk5
+            // make sure we have an effect (material)
+            EnsureEffect(device);
+
+            //w, v, p
+            _effect.World = Matrix.Identity; //TODO - get transform
+            _effect.View = camera.View;
+            _effect.Projection = camera.Projection;
+
+            //lighting - no normals!
+
+            //point GFX card to the vertex and index buffers
+            device.SetVertexBuffer(_meshFilter.VertexBuffer);
+            device.Indices = _meshFilter.IndexBuffer;
+
+            //apply
+            var passes = _effect.CurrentTechnique.Passes;
+            for (int i = 0; i < passes.Count; i++)
+            {
+                //load w,v,p, and all lighting settings, and buffers
+                passes[i].Apply();
+
+                device.DrawIndexedPrimitives(_meshFilter.PrimitiveType,
+                    0, 0, _meshFilter.PrimitiveCount);
+            }
+            //draw
         }
 
         /// <summary>
@@ -42,12 +66,25 @@ namespace GDEngine.Core
         /// </summary>
         public void EnsureEffect(GraphicsDevice device)
         {
-            //TODO - Wk5
+            if (_effect != null)
+                return;
+
+            _effect = new BasicEffect(device)
+            {
+                VertexColorEnabled = true,
+                LightingEnabled = true,
+            };
         }
         #endregion
 
         #region Lifecycle Methods
         //TODO - Wk5 - Get MeshFilter
+        protected override void Start()
+        {
+            _meshFilter = GameObject.GetComponent<MeshFilter>();
+        }
+
+
         #endregion
 
         #region Housekeeping Methods
