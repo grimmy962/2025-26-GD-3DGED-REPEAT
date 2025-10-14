@@ -40,15 +40,20 @@ namespace GDGame
             _cameraGO = new GameObject("First person camera");
             _camera = _cameraGO.AddComponent<Camera>();
             _cameraGO.Transform.Position = new Vector3(0, 0, 3);
+            //add to scene
             _scene.AddGameObject(_cameraGO);
 
-            //give me something to admire
-            var meshFilter =
-            MeshFilterFactory.CreateQuadColored(_graphics.GraphicsDevice);
+            //make it face the origin so we can see the quad!
+            _cameraGO.Transform.RotateEuler(new Vector3(0, MathHelper.ToRadians(180), 0));
 
+            //generate the data for a quad (normally you might load an FBX)
+            var meshFilter = MeshFilterFactory.CreateQuadColored(_graphics.GraphicsDevice);
+
+            //make a game object with filter (data) and renderer (draw behaviour)
             _primitiveCQO = new GameObject("Colored quad");
             _primitiveCQO.AddComponent(meshFilter);
             _primitiveCQORenderer = _primitiveCQO.AddComponent<MeshRenderer>();
+            //add to scene
             _scene.AddGameObject(_primitiveCQO);
 
 
@@ -57,11 +62,11 @@ namespace GDGame
 
         protected override void Update(GameTime gameTime)
         {
-            //Step 1 - call time update
+            //call time update
             Time.Update(gameTime);
 
-
-            //TODO - Wk5 - Update Scene
+            //update Scene
+            _scene.Update(Time.UnscaledDeltaTime);
 
             base.Update(gameTime);
         }
@@ -69,6 +74,9 @@ namespace GDGame
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
+
+            _primitiveCQORenderer.Render(_graphics.GraphicsDevice,
+                _camera);
 
             base.Draw(gameTime);
         }

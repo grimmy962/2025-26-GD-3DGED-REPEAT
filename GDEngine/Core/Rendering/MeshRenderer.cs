@@ -72,7 +72,7 @@ namespace GDEngine.Core
             _effect = new BasicEffect(device)
             {
                 VertexColorEnabled = true,
-                LightingEnabled = true,
+                LightingEnabled = false,
             };
         }
         #endregion
