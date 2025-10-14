@@ -1,7 +1,6 @@
-﻿using GDEngine.Core;
+﻿using GDEngine.Core.Services;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
 
 namespace GDGame
 {
@@ -21,8 +20,6 @@ namespace GDGame
             //initialize context
             EngineContext.Initialize(_graphics.GraphicsDevice, Content);
 
-           
-
             //initialize systems (input, rendering, UI, sound, physics)
 
             //initialize dictionaries (ContentDictionary)
@@ -40,17 +37,11 @@ namespace GDGame
             base.Initialize();
         }
 
-        protected override void LoadContent()
-        {
-            //load assets?
-        }
-
         protected override void Update(GameTime gameTime)
         {
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
-                Exit();
+            //TODO - Wk5 - Update Time
 
-            // TODO: Add your update logic here
+            //TODO - Wk5 - Update Scene
 
             base.Update(gameTime);
         }
@@ -58,8 +49,6 @@ namespace GDGame
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
-
-            // TODO: Add your drawing code here
 
             base.Draw(gameTime);
         }

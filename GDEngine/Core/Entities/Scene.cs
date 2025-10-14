@@ -1,0 +1,238 @@
+﻿using GDEngine.Core.Components;
+using GDEngine.Core.Enums;
+using GDEngine.Core.Services;
+using GDEngine.Core.Systems;
+
+namespace GDEngine.Core.Entities
+{
+    /// <summary>
+    /// Logical collection of scene GameObject instances and lifecycle-ordered systems.
+    /// Coordinates component lifecycle (Awake/Start/Update/LateUpdate) and dispatches system lifecycles.
+    /// </summary>
+    /// <see cref="GameObject"/>
+    /// <see cref="Component"/>
+    /// <see cref="SystemBase"/>
+    /// <see cref="FrameLifecycle"/>
+    /// <see cref="EngineContext"/>
+    public sealed class Scene
+    {
+        #region Fields
+        // Owned objects and lifecycle tracking
+        private readonly List<GameObject> _gameObjects = new();
+        private readonly HashSet<Component> _started = new();
+
+        // Flat snapshot for inspection/UI
+        private readonly List<SystemBase> _systemsAll = new();
+
+        // Systems bucketed by FrameLifecycle index (we know there are exactly 5 lifecycles)
+        private readonly List<SystemBase>[] _systemsByLifecycle;
+
+        // Engine services container
+        private readonly EngineContext _context;
+        #endregion
+
+        #region Properties
+        public string Name { get; set; }
+
+        public EngineContext Context => _context;
+
+        // Stage-1 convenience camera selection; to be owned by CameraSystem later
+        public Camera? ActiveCamera { get; set; }
+
+        public IReadOnlyList<GameObject> GameObjects => _gameObjects;
+        public IReadOnlyList<SystemBase> Systems => _systemsAll;
+        #endregion
+
+        #region Constructors
+        /// <summary>
+        /// Creates a new <see cref="Scene"/>.
+        /// </summary>
+        /// <param name="context">Engine services container used by the scene.</param>
+        /// <param name="name">Debug/display name.</param>
+        public Scene(EngineContext context, string name = "Untitled Scene")
+        {
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            Name = name;
+
+            _systemsByLifecycle = new List<SystemBase>[5];
+            for (int i = 0; i < _systemsByLifecycle.Length; i++)
+                _systemsByLifecycle[i] = new List<SystemBase>(4);
+        }
+        #endregion
+
+        #region Core Methods
+        /// <summary>
+        /// Adds a system to the scene; routes to the lifecycle bucket and sorts by Order within that bucket.
+        /// </summary>
+        public void AddSystem(SystemBase system)
+        {
+            if (system == null)
+                throw new ArgumentNullException(nameof(system));
+
+            if (system.Scene != this && system.Scene != null)
+                throw new InvalidOperationException("System already attached to a different Scene.");
+
+            system.OnAddedToScene(this);
+            _systemsAll.Add(system);
+
+            var systemBucket = _systemsByLifecycle[(int)system.Lifecycle];
+            systemBucket.Add(system);
+
+            // Stable ascending order by Order
+            systemBucket.Sort((a, b) =>
+            {
+                if (a.Order == b.Order)
+                    return 0;
+                return a.Order < b.Order ? -1 : 1;
+            });
+        }
+
+        /// <summary>
+        /// Adds an existing <see cref="GameObject"/> to the scene and runs Awake() on its components.
+        /// </summary>
+        public GameObject AddGameObject(GameObject gameObject)
+        {
+            if (gameObject == null)
+                throw new ArgumentNullException(nameof(gameObject));
+
+            if (_gameObjects.Contains(gameObject))
+                return gameObject;
+
+            _gameObjects.Add(gameObject);
+
+            // Run Awake on all pre-existing components
+            var comps = gameObject.Components;
+            for (int i = 0; i < comps.Count; i++)
+                comps[i].InternalAwake();
+
+            // Promote first enabled camera if none set yet (temporary until CameraSystem)
+            var cam = gameObject.GetComponent<Camera>();
+            if (ActiveCamera == null && cam != null && cam.Enabled)
+                ActiveCamera = cam;
+
+            return gameObject;
+        }
+
+        /// <summary>
+        /// Advances non-render lifecycles and drives component lifecycle. Call once per frame.
+        /// </summary>
+        public void Update(float deltaTime)
+        {
+            // The last two lifecycles are Render and PostRender; skip them here.
+            var nonRenderCount = _systemsByLifecycle.Length - 2;
+
+            // Run all non-render system lifecycles in index order
+            for (int li = 0; li < nonRenderCount; li++)
+            {
+                var systemBucket = _systemsByLifecycle[li];
+                for (int i = 0; i < systemBucket.Count; i++)
+                {
+                    var s = systemBucket[i];
+                    if (!s.Enabled)
+                        continue;
+                    s.Update(deltaTime);
+                }
+            }
+
+            // Ensure Start() runs once per component
+            for (int i = 0; i < _gameObjects.Count; i++)
+            {
+                var go = _gameObjects[i];
+                if (!go.Enabled)
+                    continue;
+
+                var components = go.Components;
+                for (int j = 0; j < components.Count; j++)
+                {
+                    var c = components[j];
+                    if (_started.Contains(c))
+                        continue;
+
+                    c.InternalStart();
+                    _started.Add(c);
+                }
+            }
+
+            // Update pass
+            for (int i = 0; i < _gameObjects.Count; i++)
+            {
+                var go = _gameObjects[i];
+                if (!go.Enabled)
+                    continue;
+
+                var components = go.Components;
+                for (int j = 0; j < components.Count; j++)
+                    components[j].InternalUpdate(deltaTime);
+            }
+
+            // LateUpdate pass
+            for (int i = 0; i < _gameObjects.Count; i++)
+            {
+                var gameObject = _gameObjects[i];
+                if (!gameObject.Enabled)
+                    continue;
+
+                var components = gameObject.Components;
+                for (int j = 0; j < components.Count; j++)
+                    components[j].InternalLateUpdate(deltaTime);
+            }
+        }
+
+        /// <summary>
+        /// Dispatches Render and PostRender lifecycles in order.
+        /// </summary>
+        public void Draw()
+        {
+            var renderSystems = _systemsByLifecycle[(int)FrameLifecycle.Render];
+            for (int i = 0; i < renderSystems.Count; i++)
+            {
+                var system = renderSystems[i];
+                if (!system.Enabled)
+                    continue;
+                system.Draw();
+            }
+
+            var postRenderSystems = _systemsByLifecycle[(int)FrameLifecycle.PostRender];
+            for (int i = 0; i < postRenderSystems.Count; i++)
+            {
+                var system = postRenderSystems[i];
+                if (!system.Enabled)
+                    continue;
+                system.Draw();
+            }
+        }
+        #endregion
+
+        #region Lifecycle Methods
+        // Scene does not have its own lifecycle hooks at Stage-1.
+        #endregion
+
+        #region Housekeeping Methods
+        /// <summary>
+        /// Removes all objects and systems from the scene and clears lifecycle state.
+        /// </summary>
+        public void Clear()
+        {
+            for (int i = 0; i < _gameObjects.Count; i++)
+                _gameObjects[i].Destroy();
+
+            _gameObjects.Clear();
+            _started.Clear();
+            _systemsAll.Clear();
+
+            for (int i = 0; i < _systemsByLifecycle.Length; i++)
+                _systemsByLifecycle[i].Clear();
+
+            ActiveCamera = null;
+        }
+
+        /// <summary>
+        /// String for diagnostics.
+        /// </summary>
+        public override string ToString()
+        {
+            return $"Scene(Name={Name}, GameObjects={_gameObjects.Count}, Systems={_systemsAll.Count})";
+        }
+        #endregion
+    }
+}

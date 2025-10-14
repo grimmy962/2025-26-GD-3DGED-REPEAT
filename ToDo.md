@@ -20,14 +20,17 @@ This document contains a step-by-step development plan of MonoGame content cover
 ---
 
 ## Week 4
-- [ ] Create clean MonoGame Game + Engine project.
-- [ ] Add `EngineContext` with `GraphicsDevice`, `Content`, `GameTime`, `SpriteBatch`.
-- [ ] Add `SystemBase` (Update/Draw hooks).
-- [ ] Refactor `EngineContext` to make it a singleton and implement `IDisposable`
-- [ ] - [ ] Add `Camera` with position, forward, up; FOV/aspect/near/far.
-- [ ] Add `Component` base with `Enabled`, lifecycle hooks, internals for `Awake/Start`.
-- [ ] Add `GameObject` with `AddComponent<T>()`, `GetComponent<T>()`.
-- [ ] Implement `Transform` (LocalPosition/Rotation/Scale; LocalMatrix; WorldMatrix).
+- [x] Create clean MonoGame Game + Engine project.
+- [x] Add `EngineContext` with `GraphicsDevice`, `Content`, `GameTime`, `SpriteBatch`.
+- [x] Add `SystemBase` (Update/Draw hooks).
+- [x] Refactor `EngineContext` to make it a singleton and implement `IDisposable`
+- [x] Add `Camera` with position, forward, up; FOV/aspect/near/far.
+- [x] Add `Component` base with `Enabled`, lifecycle hooks, internals for `Awake/Start`.
+- [x] Add `GameObject` with `AddComponent<T>()`, `GetComponent<T>()`.
+- [x] Implement `Transform` (LocalPosition/Rotation/Scale; LocalMatrix; WorldMatrix).
+
+## Week 5
+- [x] Add Time class to support timescale; refactor update methods from GameTime to deltaTime
 - [ ] Parent/child with `SetParent`, and `Forward/Right/Up` helpers.
 - [ ] Convert standalone camera to a `Camera` **Component**.
 - [ ] `Camera.LateUpdate` computes View/Projection from `Transform`.
