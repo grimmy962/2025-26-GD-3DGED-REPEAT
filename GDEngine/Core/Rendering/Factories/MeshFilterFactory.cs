@@ -34,8 +34,22 @@ namespace GDEngine.Core.Rendering.Factories
         /// </summary>
         public static MeshFilter CreateQuadColored(GraphicsDevice device)
         {
+            var hl = 0.5f;
+
             //TODO - Wk 5
-            throw new NotImplementedException();
+            var verts = new VertexPositionColor[4];
+            verts[0] = new VertexPositionColor(
+                new Vector3(-hl, -hl, 0), Color.Red); //0 - BL
+            verts[1] = new VertexPositionColor(
+               new Vector3(hl, -hl, 0), Color.Green);  //1- BR
+            verts[2] = new VertexPositionColor(
+               new Vector3(-hl, hl, 0), Color.Blue);  //2 - TL
+            verts[3] = new VertexPositionColor(
+               new Vector3(hl, hl, 0), Color.Yellow);  //3 - TR
+
+            var meshFilter = new MeshFilter();
+           // meshFilter.SetGeometry();
+            return meshFilter;
         }
 
 
