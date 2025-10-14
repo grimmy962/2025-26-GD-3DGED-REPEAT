@@ -1,4 +1,9 @@
-﻿using GDEngine.Core.Services;
+﻿using GDEngine.Core;
+using GDEngine.Core.Components;
+using GDEngine.Core.Entities;
+using GDEngine.Core.Rendering.Factories;
+using GDEngine.Core.Services;
+using GDEngine.Core.Timing;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -7,6 +12,11 @@ namespace GDGame
     public class Main : Game
     {
         private GraphicsDeviceManager _graphics;
+        private Scene _scene;
+        private GameObject _cameraGO;
+        private Camera _camera;
+        private GameObject _primitiveCQO;
+        private MeshRenderer _primitiveCQORenderer;
 
         public Main()
         {
@@ -20,26 +30,36 @@ namespace GDGame
             //initialize context
             EngineContext.Initialize(_graphics.GraphicsDevice, Content);
 
-            //initialize systems (input, rendering, UI, sound, physics)
+            //common vars that lots of entities access
+            var context = EngineContext.Instance;
 
-            //initialize dictionaries (ContentDictionary)
+            //make a scene
+            _scene = new Scene(context, "Dungeon antechamber");
 
-            //initialize all primitives (vertices, FBX)
+            //need a camera
+            _cameraGO = new GameObject("First person camera");
+            _camera = _cameraGO.AddComponent<Camera>();
+            _cameraGO.Transform.Position = new Vector3(0, 0, 3);
+            _scene.AddGameObject(_cameraGO);
 
-            //instantiate our game objects (camera, player)
+            //give me something to admire
+            var meshFilter =
+            MeshFilterFactory.CreateQuadColored(_graphics.GraphicsDevice);
 
-            //add game objects to scene
+            _primitiveCQO = new GameObject("Colored quad");
+            _primitiveCQO.AddComponent(meshFilter);
+            _primitiveCQORenderer = _primitiveCQO.AddComponent<MeshRenderer>();
+            _scene.AddGameObject(_primitiveCQO);
 
-            //add scene to scenemanager
-
-            //start scene (setting camera, set spawn point)
 
             base.Initialize();
         }
 
         protected override void Update(GameTime gameTime)
         {
-            //TODO - Wk5 - Update Time
+            //Step 1 - call time update
+            Time.Update(gameTime);
+
 
             //TODO - Wk5 - Update Scene
 

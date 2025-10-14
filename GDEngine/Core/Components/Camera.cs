@@ -61,7 +61,7 @@ namespace GDEngine.Core.Components
             get => _fieldOfView;
             set
             {
-                if (_fieldOfView != value)
+                if (_fieldOfView != value) //TODO - Wk5/6 - thrashing
                 {
                     _fieldOfView = value;
                     _projectionDirty = true;
@@ -110,11 +110,23 @@ namespace GDEngine.Core.Components
         #endregion
 
         #region Lifecycle Methods
+
+        protected override void Awake()
+        {
+            // if we never mark at start as dirty then matrices MAY never be set (hence we will have a problem with effect.View)
+            _viewDirty = true;
+            _projectionDirty = true;
+
+            //NO-OP in base
+            //base.Awake();
+        }
+
+
+
         private void RecalculateView()
         {
             if (Transform == null)
                 throw new NullReferenceException(nameof(Transform));
-
 
             var position = Transform.Position;
             var forward = Transform.Forward;

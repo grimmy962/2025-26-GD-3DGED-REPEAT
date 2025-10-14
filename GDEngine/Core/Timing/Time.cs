@@ -15,7 +15,7 @@ namespace GDEngine.Core.Timing
 
         public static void Update(GameTime gameTime)
         {
-            UnscaledDeltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
+            UnscaledDeltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds; //16ms
             DeltaTime = UnscaledDeltaTime * TimeScale;
             RealtimeSinceStartup += UnscaledDeltaTime;
             FrameCount++;
