@@ -32,10 +32,10 @@ namespace GDEngine.Core
                 return;
 
             float angle = _rotationSpeedInRadiansPerSecond * deltaTime;
-            Quaternion dq = Quaternion.CreateFromAxisAngle(_rotationAxisNormalized, angle);
+            Quaternion rotQuaternion = Quaternion.CreateFromAxisAngle(_rotationAxisNormalized, angle);
 
             //the ? means only call if Transform is not null (it's like wrapping in an if(Transform != null) clause)
-            Transform.LocalRotation = Quaternion.Normalize(dq * Transform.LocalRotation);
+            Transform.LocalRotation = Quaternion.Normalize(rotQuaternion * Transform.LocalRotation);
 
         }
 
