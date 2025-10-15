@@ -15,8 +15,8 @@ namespace GDGame
         private Scene _scene;
         private GameObject _cameraGO;
         private Camera _camera;
-        private GameObject _primitiveCQO;
-        private MeshRenderer _primitiveCQORenderer;
+        private GameObject _primitiveGO;
+        private MeshRenderer _primitiveGORenderer;
 
         public Main()
         {
@@ -27,34 +27,72 @@ namespace GDGame
 
         protected override void Initialize()
         {
+            _graphics.PreferredBackBufferWidth = 1920;
+            _graphics.PreferredBackBufferHeight = 1080;
+            _graphics.ApplyChanges();
+
             //initialize context
             EngineContext.Initialize(_graphics.GraphicsDevice, Content);
 
-            //common vars that lots of entities access
-            var context = EngineContext.Instance;
-
             //make a scene
-            _scene = new Scene(context, "Dungeon antechamber");
+            _scene = new Scene(EngineContext.Instance, "Dungeon antechamber");
 
+            #region Camera
             //need a camera
             _cameraGO = new GameObject("First person camera");
+            //add camera component to the GO
             _camera = _cameraGO.AddComponent<Camera>();
-            _cameraGO.Transform.Position = new Vector3(0, 0, 3);
+            //set position
+            _cameraGO.Transform.Position = new Vector3(0, 0, 5);
+            //feed off whatever screen dimensions you set in lines 31-32
+            _camera.AspectRatio = (float)_graphics.PreferredBackBufferWidth / _graphics.PreferredBackBufferHeight;
             //add to scene
             _scene.AddGameObject(_cameraGO);
-
-            //make it face the origin so we can see the quad!
+            //rotate to face the origin so we can see the quad!
             _cameraGO.Transform.RotateEuler(new Vector3(0, MathHelper.ToRadians(180), 0));
+            #endregion
 
+            #region Demo - Primitive 
+            //make a game object with filter (data) and renderer (draw behaviour)
+            _primitiveGO = new GameObject("my first primitive");
+            
             //generate the data for a quad (normally you might load an FBX)
             var meshFilter = MeshFilterFactory.CreateQuadColored(_graphics.GraphicsDevice);
+            //add mesh filter (i.e. the verts and indices data)
+            _primitiveGO.AddComponent(meshFilter);
+            //add a renderer to draw the data
+            _primitiveGORenderer = _primitiveGO.AddComponent<MeshRenderer>();
 
-            //make a game object with filter (data) and renderer (draw behaviour)
-            _primitiveCQO = new GameObject("Colored quad");
-            _primitiveCQO.AddComponent(meshFilter);
-            _primitiveCQORenderer = _primitiveCQO.AddComponent<MeshRenderer>();
+            #region Demo - Primitive - Controller(s) with no culling
+
+            RotationController rotController = null;
+
+            //add rotation Y
+            rotController = _primitiveGO.AddComponent<RotationController>();
+            rotController._rotationAxisNormalized = Vector3.UnitY;   // Y axis
+            rotController._rotationSpeedInRadiansPerSecond = MathHelper.ToRadians(90);
+
+            //uncomment to add rotation X
+            rotController = _primitiveGO.AddComponent<RotationController>();
+            rotController._rotationAxisNormalized = Vector3.UnitX;  // X axis
+            rotController._rotationSpeedInRadiansPerSecond = MathHelper.ToRadians(60);
+
+            //uncomment to add rotation Z
+            //rotController = _primitiveQuad.AddComponent<RotationController>();
+            //rotController._rotationAxisNormalized = Vector3.UnitZ;   // Z axis
+            //rotController._rotationSpeedInRadiansPerSecond = MathHelper.ToRadians(-30);
+
+            //if we want to see front and back of the quad then lets set the cull mode (remember this relates to the wind order (i.e. CW, CCW) of our indices
+            var rsState = new RasterizerState();
+            rsState.CullMode = CullMode.None;
+            //uncomment to see a wireframe render of the primitive
+            //rsState.FillMode = FillMode.WireFrame;
+            _graphics.GraphicsDevice.RasterizerState = rsState;
+            #endregion 
+            #endregion
+
             //add to scene
-            _scene.AddGameObject(_primitiveCQO);
+            _scene.AddGameObject(_primitiveGO);
 
 
             base.Initialize();
@@ -75,8 +113,8 @@ namespace GDGame
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
-            _primitiveCQORenderer.Render(_graphics.GraphicsDevice,
-                _camera);
+            //notice that we have to manually call render on each primitive - we really need a RenderSystem!
+            _primitiveGORenderer.Render(_graphics.GraphicsDevice, _camera);
 
             base.Draw(gameTime);
         }

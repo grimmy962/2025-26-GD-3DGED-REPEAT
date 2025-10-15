@@ -34,11 +34,15 @@ namespace GDEngine.Core
         /// </summary>
         public void Render(GraphicsDevice device, Camera camera)
         {
+            //exit if the Transform isnt set
+            if (Transform == null)
+                return;
+
             // make sure we have an effect (material)
             EnsureEffect(device);
 
             //w, v, p
-            _effect.World = Matrix.Identity; //TODO - get transform
+            _effect.World = Transform.WorldMatrix;
             _effect.View = camera.View;
             _effect.Projection = camera.Projection;
 

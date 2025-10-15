@@ -73,7 +73,12 @@ namespace GDEngine.Core
         /// </summary>
         public void SetGeometry(VertexBuffer vb, IndexBuffer ib, PrimitiveType primitiveType, int indexCount)
         {
-            //TODO - Wk5 
+            _vertexBuffer = vb;
+            _indexBuffer = ib;
+            _primitiveType = primitiveType;
+            _indexCount = indexCount;
+            _vertexCount = vb.VertexCount;
+            _primitiveCount = CalculatePrimitiveCount(_indexCount, _primitiveType);
         }
 
         private static int CalculatePrimitiveCount(int indexCount, PrimitiveType type)
