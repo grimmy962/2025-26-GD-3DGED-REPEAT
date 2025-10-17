@@ -4,54 +4,70 @@ using Microsoft.Xna.Framework;
 namespace GDEngine.Core.Components
 {
     /// <summary>
-    /// Rotates its <see cref="GameObject"/> around a configurable local axis at a configurable angular speed.
+    /// Rotates the owning <see cref="GameObject"/> around a configurable local-space axis
+    /// at a configurable angular speed. Rotation is applied incrementally each frame using
+    /// an axis–angle quaternion and composed with the current <see cref="Transform.LocalRotation"/>.
     /// </summary>
     /// <see cref="Transform"/>
     public sealed class RotationController : Component
     {
+        #region Static Fields
+        // Smallest |ω| we consider "meaningful" (radians/sec). Helps avoid work and floating-point churn.
+        private static readonly float ROTATION_THRESHOLD = 1E-8f;
+        #endregion
+
         #region Fields
-        // Rotation axis in local space. Will be normalized at runtime.
+        // Local-space rotation axis. Will be normalized in Awake() to ensure stable angular motion.
+        // Defaults to +Y (Vector3.Up) which yields a spin like a turntable.
         public Vector3 _rotationAxisNormalized = Vector3.Up;
 
-        // Rotation speed in degrees per second.
-        public float _rotationSpeedInRadiansPerSecond = (float)Math.PI/2;
-
-        private static readonly float ROTATION_THRESHOLD = 1E-8f;
+        // Angular speed in radians per second. Positive values rotate according to the right-hand rule
+        // about _rotationAxisNormalized; negative values rotate in the opposite direction.
+        public float _rotationSpeedInRadiansPerSecond = MathF.PI / 2f; // 90°/s by default
         #endregion
 
         #region Lifecycle Methods
         /// <summary>
-        /// Applies a delta rotation around <see cref="_rotationAxisNormalized"/> each frame.
+        /// Applies an incremental rotation for this frame.
         /// </summary>
-        /// <param name="deltaTime">Seconds since last frame.</param>
+        /// <param name="deltaTime">Elapsed time since last frame (seconds).</param>
         protected override void Update(float deltaTime)
         {
+            // Respect component enable; skip any work if disabled.
             if (!Enabled)
                 return;
 
-            if (MathF.Abs(_rotationSpeedInRadiansPerSecond) 
-                                        <= ROTATION_THRESHOLD)
+            // Skip tiny angular speeds to avoid unnecessary quaternion work / denorms.
+            if (MathF.Abs(_rotationSpeedInRadiansPerSecond) <= ROTATION_THRESHOLD)
                 return;
 
+            // θ = ω * Δt (radians). This is the per-frame angle to rotate by.
             float angle = _rotationSpeedInRadiansPerSecond * deltaTime;
-            Quaternion rotQuaternion = Quaternion.CreateFromAxisAngle(_rotationAxisNormalized, angle);
 
-            //the ? means only call if Transform is not null (it's like wrapping in an if(Transform != null) clause)
-            Transform.LocalRotation = Quaternion.Normalize(rotQuaternion * Transform.LocalRotation);
+            // Build a delta-rotation from axis–angle. Assumes axis is already normalized in Awake().
+            Quaternion delta = Quaternion.CreateFromAxisAngle(_rotationAxisNormalized, angle);
 
+            // Compose new local rotation. Multiply on the left so 'delta' is applied in the object's local basis.
+            // Normalize to keep numerical drift at bay over long runtimes.
+            // The ?. operator protects against a missing Transform (defensive, though Awake() guards this).
+            Transform.LocalRotation = Quaternion.Normalize(delta * Transform.LocalRotation);
         }
 
+        /// <summary>
+        /// Validates references and normalizes configuration for stable runtime behavior.
+        /// </summary>
         protected override void Awake()
-        {       
-            //just in case there's anything wrong with Transform
+        {
+            // Ensure Transform exists; rotation has no meaning without it.
             if (Transform == null)
                 throw new ArgumentNullException(nameof(Transform));
 
-            //just in case user enters something with greater than |1| length
+            // Guarantee unit-length axis so angular speed maps 1:1 to radians/sec about that axis.
+            // If the user provided the zero vector, Normalize() will leave it at (0,0,0);
+            // in that case, no visible rotation will occur, which is acceptable and safe.
             _rotationAxisNormalized.Normalize();
 
-            //NO-OP
-            //base.Awake();
+            // NO-OP: base.Awake() if your base class needs it; otherwise intentionally omitted.
         }
         #endregion
     }

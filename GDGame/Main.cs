@@ -1,6 +1,5 @@
 ﻿using GDEngine.Core;
 using GDEngine.Core.Components;
-using GDEngine.Core.Components;
 using GDEngine.Core.Entities;
 using GDEngine.Core.Rendering.Factories;
 using GDEngine.Core.Services;
@@ -64,22 +63,20 @@ namespace GDGame
             //add a renderer to draw the data
             _primitiveGORenderer = _primitiveGO.AddComponent<MeshRenderer>();
 
-            var transController = _primitiveGO.AddComponent<TranslationController>();
-            transController._maxDistance = 0.5f;
-            transController._angularSpeed = 1f;
-            transController._direction = new Vector3(1, 1, 1);
+            #region Demo - Primitive - Controller(s) 
 
-            RotationController rotController = null;
-            rotController = _primitiveGO.AddComponent<RotationController>();
-            rotController._rotationAxisNormalized = Vector3.UnitY;   // Y axis
-            rotController._rotationSpeedInRadiansPerSecond = MathHelper.ToRadians(90);
+            //var transController = _primitiveGO.AddComponent<SineTranslationController>();
+            //transController._maxDistance = 0.5f;
+            //transController._angularSpeed = 1f;
+            //transController._direction = new Vector3(1, 0, 0);
 
+            var easableTransController = _primitiveGO.AddComponent<EasableSineTranslationController>();
+            easableTransController._maxDistance = 0.5f;
+            easableTransController._angularSpeed = 1f;
+            easableTransController._direction = new Vector3(0, 1, 0);
+            easableTransController._timeCurve = Ease.EaseOutElastic;
 
-
-            #region Demo - Primitive - Controller(s) with no culling
             //RotationController rotController = null;
-
-            //add rotation Y
             //rotController = _primitiveGO.AddComponent<RotationController>();
             //rotController._rotationAxisNormalized = Vector3.UnitY;   // Y axis
             //rotController._rotationSpeedInRadiansPerSecond = MathHelper.ToRadians(90);
@@ -95,14 +92,13 @@ namespace GDGame
             //rotController._rotationSpeedInRadiansPerSecond = MathHelper.ToRadians(-30);
 
             //if we want to see front and back of the quad then lets set the cull mode (remember this relates to the wind order (i.e. CW, CCW) of our indices
-            var rsState = new RasterizerState()
-            {
-                CullMode = CullMode.None
-            };
-            _graphics.GraphicsDevice.RasterizerState = rsState;
-            #endregion 
+            //var rsState = new RasterizerState()
+            //{
+            //    CullMode = CullMode.None
+            //};
+            //_graphics.GraphicsDevice.RasterizerState = rsState;
             #endregion
-
+            #endregion
             //add to scene
             _scene.AddGameObject(_primitiveGO);
 
