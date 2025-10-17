@@ -2,7 +2,7 @@
 using GDEngine.Core.Entities;
 using Microsoft.Xna.Framework;
 
-namespace GDEngine.Core
+namespace GDEngine.Core.Controllers
 {
     /// <summary>
     /// Rotates its <see cref="GameObject"/> around a configurable local axis at a configurable angular speed.
