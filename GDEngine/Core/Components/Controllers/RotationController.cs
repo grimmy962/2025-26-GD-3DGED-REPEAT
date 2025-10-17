@@ -1,8 +1,7 @@
-﻿using GDEngine.Core.Components;
-using GDEngine.Core.Entities;
+﻿using GDEngine.Core.Entities;
 using Microsoft.Xna.Framework;
 
-namespace GDEngine.Core.Controllers
+namespace GDEngine.Core.Components
 {
     /// <summary>
     /// Rotates its <see cref="GameObject"/> around a configurable local axis at a configurable angular speed.
@@ -16,6 +15,8 @@ namespace GDEngine.Core.Controllers
 
         // Rotation speed in degrees per second.
         public float _rotationSpeedInRadiansPerSecond = (float)Math.PI/2;
+
+        private static readonly float ROTATION_THRESHOLD = 1E-8f;
         #endregion
 
         #region Lifecycle Methods
@@ -28,7 +29,8 @@ namespace GDEngine.Core.Controllers
             if (!Enabled)
                 return;
 
-            if (MathF.Abs(_rotationSpeedInRadiansPerSecond) <= 1e-8f)
+            if (MathF.Abs(_rotationSpeedInRadiansPerSecond) 
+                                        <= ROTATION_THRESHOLD)
                 return;
 
             float angle = _rotationSpeedInRadiansPerSecond * deltaTime;

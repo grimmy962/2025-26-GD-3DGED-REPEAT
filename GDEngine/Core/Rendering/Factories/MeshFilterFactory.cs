@@ -12,6 +12,14 @@ namespace GDEngine.Core.Rendering.Factories
     /// <see cref="GameObject"/>
     public class MeshFilterFactory
     {
+        public static MeshFilter CreateMyFirstInitial(GraphicsDevice device)
+        {
+            //TODO - Homework
+            throw new NotImplementedException("add initial (N)");
+        }
+
+
+
         /// <summary>
         /// Creates XYZ axes as colored lines (X=Red, Y=Green, Z=Blue) starting at the origin.
         /// </summary>
@@ -299,7 +307,7 @@ namespace GDEngine.Core.Rendering.Factories
                                                  int meshIndex = 0,
                                                  int partIndex = 0)
         {
-            //TODO - Wk 5
+            //TODO - Wk 6
             throw new NotImplementedException();
         }
     }

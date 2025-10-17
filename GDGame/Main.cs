@@ -1,6 +1,6 @@
 ﻿using GDEngine.Core;
 using GDEngine.Core.Components;
-using GDEngine.Core.Controllers;
+using GDEngine.Core.Components;
 using GDEngine.Core.Entities;
 using GDEngine.Core.Rendering.Factories;
 using GDEngine.Core.Services;
@@ -58,36 +58,47 @@ namespace GDGame
             _primitiveGO = new GameObject("my first primitive");
             
             //generate the data for a quad (normally you might load an FBX)
-            var meshFilter = MeshFilterFactory.CreateQuadColored(_graphics.GraphicsDevice);
+            var meshFilter = MeshFilterFactory.CreateWireBox(_graphics.GraphicsDevice);
             //add mesh filter (i.e. the verts and indices data)
             _primitiveGO.AddComponent(meshFilter);
             //add a renderer to draw the data
             _primitiveGORenderer = _primitiveGO.AddComponent<MeshRenderer>();
 
-            #region Demo - Primitive - Controller(s) with no culling
+            var transController = _primitiveGO.AddComponent<TranslationController>();
+            transController._maxDistance = 0.5f;
+            transController._angularSpeed = 1f;
+            transController._direction = new Vector3(1, 1, 1);
 
             RotationController rotController = null;
-
-            //add rotation Y
             rotController = _primitiveGO.AddComponent<RotationController>();
             rotController._rotationAxisNormalized = Vector3.UnitY;   // Y axis
             rotController._rotationSpeedInRadiansPerSecond = MathHelper.ToRadians(90);
 
+
+
+            #region Demo - Primitive - Controller(s) with no culling
+            //RotationController rotController = null;
+
+            //add rotation Y
+            //rotController = _primitiveGO.AddComponent<RotationController>();
+            //rotController._rotationAxisNormalized = Vector3.UnitY;   // Y axis
+            //rotController._rotationSpeedInRadiansPerSecond = MathHelper.ToRadians(90);
+
             //uncomment to add rotation X
-            rotController = _primitiveGO.AddComponent<RotationController>();
-            rotController._rotationAxisNormalized = Vector3.UnitX;  // X axis
-            rotController._rotationSpeedInRadiansPerSecond = MathHelper.ToRadians(60);
+            //rotController = _primitiveGO.AddComponent<RotationController>();
+            //rotController._rotationAxisNormalized = Vector3.UnitX;  // X axis
+            //rotController._rotationSpeedInRadiansPerSecond = MathHelper.ToRadians(60);
 
             //uncomment to add rotation Z
-            //rotController = _primitiveQuad.AddComponent<RotationController>();
+            //rotController = _primitiveGO.AddComponent<RotationController>();
             //rotController._rotationAxisNormalized = Vector3.UnitZ;   // Z axis
             //rotController._rotationSpeedInRadiansPerSecond = MathHelper.ToRadians(-30);
 
             //if we want to see front and back of the quad then lets set the cull mode (remember this relates to the wind order (i.e. CW, CCW) of our indices
-            var rsState = new RasterizerState();
-            rsState.CullMode = CullMode.None;
-            //uncomment to see a wireframe render of the primitive
-            //rsState.FillMode = FillMode.WireFrame;
+            var rsState = new RasterizerState()
+            {
+                CullMode = CullMode.None
+            };
             _graphics.GraphicsDevice.RasterizerState = rsState;
             #endregion 
             #endregion
@@ -104,8 +115,11 @@ namespace GDGame
             //call time update
             Time.Update(gameTime);
 
+            // stop (0), run normall (1), slow (<1) and speed time(>1)
+            //Time.TimeScale = 4f;
+
             //update Scene
-            _scene.Update(Time.UnscaledDeltaTime);
+            _scene.Update(Time.DeltaTime);
 
             base.Update(gameTime);
         }
