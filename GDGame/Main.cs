@@ -6,6 +6,7 @@ using GDEngine.Core.Services;
 using GDEngine.Core.Timing;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System;
 using System.Windows.Forms;
 
 namespace GDGame
@@ -28,23 +29,53 @@ namespace GDGame
 
         protected override void Initialize()
         {
-            _graphics.PreferredBackBufferWidth = 1920;
-            _graphics.PreferredBackBufferHeight = 1080;
-            _graphics.ApplyChanges();
+            InitializeGraphics(1920, 1080);
 
+            InitializeContext();
+
+            InitializeScene();
+
+            InitializeCamera(new Vector3(0, 0, 5));
+
+            InitializeSkyBox();
+
+            InitializeGround();
+
+            base.Initialize();
+        }
+
+     
+
+        private void InitializeGraphics(int width, int height)
+        {
+            _graphics.PreferredBackBufferWidth = width;
+            _graphics.PreferredBackBufferHeight = height;
+            _graphics.ApplyChanges();
+        }
+
+        private void InitializeContext()
+        {
             //initialize context
             EngineContext.Initialize(_graphics.GraphicsDevice, Content);
 
+        }
+
+        private void InitializeScene()
+        {
             //make a scene
             _scene = new Scene(EngineContext.Instance, "Dungeon antechamber");
 
+        }
+
+        private void InitializeCamera(Vector3 position)
+        {
             #region Camera
             //need a camera
             _cameraGO = new GameObject("First person camera");
             //add camera component to the GO
             _camera = _cameraGO.AddComponent<Camera>();
             //set position
-            _cameraGO.Transform.TranslateBy(new Vector3(0, 0, 5));
+            _cameraGO.Transform.TranslateBy(position);
             //feed off whatever screen dimensions you set in lines 31-32
             _camera.AspectRatio = (float)_graphics.PreferredBackBufferWidth / _graphics.PreferredBackBufferHeight;
             //add to scene
@@ -52,25 +83,16 @@ namespace GDGame
             //rotate to face the origin so we can see the quad!
             _cameraGO.Transform.RotateEuler(new Vector3(0, MathHelper.ToRadians(180), 0));
             #endregion
+        }
 
-            #region Demo - Primitive 
-            //make a game object with filter (data) and renderer (draw behaviour)
-            _primitiveGO = new GameObject("my first primitive");
-            
-            //generate the data for a quad (normally you might load an FBX)
-            var meshFilter = MeshFilterFactory.CreateWireBox(_graphics.GraphicsDevice);
-            //add mesh filter (i.e. the verts and indices data)
-            _primitiveGO.AddComponent(meshFilter);
-            //add a renderer to draw the data
-            _primitiveGORenderer = _primitiveGO.AddComponent<MeshRenderer>();
-            //add to scene
-            _scene.AddGameObject(_primitiveGO);
+        private void InitializeSkyBox()
+        {
+            throw new NotImplementedException();
+        }
 
-            _primitiveGO.AddComponent<SineScaleController>();
-            
-            #endregion
-
-            base.Initialize();
+        private void InitializeGround()
+        {
+            throw new NotImplementedException();
         }
 
         protected override void Update(GameTime gameTime)
