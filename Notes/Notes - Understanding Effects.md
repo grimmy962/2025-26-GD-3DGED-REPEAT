@@ -1,7 +1,5 @@
 # Effects in 3D Graphics in MonoGame 
 
-# Lesson: Built-in Effect Classes in MonoGame
-
 ## Learning Objectives
 By the end of this lesson, you should be able to:
 
