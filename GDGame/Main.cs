@@ -37,7 +37,7 @@ namespace GDGame
 
             InitializeScene();
 
-            InitializeCamera(new Vector3(0, 0, 5));
+            InitializeCamera(new Vector3(0, 10, 5));
 
             InitializeSkyBox();
 
@@ -78,6 +78,8 @@ namespace GDGame
             _camera = _cameraGO.AddComponent<Camera>();
             //set position
             _cameraGO.Transform.TranslateBy(position);
+            _cameraGO.Transform.RotateEuler(
+                new Vector3(MathHelper.ToRadians(-45), 0, 0));
             //feed off whatever screen dimensions you set in lines 31-32
             _camera.AspectRatio = (float)_graphics.PreferredBackBufferWidth / _graphics.PreferredBackBufferHeight;
             //add to scene
