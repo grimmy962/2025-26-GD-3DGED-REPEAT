@@ -1,7 +1,7 @@
-﻿using GDEngine.Core.Components;
+﻿using GDEngine.Core.Entities;
 using Microsoft.Xna.Framework;
 
-namespace GDEngine.Core
+namespace GDEngine.Core.Components
 {
 
     [Flags]
@@ -52,7 +52,7 @@ namespace GDEngine.Core
         public Vector3 LocalPosition
         {
             get => _localPosition;
-            set
+            private set
             {
                 if (_localPosition == value)
                     return;
@@ -64,7 +64,7 @@ namespace GDEngine.Core
         public Quaternion LocalRotation
         {
             get => _localRotation;
-            set
+            private set
             {
                 if (_localRotation == value)
                     return;
@@ -76,7 +76,7 @@ namespace GDEngine.Core
         public Vector3 LocalScale
         {
             get => _localScale;
-            set
+            private set
             {
                 if (_localScale == value)
                     return;
@@ -125,7 +125,7 @@ namespace GDEngine.Core
         public Vector3 Position
         {
             get => WorldMatrix.Translation;
-            set
+            private set
             {
                 if (_parent == null)
                 {
@@ -146,7 +146,7 @@ namespace GDEngine.Core
             get => _parent == null
                 ? _localRotation
                 : Quaternion.Normalize(Quaternion.Concatenate(_localRotation, _parent.Rotation));
-            set
+            private set
             {
                 if (_parent == null)
                 {
@@ -199,6 +199,15 @@ namespace GDEngine.Core
         /// <summary>
         /// Sets the parent transform. Keeps local TRS unchanged; world will follow parent.
         /// </summary>
+        /// <param name="gameObject">Parent containing transform.</param>
+        public void SetParent(GameObject gameObject)
+        {
+            SetParent(gameObject?.Transform);
+        }
+
+        /// <summary>
+        /// Sets the parent transform. Keeps local TRS unchanged; world will follow parent.
+        /// </summary>
         /// <param name="newParent">New parent or null to unparent.</param>
         public void SetParent(Transform? newParent)
         {
@@ -213,11 +222,21 @@ namespace GDEngine.Core
         }
 
         /// <summary>
+        /// Moves this transform to a target position in local space.
+        /// </summary>
+        /// <param name="target">Scale to value for new localScale.</param>
+        public void TranslateTo(in Vector3 target)
+        {
+            _localPosition = target;
+            MarkLocalDirty(TransformChangeFlags.Position);
+        }
+
+        /// <summary>
         /// Translates this transform by a delta. If worldSpace is true, the delta is interpreted in world space.
         /// </summary>
         /// <param name="delta">Translation delta.</param>
         /// <param name="worldSpace">If true, delta is in world space; otherwise local space.</param>
-        public void Translate(in Vector3 delta, bool worldSpace = false)
+        public void TranslateBy(in Vector3 delta, bool worldSpace = false)
         {
             if (!worldSpace)
             {
@@ -270,27 +289,37 @@ namespace GDEngine.Core
         /// <param name="worldSpace">If true, apply in world space; otherwise local space.</param>
         public void RotateEuler(in Vector3 eulerRadians, bool worldSpace = false)
         {
-            var delta = Quaternion.CreateFromYawPitchRoll(eulerRadians.Y, eulerRadians.X, eulerRadians.Z);
-            Rotate(delta, worldSpace);
+            Rotate(Quaternion.CreateFromYawPitchRoll(eulerRadians.Y, eulerRadians.X, eulerRadians.Z), 
+                worldSpace);
         }
 
         /// <summary>
-        /// Scales this transform by a uniform factor in local space.
+        /// Scales this transform to a non-uniform vector in local space.
         /// </summary>
-        /// <param name="uniform">Uniform scale factor.</param>
-        public void Scale(float uniform)
+        /// <param name="scaleTo">Scale to value for new localScale.</param>
+        public void ScaleTo(in Vector3 scaleTo)
         {
-            _localScale *= new Vector3(uniform, uniform, uniform);
+            _localScale = scaleTo;
             MarkLocalDirty(TransformChangeFlags.Scale);
         }
 
         /// <summary>
-        /// Scales this transform by a non-uniform vector in local space.
+        /// Scales this transform <b>by</b> a non-uniform vector in local space.
         /// </summary>
-        /// <param name="scale">Per-axis scale multiplier.</param>
-        public void Scale(in Vector3 scale)
+        /// <param name="scaleBy">Per-axis scale-by multiplier.</param>
+        public void ScaleBy(in Vector3 scaleBy)
         {
-            _localScale *= scale;
+            _localScale *= scaleBy;
+            MarkLocalDirty(TransformChangeFlags.Scale);
+        }
+
+        /// <summary>
+        /// Scales this transform <b>by</b> a uniform scalar in local space.
+        /// </summary>
+        /// <param name="scaleBy">Scalar scale-by factor.</param>
+        public void ScaleBy(float scaleBy)
+        {
+            _localScale *= scaleBy;
             MarkLocalDirty(TransformChangeFlags.Scale);
         }
 
@@ -319,7 +348,7 @@ namespace GDEngine.Core
         #endregion
 
         #region Housekeeping Methods
-        // (none)
+        // None
         #endregion
     }
 }

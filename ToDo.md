@@ -31,17 +31,24 @@ This document contains a step-by-step development plan of MonoGame content cover
 
 ## Week 5
 - [x] Add Time class to support timescale; refactor update methods from GameTime to deltaTime
-- [ ] Parent/child with `SetParent`, and `Forward/Right/Up` helpers.
-- [ ] Convert standalone camera to a `Camera` **Component**.
-- [ ] `Camera.LateUpdate` computes View/Projection from `Transform`.
-- [ ] Create `MeshFilter` with `VertexBuffer`, `IndexBuffer?`, `PrimitiveType`, `PrimitiveCount`, bounds.
-- [ ] Add `MeshRenderer` with `BasicEffect` (`VertexColorEnabled=true`, depth on in renderer).
+- [x] Parent/child with `SetParent`, and `Forward/Right/Up` helpers.
+- [x] Convert standalone camera to a `Camera` **Component**.
+- [x] `Camera.LateUpdate` computes View/Projection from `Transform`.
+- [x] Create `MeshFilter` with `VertexBuffer`, `IndexBuffer?`, `PrimitiveType`, `PrimitiveCount`, bounds.
+- [x] Add `MeshRenderer` with `BasicEffect` (`VertexColorEnabled=true`, depth on in renderer).
+
+## Week 6
+- [x] Added LayerMask in preparation for 1st stage of camer culling
+- [ ] Add FBX loading in MeshFilterFactory
+- [ ] Add some assets for grass and skybox
+- [ ] Add support for deep and shallow cloning on GameObject components
+- [ ] Add IMaterial support for effects other than BasicEffect in MashRenderer
 - [ ] Add `RenderingSystem` that gathers `(Transform, MeshFilter, MeshRenderer)`.
+- [ ] Add `RenderLayer` sorting in `RenderingSystem`.
 - [ ] Define `InputState` (Move, JumpPressed, Action1, Action2).
 - [ ] Implement `IInputDevice` + `KeyboardInput`, `GamepadInput`.
 - [ ] Implement `IInputReceiver` (e.g., `PlayerController` component).
 - [ ] Add `InputSystem` that routes device → receiver; expose `SetDevice`, `SetReceiver`.
-- [ ] Add `RenderLayer` sorting in `RenderingSystem`.
 - [ ] Add **frustum culling** with `BoundingFrustum` against `MeshFilter.Bounds`.
 - [ ] Add **material abstraction**: wrap `Effect` into a `Material` with parameters; pipeline for future shaders.
 - [ ] Add **prefab/serialization**: simple JSON for spawning `GameObject` graphs.

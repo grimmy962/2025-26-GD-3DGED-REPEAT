@@ -17,8 +17,10 @@ namespace GDEngine.Core.Entities
     public sealed class Scene
     {
         #region Fields
-        // Owned objects and lifecycle tracking
+        // Owned objects
         private readonly List<GameObject> _gameObjects = new();
+
+        // Lifecycle tracking used to wake up new components
         private readonly HashSet<Component> _started = new();
 
         // Flat snapshot for inspection/UI
@@ -36,7 +38,7 @@ namespace GDEngine.Core.Entities
 
         public EngineContext Context => _context;
 
-        // Stage-1 convenience camera selection; to be owned by CameraSystem later
+        // Camera selection; to be owned by CameraSystem later
         public Camera? ActiveCamera { get; set; }
 
         public IReadOnlyList<GameObject> GameObjects => _gameObjects;
@@ -153,7 +155,7 @@ namespace GDEngine.Core.Entities
                 }
             }
 
-            // Update pass
+            // Update GameObject pass
             for (int i = 0; i < _gameObjects.Count; i++)
             {
                 var go = _gameObjects[i];
@@ -165,7 +167,7 @@ namespace GDEngine.Core.Entities
                     components[j].InternalUpdate(deltaTime);
             }
 
-            // LateUpdate pass
+            // LateUpdate GameObject pass
             for (int i = 0; i < _gameObjects.Count; i++)
             {
                 var gameObject = _gameObjects[i];

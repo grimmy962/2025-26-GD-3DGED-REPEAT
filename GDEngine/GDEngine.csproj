@@ -11,9 +11,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Systems\" />
-    <Folder Include="Input\" />
-    <Folder Include="Components\" />
+    <Folder Include="Core\Input\" />
+    <Folder Include="Core\Utilities\" />
   </ItemGroup>
 
 </Project>

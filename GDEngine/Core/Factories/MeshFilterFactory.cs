@@ -1,8 +1,9 @@
-﻿using Microsoft.Xna.Framework;
+﻿using GDEngine.Core.Rendering;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace GDEngine.Core.Rendering.Factories
+namespace GDEngine.Core.Factories
 {
     /// <summary>
     /// Utility factory for building simple GPU meshes for quick demos and tests.
@@ -17,8 +18,6 @@ namespace GDEngine.Core.Rendering.Factories
             //TODO - Homework
             throw new NotImplementedException("add initial (N)");
         }
-
-
 
         /// <summary>
         /// Creates XYZ axes as colored lines (X=Red, Y=Green, Z=Blue) starting at the origin.
@@ -115,7 +114,7 @@ namespace GDEngine.Core.Rendering.Factories
             for (int c = 0; c <= cols; c++)
             {
                 float x = x0 + c * spacing;
-                var col = (c % 5 == 0) ? Color.LightGray : Color.White; // inline, simple variation
+                var col = c % 5 == 0 ? Color.LightGray : Color.White; // inline, simple variation
                 verts[k++] = new VertexPositionColor(new Vector3(x, y0, 0f), col);
                 verts[k++] = new VertexPositionColor(new Vector3(x, y0 + h, 0f), col);
             }
@@ -123,7 +122,7 @@ namespace GDEngine.Core.Rendering.Factories
             for (int r = 0; r <= rows; r++)
             {
                 float y = y0 + r * spacing;
-                var col = (r % 5 == 0) ? Color.LightGray : Color.White; // inline, simple variation
+                var col = r % 5 == 0 ? Color.LightGray : Color.White; // inline, simple variation
                 verts[k++] = new VertexPositionColor(new Vector3(x0, y, 0f), col);
                 verts[k++] = new VertexPositionColor(new Vector3(x0 + w, y, 0f), col);
             }
@@ -302,13 +301,77 @@ namespace GDEngine.Core.Rendering.Factories
         /// <param name="meshIndex">Which ModelMesh to use (default 0).</param>
         /// <param name="partIndex">Which ModelMeshPart to use within the mesh (default 0).</param>
         public static MeshFilter CreateFromModel(ContentManager content,
-                                                 GraphicsDevice device,
-                                                 string assetName,
-                                                 int meshIndex = 0,
-                                                 int partIndex = 0)
+                                          GraphicsDevice device,
+                                          string assetName,
+                                          int meshIndex = 0,
+                                          int partIndex = 0)
         {
-            //TODO - Wk 6
-            throw new NotImplementedException();
+            if (content == null)
+                throw new ArgumentNullException(nameof(content));
+            if (device == null)
+                throw new ArgumentNullException(nameof(device));
+            if (string.IsNullOrWhiteSpace(assetName))
+                throw new ArgumentException("Asset name must be non-empty.", nameof(assetName));
+
+            // Load model and select mesh/part
+            var model = content.Load<Model>(assetName);
+            if (meshIndex < 0 || meshIndex >= model.Meshes.Count)
+                throw new ArgumentOutOfRangeException(nameof(meshIndex), "meshIndex outside range of Model.Meshes.");
+
+            var mesh = model.Meshes[meshIndex];
+            if (partIndex < 0 || partIndex >= mesh.MeshParts.Count)
+                throw new ArgumentOutOfRangeException(nameof(partIndex), "partIndex outside range of ModelMesh.MeshParts.");
+
+            var part = mesh.MeshParts[partIndex];
+
+            // Vertex copy (slice the part's vertex range into a standalone buffer)
+            var vertexDecl = part.VertexBuffer.VertexDeclaration;
+            int vertexStride = vertexDecl.VertexStride;
+            int vertexCount = part.NumVertices;
+            int vertexOffsetBytes = part.VertexOffset * vertexStride;
+
+            var vertexBytes = new byte[vertexStride * vertexCount];
+            part.VertexBuffer.GetData(vertexOffsetBytes, vertexBytes, 0, vertexBytes.Length, vertexStride);
+
+            var vb = new VertexBuffer(device, vertexDecl, vertexCount, BufferUsage.WriteOnly);
+            vb.SetData(vertexBytes);
+
+            // Index copy (slice indices for this part and rebase to zero because we won't use baseVertex)
+            int indexCount = part.PrimitiveCount * 3;
+            int indexStartByte = part.StartIndex * (part.IndexBuffer.IndexElementSize == IndexElementSize.SixteenBits ? 2 : 4);
+
+            IndexBuffer ib;
+            if (part.IndexBuffer.IndexElementSize == IndexElementSize.SixteenBits)
+            {
+                var src = new ushort[indexCount];
+                part.IndexBuffer.GetData(indexStartByte, src, 0, indexCount);
+
+                // Rebase to local vertex 0
+                short[] dst = new short[indexCount];
+                for (int i = 0; i < indexCount; i++)
+                    dst[i] = (short)(src[i] - part.VertexOffset);
+
+                ib = new IndexBuffer(device, IndexElementSize.SixteenBits, indexCount, BufferUsage.WriteOnly);
+                ib.SetData(dst);
+            }
+            else
+            {
+                var src = new int[indexCount];
+                part.IndexBuffer.GetData(indexStartByte, src, 0, indexCount);
+
+                // Rebase to local vertex 0
+                for (int i = 0; i < indexCount; i++)
+                    src[i] = src[i] - part.VertexOffset;
+
+                ib = new IndexBuffer(device, IndexElementSize.ThirtyTwoBits, indexCount, BufferUsage.WriteOnly);
+                ib.SetData(src);
+            }
+
+            // Package into MeshFilter
+            var mf = new MeshFilter();
+            mf.SetGeometry(vb, ib, PrimitiveType.TriangleList, indexCount);
+            return mf;
         }
+
     }
 }

@@ -1,7 +1,7 @@
 ﻿using GDEngine.Core.Components;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace GDEngine.Core
+namespace GDEngine.Core.Rendering
 {
     /// <summary>
     /// Holds mesh geometry buffers (vertex/index) and draw topology for a <see cref="GameObject"/>.
@@ -9,11 +9,11 @@ namespace GDEngine.Core
     /// </summary>
     /// <see cref="MeshRenderer"/>
     /// <see cref="GameObject"/>
-    public sealed class MeshFilter : Component 
+    public sealed class MeshFilter : Component
     {
         #region Fields
-        private VertexBuffer _vertexBuffer;
-        private IndexBuffer _indexBuffer;
+        private VertexBuffer? _vertexBuffer;
+        private IndexBuffer? _indexBuffer;
         private PrimitiveType _primitiveType;
         private int _primitiveCount;
         private int _vertexCount;
@@ -21,21 +21,12 @@ namespace GDEngine.Core
         #endregion
 
         #region Properties
-        public VertexBuffer VertexBuffer => _vertexBuffer;
-        public IndexBuffer IndexBuffer => _indexBuffer;
+        public VertexBuffer? VertexBuffer => _vertexBuffer;
+        public IndexBuffer? IndexBuffer => _indexBuffer;
         public PrimitiveType PrimitiveType => _primitiveType;
         public int PrimitiveCount => _primitiveCount;
         public int VertexCount => _vertexCount;
         public int IndexCount => _indexCount;
-        #endregion
-
-        #region Constructors
-        /// <summary>
-        /// Creates an empty <see cref="MeshFilter"/>. Call one of the SetGeometry methods to provide buffers.
-        /// </summary>
-        public MeshFilter() 
-        { 
-        }
         #endregion
 
         #region Core Methods
@@ -92,6 +83,11 @@ namespace GDEngine.Core
             if (type == PrimitiveType.LineStrip)
                 return indexCount - 1 < 0 ? 0 : indexCount - 1;
             return 0;
+        }
+
+        public void Bind(GraphicsDevice device)
+        {
+            //TODO - Wk6 - Refactor MeshRenderer
         }
 
         #endregion

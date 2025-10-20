@@ -2,7 +2,7 @@
 {
     /// <summary>
     /// Easing functions matching the set and formulas from easings.net.
-    /// Use PascalCase names (e.g., EaseInSine) and x ∈ [0,1] → y (typically in [0,1]).
+    /// Use PascalCase names (e.g., EaseInSine) and x is [0,1] where y (typically in [0,1]).
     /// </summary>
     /// <see cref="https://easings.net/"/>
     public static class Ease
@@ -307,6 +307,46 @@
 
             return (1f + EaseOutBounce(2f * x - 1f)) / 2f;
         }
+
+        // --- Sine ---
+
+        /// <summary>
+        /// Default sine wave mapped to [0,1]: y = 0.5 * (sin(2π * x) + 1).
+        /// Conforms directly to Func so you can pass Ease.Sine01Eval.
+        /// </summary>
+        public static float Sine01(float x)
+        {
+            return 0.5f * (MathF.Sin(2 * MathF.PI * x) + 1f);
+        }
+
+        /// <summary>
+        /// Default signed sine wave in [-1,1]: y = sin(2π * x).
+        /// Conforms directly to Func&lt;float,float&gt;.
+        /// </summary>
+        public static float SineSigned(float x)
+        {
+            return MathF.Sin(2 * MathF.PI * x);
+        }
+
+        /// <summary>
+        /// Factory: build a sine "easing" in [0,1] with custom cycles and phase (radians).
+        /// Returns a Func you can plug into controllers.
+        /// y(x) = 0.5 * (sin(2π * cycles * x + phase) + 1)
+        /// </summary>
+        public static Func<float, float> MakeSine01(float cycles = 1f, float phaseRadians = 0f)
+        {
+            return (x) => 0.5f * (MathF.Sin(2 * MathF.PI * cycles * x + phaseRadians) + 1f);
+        }
+
+        /// <summary>
+        /// Factory: build a signed sine in [-1,1] with custom cycles and phase (radians).
+        /// y(x) = sin(2π * cycles * x + phase)
+        /// </summary>
+        public static Func<float, float> MakeSineSigned(float cycles = 1f, float phaseRadians = 0f)
+        {
+            return (x) => MathF.Sin(2 * MathF.PI * cycles * x + phaseRadians);
+        }
+
         #endregion
     }
 }

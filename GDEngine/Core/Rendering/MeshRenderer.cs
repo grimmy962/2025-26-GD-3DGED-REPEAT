@@ -1,10 +1,7 @@
-﻿// MeshRenderer.cs
-using GDEngine.Core.Components;
-using GDEngine.Core.Entities;
-using Microsoft.Xna.Framework;
+﻿using GDEngine.Core.Components;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace GDEngine.Core
+namespace GDEngine.Core.Rendering
 {
     /// <summary>
     /// Minimal renderer that draws a <see cref="MeshFilter"/> with an unlit <see cref="BasicEffect"/>.
@@ -17,16 +14,13 @@ namespace GDEngine.Core
     {
         private BasicEffect _effect;
         #region Fields
-        private MeshFilter _meshFilter;
+        private MeshFilter? _meshFilter;
         #endregion
 
         #region Properties
         //TODO - Wk5
         #endregion
 
-        #region Constructors
-        public MeshRenderer() { }
-        #endregion
 
         #region Core Methods
         /// <summary>
@@ -49,8 +43,8 @@ namespace GDEngine.Core
             //lighting - no normals!
 
             //point GFX card to the vertex and index buffers
-            device.SetVertexBuffer(_meshFilter.VertexBuffer);
-            device.Indices = _meshFilter.IndexBuffer;
+            device.SetVertexBuffer(_meshFilter?.VertexBuffer);
+            device.Indices = _meshFilter?.IndexBuffer;
 
             //apply
             var passes = _effect.CurrentTechnique.Passes;
@@ -85,7 +79,7 @@ namespace GDEngine.Core
         //TODO - Wk5 - Get MeshFilter
         protected override void Start()
         {
-            _meshFilter = GameObject.GetComponent<MeshFilter>();
+            _meshFilter = GameObject?.GetComponent<MeshFilter>();
         }
 
 

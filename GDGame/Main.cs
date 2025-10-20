@@ -1,11 +1,12 @@
-﻿using GDEngine.Core;
-using GDEngine.Core.Components;
+﻿using GDEngine.Core.Components;
 using GDEngine.Core.Entities;
-using GDEngine.Core.Rendering.Factories;
+using GDEngine.Core.Factories;
+using GDEngine.Core.Rendering;
 using GDEngine.Core.Services;
 using GDEngine.Core.Timing;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System.Windows.Forms;
 
 namespace GDGame
 {
@@ -43,7 +44,7 @@ namespace GDGame
             //add camera component to the GO
             _camera = _cameraGO.AddComponent<Camera>();
             //set position
-            _cameraGO.Transform.Position = new Vector3(0, 0, 5);
+            _cameraGO.Transform.TranslateBy(new Vector3(0, 0, 5));
             //feed off whatever screen dimensions you set in lines 31-32
             _camera.AspectRatio = (float)_graphics.PreferredBackBufferWidth / _graphics.PreferredBackBufferHeight;
             //add to scene
@@ -55,7 +56,6 @@ namespace GDGame
             #region Demo - Primitive 
             //make a game object with filter (data) and renderer (draw behaviour)
             _primitiveGO = new GameObject("my first primitive");
-            
             //generate the data for a quad (normally you might load an FBX)
             var meshFilter = MeshFilterFactory.CreateWireBox(_graphics.GraphicsDevice);
             //add mesh filter (i.e. the verts and indices data)
@@ -65,31 +65,17 @@ namespace GDGame
 
             #region Demo - Primitive - Controller(s) 
 
-            //var transController = _primitiveGO.AddComponent<SineTranslationController>();
-            //transController._maxDistance = 0.5f;
-            //transController._angularSpeed = 1f;
-            //transController._direction = new Vector3(1, 0, 0);
+            var transController = _primitiveGO.AddComponent<SineTranslationController>();
+            transController._maxDistance = 2;
+            transController._angularSpeed = 1f;
+            transController._direction = new Vector3(1, 0, 0);
 
-            var easableTransController = _primitiveGO.AddComponent<EasableSineTranslationController>();
-            easableTransController._maxDistance = 0.5f;
-            easableTransController._angularSpeed = 1f;
-            easableTransController._direction = new Vector3(0, 1, 0);
-            easableTransController._timeCurve = Ease.EaseOutElastic;
+            // RotationController rotController = null;
+            RotationController rotController = null;
+            rotController = _primitiveGO.AddComponent<RotationController>();
+            rotController._rotationAxisNormalized = Vector3.UnitY;   // Y axis
+            rotController._rotationSpeedInRadiansPerSecond = MathHelper.ToRadians(90);
 
-            //RotationController rotController = null;
-            //rotController = _primitiveGO.AddComponent<RotationController>();
-            //rotController._rotationAxisNormalized = Vector3.UnitY;   // Y axis
-            //rotController._rotationSpeedInRadiansPerSecond = MathHelper.ToRadians(90);
-
-            //uncomment to add rotation X
-            //rotController = _primitiveGO.AddComponent<RotationController>();
-            //rotController._rotationAxisNormalized = Vector3.UnitX;  // X axis
-            //rotController._rotationSpeedInRadiansPerSecond = MathHelper.ToRadians(60);
-
-            //uncomment to add rotation Z
-            //rotController = _primitiveGO.AddComponent<RotationController>();
-            //rotController._rotationAxisNormalized = Vector3.UnitZ;   // Z axis
-            //rotController._rotationSpeedInRadiansPerSecond = MathHelper.ToRadians(-30);
 
             //if we want to see front and back of the quad then lets set the cull mode (remember this relates to the wind order (i.e. CW, CCW) of our indices
             //var rsState = new RasterizerState()
@@ -117,6 +103,7 @@ namespace GDGame
             //update Scene
             _scene.Update(Time.DeltaTime);
 
+            
             base.Update(gameTime);
         }
 

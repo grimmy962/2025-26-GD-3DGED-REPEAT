@@ -1,4 +1,4 @@
-﻿using GDEngine.Core.Timing;       
+﻿using GDEngine.Core.Timing;
 using Microsoft.Xna.Framework;
 
 namespace GDEngine.Core.Components
@@ -38,10 +38,10 @@ namespace GDEngine.Core.Components
 
         #region Methods
         // Maps a running angle (radians) to an eased angle by:
-        private float ComputeEasedAngle(float angleRaw)
+        private float ComputeEasedAngle(float rawAngleInRadians)
         {
-            // Normalize angle to cycles, then take fractional part as t ∈ [0,1)
-            float cycles = angleRaw / MathHelper.TwoPi;
+            // Normalize angle to cycles, then take fractional part as t is [0,1)
+            float cycles = rawAngleInRadians / MathHelper.TwoPi;
             float t = cycles - MathF.Floor(cycles);
 
             // Apply time curve if present
@@ -59,6 +59,10 @@ namespace GDEngine.Core.Components
         /// </summary>
         protected override void Awake()
         {
+            // Ensure Transform exists; rotation has no meaning without it.
+            if (Transform == null)
+                throw new ArgumentNullException(nameof(Transform));
+
             _originalLocalPosition = Transform.LocalPosition;
 
             if (_direction != Vector3.Zero)
@@ -70,7 +74,7 @@ namespace GDEngine.Core.Components
         /// </summary>
         protected override void Update(float deltaTime)
         {
-            // Build the raw running angle using unscaled realtime to match your existing controller
+            // Build the raw running angle using unscaled realtime 
             float angleRaw = (float)Time.RealtimeSinceStartup * _angularSpeed + _phaseRadians;
 
             // Ease the time within the cycle before applying sine
@@ -80,7 +84,7 @@ namespace GDEngine.Core.Components
             float distance = MathF.Sin(angle);
 
             // Apply amplitude and direction about the original position
-            Transform.LocalPosition = _originalLocalPosition + _direction * distance * _maxDistance;
+            Transform?.TranslateTo(_originalLocalPosition + _direction * distance * _maxDistance);
         }
         #endregion
     }

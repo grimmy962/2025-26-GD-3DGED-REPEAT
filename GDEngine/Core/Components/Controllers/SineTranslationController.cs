@@ -12,7 +12,7 @@ namespace GDEngine.Core.Components
     public class SineTranslationController : Component
     {
         #region Fields
-        // Angular speed in radians per second (ω). Example: 2PI = one full oscillation per second.
+        // Angular speed in radians per second. Example: 2PI = one full oscillation per second.
         public float _angularSpeed = 1f;
 
         // Maximum displacement from the starting position along _direction.
@@ -41,7 +41,7 @@ namespace GDEngine.Core.Components
             float distance = MathF.Sin(phase); // [1, +1]
 
             // Offset from the cached start position along the normalized direction, scaled by amplitude.
-            Transform.LocalPosition = _originalLocalPosition + _direction * distance * _maxDistance;
+            Transform?.TranslateTo(_originalLocalPosition + _direction * distance * _maxDistance);
         }
 
         /// <summary>
@@ -49,6 +49,10 @@ namespace GDEngine.Core.Components
         /// </summary>
         protected override void Awake()
         {
+            // Ensure Transform exists; rotation has no meaning without it.
+            if (Transform == null)
+                throw new ArgumentNullException(nameof(Transform));
+
             // Remember where we start so the motion is centered about this point.
             _originalLocalPosition = Transform.LocalPosition;
 

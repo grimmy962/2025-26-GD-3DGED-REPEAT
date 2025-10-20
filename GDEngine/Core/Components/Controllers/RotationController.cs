@@ -12,7 +12,7 @@ namespace GDEngine.Core.Components
     public sealed class RotationController : Component
     {
         #region Static Fields
-        // Smallest |ω| we consider "meaningful" (radians/sec). Helps avoid work and floating-point churn.
+        // Smallest speed we consider "meaningful" (radians/sec). Helps avoid work and floating-point churn.
         private static readonly float ROTATION_THRESHOLD = 1E-8f;
         #endregion
 
@@ -33,11 +33,7 @@ namespace GDEngine.Core.Components
         /// <param name="deltaTime">Elapsed time since last frame (seconds).</param>
         protected override void Update(float deltaTime)
         {
-            // Respect component enable; skip any work if disabled.
-            if (!Enabled)
-                return;
-
-            // Skip tiny angular speeds to avoid unnecessary quaternion work / denorms.
+             // Skip tiny angular speeds to avoid unnecessary quaternion work / denorms.
             if (MathF.Abs(_rotationSpeedInRadiansPerSecond) <= ROTATION_THRESHOLD)
                 return;
 
@@ -47,10 +43,8 @@ namespace GDEngine.Core.Components
             // Build a delta-rotation from axis–angle. Assumes axis is already normalized in Awake().
             Quaternion delta = Quaternion.CreateFromAxisAngle(_rotationAxisNormalized, angle);
 
-            // Compose new local rotation. Multiply on the left so 'delta' is applied in the object's local basis.
-            // Normalize to keep numerical drift at bay over long runtimes.
-            // The ?. operator protects against a missing Transform (defensive, though Awake() guards this).
-            Transform.LocalRotation = Quaternion.Normalize(delta * Transform.LocalRotation);
+            // Apply rotation via delta quaternion
+            Transform?.Rotate(delta);
         }
 
         /// <summary>
