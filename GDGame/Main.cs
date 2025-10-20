@@ -19,6 +19,8 @@ namespace GDGame
         private Camera _camera;
         private GameObject _primitiveGO;
         private MeshRenderer _primitiveGORenderer;
+        private GameObject _grassQuadGO;
+        private MeshRenderer _grassQuadRenderer;
 
         public Main()
         {
@@ -92,9 +94,12 @@ namespace GDGame
 
         private void InitializeGround()
         {
-            throw new NotImplementedException();
+            _grassQuadGO = new GameObject("ground");
+            var meshFilter = MeshFilterFactory.CreateQuadColored(_graphics.GraphicsDevice);
+            _grassQuadGO.AddComponent(meshFilter);
+            _grassQuadRenderer = _grassQuadGO.AddComponent<MeshRenderer>();
+            _scene.AddGameObject(_grassQuadGO);
         }
-
         protected override void Update(GameTime gameTime)
         {
             //call time update
@@ -109,13 +114,12 @@ namespace GDGame
             
             base.Update(gameTime);
         }
-
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
             //notice that we have to manually call render on each primitive - we really need a RenderSystem!
-            _primitiveGORenderer.Render(_graphics.GraphicsDevice, _camera);
+            _grassQuadRenderer.Render(_graphics.GraphicsDevice, _camera);
 
             base.Draw(gameTime);
         }
