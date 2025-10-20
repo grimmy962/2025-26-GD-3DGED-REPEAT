@@ -89,13 +89,17 @@ namespace GDGame
 
         private void InitializeSkyBox()
         {
-            throw new NotImplementedException();
+         //   throw new NotImplementedException();
         }
 
         private void InitializeGround()
         {
             _grassQuadGO = new GameObject("ground");
             var meshFilter = MeshFilterFactory.CreateQuadColored(_graphics.GraphicsDevice);
+            _grassQuadGO.Transform.RotateEuler(
+                new Vector3(MathHelper.ToRadians(-90), 0, 0));
+            _grassQuadGO.Transform.ScaleBy(new Vector3(25, 1, 25));
+           // _grassQuadGO.Transform.TranslateBy(new Vector3(0, 0, 0));
             _grassQuadGO.AddComponent(meshFilter);
             _grassQuadRenderer = _grassQuadGO.AddComponent<MeshRenderer>();
             _scene.AddGameObject(_grassQuadGO);
@@ -117,10 +121,8 @@ namespace GDGame
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
-
             //notice that we have to manually call render on each primitive - we really need a RenderSystem!
             _grassQuadRenderer.Render(_graphics.GraphicsDevice, _camera);
-
             base.Draw(gameTime);
         }
     }
