@@ -33,7 +33,7 @@ namespace GDEngine.Core.Components
         /// <param name="deltaTime">Elapsed time since last frame (seconds).</param>
         protected override void Update(float deltaTime)
         {
-             // Skip tiny angular speeds to avoid unnecessary quaternion work / denorms.
+            // Skip tiny angular speeds to avoid unnecessary quaternion work / denorms.
             if (MathF.Abs(_rotationSpeedInRadiansPerSecond) <= ROTATION_THRESHOLD)
                 return;
 
@@ -43,7 +43,7 @@ namespace GDEngine.Core.Components
             // Build a delta-rotation from axis–angle. Assumes axis is already normalized in Awake().
             Quaternion delta = Quaternion.CreateFromAxisAngle(_rotationAxisNormalized, angle);
 
-            // Apply rotation via delta quaternion
+            //Apply rotation via delta quaternion
             Transform?.Rotate(delta);
         }
 

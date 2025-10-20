@@ -56,38 +56,19 @@ namespace GDGame
             #region Demo - Primitive 
             //make a game object with filter (data) and renderer (draw behaviour)
             _primitiveGO = new GameObject("my first primitive");
+            
             //generate the data for a quad (normally you might load an FBX)
             var meshFilter = MeshFilterFactory.CreateWireBox(_graphics.GraphicsDevice);
             //add mesh filter (i.e. the verts and indices data)
             _primitiveGO.AddComponent(meshFilter);
             //add a renderer to draw the data
             _primitiveGORenderer = _primitiveGO.AddComponent<MeshRenderer>();
-
-            #region Demo - Primitive - Controller(s) 
-
-            var transController = _primitiveGO.AddComponent<SineTranslationController>();
-            transController._maxDistance = 2;
-            transController._angularSpeed = 1f;
-            transController._direction = new Vector3(1, 0, 0);
-
-            // RotationController rotController = null;
-            RotationController rotController = null;
-            rotController = _primitiveGO.AddComponent<RotationController>();
-            rotController._rotationAxisNormalized = Vector3.UnitY;   // Y axis
-            rotController._rotationSpeedInRadiansPerSecond = MathHelper.ToRadians(90);
-
-
-            //if we want to see front and back of the quad then lets set the cull mode (remember this relates to the wind order (i.e. CW, CCW) of our indices
-            //var rsState = new RasterizerState()
-            //{
-            //    CullMode = CullMode.None
-            //};
-            //_graphics.GraphicsDevice.RasterizerState = rsState;
-            #endregion
-            #endregion
             //add to scene
             _scene.AddGameObject(_primitiveGO);
 
+            _primitiveGO.AddComponent<SineScaleController>();
+            
+            #endregion
 
             base.Initialize();
         }

@@ -41,7 +41,8 @@ namespace GDEngine.Core.Components
             float distance = MathF.Sin(phase); // [1, +1]
 
             // Offset from the cached start position along the normalized direction, scaled by amplitude.
-            Transform?.TranslateTo(_originalLocalPosition + _direction * distance * _maxDistance);
+            Transform?.TranslateTo(_originalLocalPosition + _direction * distance * _maxDistance);    
+        
         }
 
         /// <summary>
