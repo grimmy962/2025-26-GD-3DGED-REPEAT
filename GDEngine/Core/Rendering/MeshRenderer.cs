@@ -12,8 +12,10 @@ namespace GDEngine.Core.Rendering
     /// <see cref="Camera"/>
     public sealed class MeshRenderer : Component
     {
-        private BasicEffect _effect;
+        public Texture2D _texture;
+
         #region Fields
+        private BasicEffect _effect;
         private MeshFilter? _meshFilter;
         #endregion
 
@@ -40,6 +42,7 @@ namespace GDEngine.Core.Rendering
             _effect.View = camera.View;
             _effect.Projection = camera.Projection;
 
+            _effect.Texture = _texture;
             //lighting - no normals!
 
             //point GFX card to the vertex and index buffers
@@ -69,8 +72,9 @@ namespace GDEngine.Core.Rendering
 
             _effect = new BasicEffect(device)
             {
-                VertexColorEnabled = true,
+                VertexColorEnabled = false,  //in texturedquad the verts[] have COLOR
                 LightingEnabled = false,
+                TextureEnabled = true
             };
         }
         #endregion

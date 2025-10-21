@@ -23,6 +23,7 @@ namespace GDGame
         private MeshRenderer _grassQuadRenderer;
         private ContentDictionary<Texture2D> _textureDictionary;
         private ContentDictionary<Model> _modelDictionary;
+        private ContentDictionary<SpriteFont> _fontDictionary;
 
         public Main()
         {
@@ -81,6 +82,8 @@ namespace GDGame
         {
             _textureDictionary = new ContentDictionary<Texture2D>();
             _modelDictionary = new ContentDictionary<Model>();
+            _fontDictionary = new ContentDictionary<SpriteFont>();
+            
         }
 
         private void LoadAssets()
@@ -136,10 +139,12 @@ namespace GDGame
         private void InitializeGround()
         {
             _grassQuadGO = new GameObject("ground");
-            var meshFilter = MeshFilterFactory.CreateQuadColored(_graphics.GraphicsDevice);
+            var meshFilter = MeshFilterFactory.CreateQuadTextured(_graphics.GraphicsDevice);
             _grassQuadGO.Transform.ScaleBy(new Vector3(100, 100, 1));
             _grassQuadGO.AddComponent(meshFilter);
             _grassQuadRenderer = _grassQuadGO.AddComponent<MeshRenderer>();
+
+            _grassQuadRenderer._texture = _textureDictionary.Get("ground_grass");
             _scene.AddGameObject(_grassQuadGO);
 
         }
