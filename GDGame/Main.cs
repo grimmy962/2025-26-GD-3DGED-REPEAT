@@ -122,7 +122,7 @@ namespace GDGame
             _cameraGO.Transform.TranslateTo(new Vector3(0, 5, 150));
             //turn around as Forward is by default (0,0,1)
             _cameraGO.Transform.RotateEuler(
-                new Vector3(0, MathHelper.ToRadians(0), 0), true);
+                new Vector3(0, MathHelper.ToRadians(135), 0), true);
             //add camera component to the GO
             _camera = _cameraGO.AddComponent<Camera>();
             ////feed off whatever screen dimensions you set InitializeGraphics
@@ -131,8 +131,10 @@ namespace GDGame
             _scene.AddGameObject(_cameraGO);
 
             //decide on controller
-            _cameraGO.AddComponent<CameraController>();
-           
+            //_cameraGO.AddComponent<CameraController>();
+
+            _cameraGO.AddComponent<KeyboardWASDController>();
+            _cameraGO.AddComponent<MouseYawPitchController>();
         }
 
         private void InitializeSkyBox()
