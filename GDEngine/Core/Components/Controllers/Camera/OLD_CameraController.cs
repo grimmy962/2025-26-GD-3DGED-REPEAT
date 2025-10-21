@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework.Input;
 
 namespace GDEngine.Core.Components
 {
-    public class CameraController : Component
+    public class OLD_CameraController : Component
     {
         private KeyboardState _kbState;
         protected override void LateUpdate(float deltaTime)
@@ -34,3 +34,5 @@ namespace GDEngine.Core.Components
         }
     }
 }
+
+

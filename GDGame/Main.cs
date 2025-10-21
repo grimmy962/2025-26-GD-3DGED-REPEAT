@@ -8,6 +8,7 @@ using GDEngine.Core.Timing;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using SharpDX.Direct2D1.Effects;
 using System;
 using System.Windows.Forms;
 
@@ -24,10 +25,7 @@ namespace GDGame
         private ContentDictionary<Texture2D> _textureDictionary;
         private ContentDictionary<Model> _modelDictionary;
         private ContentDictionary<SpriteFont> _fontDictionary;
-        private MeshRenderer _skyBoxBackRenderer;
-        private MeshRenderer _skyBoxLeftRenderer;
-        private MeshRenderer _skyBoxRightRenderer;
-        private MeshRenderer _skyBoxFrontRenderer;
+        private MeshRenderer _skyBoxBackRenderer, _skyBoxLeftRenderer, _skyBoxRightRenderer, _skyBoxFrontRenderer, _skyBoxSkyRenderer;
 
         public Main()
         {
@@ -54,9 +52,11 @@ namespace GDGame
 
             InitializeCamera(new Vector3(0, 10, 5));
 
-            InitializeSkyBox();
+            int scale = 1000;
 
-            InitializeGround();
+            InitializeSkyBox(scale);
+
+            InitializeGround(scale);
 
             base.Initialize();
         }
@@ -137,15 +137,15 @@ namespace GDGame
             _cameraGO.AddComponent<MouseYawPitchController>();
         }
 
-        private void InitializeSkyBox()
+        private void InitializeSkyBox(int scale = 500)
         {
             //back wall
             GameObject skyBoxQuad = null;
             MeshFilter meshFilter = null;
 
-            skyBoxQuad = new GameObject("back wall");
-            skyBoxQuad.Transform.ScaleTo(new Vector3(500, 500, 1));
-            skyBoxQuad.Transform.TranslateTo(new Vector3(0,0,-250));
+            skyBoxQuad = new GameObject("back");
+            skyBoxQuad.Transform.ScaleTo(new Vector3(scale, scale, 1));
+            skyBoxQuad.Transform.TranslateTo(new Vector3(0,0,-scale/2));
             meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
             skyBoxQuad.AddComponent(meshFilter); //setting VB and IB data
             _skyBoxBackRenderer = skyBoxQuad.AddComponent<MeshRenderer>();
@@ -153,11 +153,11 @@ namespace GDGame
             _scene.AddGameObject(skyBoxQuad);
 
             //left wall
-            skyBoxQuad = new GameObject("left wall");
-            skyBoxQuad.Transform.ScaleTo(new Vector3(500, 500, 1));
+            skyBoxQuad = new GameObject("left");
+            skyBoxQuad.Transform.ScaleTo(new Vector3(scale, scale, 1));
             skyBoxQuad.Transform.RotateEuler(new Vector3(
                 0, MathHelper.ToRadians(90), 0), true);
-            skyBoxQuad.Transform.TranslateTo(new Vector3(-250, 0, 0));
+            skyBoxQuad.Transform.TranslateTo(new Vector3(-scale / 2, 0, 0));
             meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
             skyBoxQuad.AddComponent(meshFilter); //setting VB and IB data
             _skyBoxLeftRenderer = skyBoxQuad.AddComponent<MeshRenderer>();
@@ -165,11 +165,11 @@ namespace GDGame
             _scene.AddGameObject(skyBoxQuad);
 
             //right wall
-            skyBoxQuad = new GameObject("right wall");
-            skyBoxQuad.Transform.ScaleTo(new Vector3(500, 500, 1));
+            skyBoxQuad = new GameObject("right");
+            skyBoxQuad.Transform.ScaleTo(new Vector3(scale, scale, 1));
             skyBoxQuad.Transform.RotateEuler(new Vector3(
                 0, MathHelper.ToRadians(-90), 0), true);
-            skyBoxQuad.Transform.TranslateTo(new Vector3(250, 0, 0));
+            skyBoxQuad.Transform.TranslateTo(new Vector3(scale / 2, 0, 0));
             meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
             skyBoxQuad.AddComponent(meshFilter); //setting VB and IB data
             _skyBoxRightRenderer = skyBoxQuad.AddComponent<MeshRenderer>();
@@ -177,23 +177,37 @@ namespace GDGame
             _scene.AddGameObject(skyBoxQuad);
 
             //right wall
-            skyBoxQuad = new GameObject("front wall");
-            skyBoxQuad.Transform.ScaleTo(new Vector3(500, 500, 1));
+            skyBoxQuad = new GameObject("front");
+            skyBoxQuad.Transform.ScaleTo(new Vector3(scale, scale, 1));
             skyBoxQuad.Transform.RotateEuler(new Vector3(
                 0, MathHelper.ToRadians(180), 0), true);
-            skyBoxQuad.Transform.TranslateTo(new Vector3(0, 0, 250));
+            skyBoxQuad.Transform.TranslateTo(new Vector3(0, 0, scale / 2));
             meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
             skyBoxQuad.AddComponent(meshFilter); //setting VB and IB data
             _skyBoxFrontRenderer = skyBoxQuad.AddComponent<MeshRenderer>();
             _skyBoxFrontRenderer._texture = _textureDictionary.Get("skybox_front");
             _scene.AddGameObject(skyBoxQuad);
+
+            //sky
+            skyBoxQuad = new GameObject("sky");
+            skyBoxQuad.Transform.ScaleTo(new Vector3(scale, scale, 1));
+            skyBoxQuad.Transform.RotateEuler(new Vector3(
+                MathHelper.ToRadians(90), 
+                0,
+                MathHelper.ToRadians(90)), true);
+            skyBoxQuad.Transform.TranslateTo(new Vector3(0, scale / 2, 00));
+            meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
+            skyBoxQuad.AddComponent(meshFilter); //setting VB and IB data
+            _skyBoxSkyRenderer = skyBoxQuad.AddComponent<MeshRenderer>();
+            _skyBoxSkyRenderer._texture = _textureDictionary.Get("skybox_sky");
+            _scene.AddGameObject(skyBoxQuad);
         }
 
-        private void InitializeGround()
+        private void InitializeGround(int scale = 500)
         {
             _grassQuadGO = new GameObject("ground");
             var meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
-            _grassQuadGO.Transform.ScaleBy(new Vector3(500, 500, 1));
+            _grassQuadGO.Transform.ScaleBy(new Vector3(scale, scale, 1));
             _grassQuadGO.Transform.RotateEuler(new Vector3(
                 MathHelper.ToRadians(-90), 0, 0), true);
 
@@ -231,7 +245,7 @@ namespace GDGame
             _skyBoxLeftRenderer.Render(_graphics.GraphicsDevice, _camera);
             _skyBoxRightRenderer.Render(_graphics.GraphicsDevice, _camera);
             _skyBoxFrontRenderer.Render(_graphics.GraphicsDevice, _camera);
-
+            _skyBoxSkyRenderer.Render(_graphics.GraphicsDevice, _camera);
             base.Draw(gameTime);
         }
     }

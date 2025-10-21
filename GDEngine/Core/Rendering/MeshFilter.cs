@@ -85,9 +85,10 @@ namespace GDEngine.Core.Rendering
             return 0;
         }
 
-        public void Bind(GraphicsDevice device)
+        public void BindBuffers(GraphicsDevice device)
         {
-            //TODO - Wk6 - Refactor MeshRenderer
+            device.SetVertexBuffer(_vertexBuffer);
+            device.Indices = _indexBuffer;
         }
 
         #endregion

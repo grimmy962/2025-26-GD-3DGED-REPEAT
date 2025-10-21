@@ -1,4 +1,5 @@
 ﻿using GDEngine.Core.Components;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
 namespace GDEngine.Core.Rendering
@@ -34,6 +35,9 @@ namespace GDEngine.Core.Rendering
             if (Transform == null)
                 return;
 
+            if (_meshFilter == null)
+                return;
+
             // make sure we have an effect (material)
             EnsureEffect(device);
 
@@ -41,13 +45,10 @@ namespace GDEngine.Core.Rendering
             _effect.World = Transform.WorldMatrix;
             _effect.View = camera.View;
             _effect.Projection = camera.Projection;
-
             _effect.Texture = _texture;
-            //lighting - no normals!
 
             //point GFX card to the vertex and index buffers
-            device.SetVertexBuffer(_meshFilter?.VertexBuffer);
-            device.Indices = _meshFilter?.IndexBuffer;
+            _meshFilter.BindBuffers(device);
 
             //apply
             var passes = _effect.CurrentTechnique.Passes;
