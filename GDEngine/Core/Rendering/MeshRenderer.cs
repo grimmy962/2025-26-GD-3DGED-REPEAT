@@ -50,6 +50,16 @@ namespace GDEngine.Core.Rendering
             //point GFX card to the vertex and index buffers
             _meshFilter.BindBuffers(device);
 
+            //REFACTOR - BRUTE FORCE!
+            SamplerState ss = new SamplerState();
+            ss.AddressU = TextureAddressMode.Clamp; //duplicate edge pixel value
+            ss.AddressV = TextureAddressMode.Clamp;
+
+            //ss.AddressU = TextureAddressMode.Border; //duplicate edge pixel value
+            //ss.AddressV = TextureAddressMode.Border;
+            //ss.BorderColor = Color.Red;
+            device.SamplerStates[0] = ss; //1 texture will use first ss register
+
             //apply
             var passes = _effect.CurrentTechnique.Passes;
             for (int i = 0; i < passes.Count; i++)

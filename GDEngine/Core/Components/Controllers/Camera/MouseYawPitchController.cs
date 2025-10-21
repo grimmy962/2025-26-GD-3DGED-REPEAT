@@ -31,7 +31,7 @@ namespace GDEngine.Core.Components
             dX *= Time.DeltaTime;
 
             float dY = _newMouseState.Y - _oldMouseState.Y;
-            dY *= _mouseSensitivity;
+            dY *= _mouseSensitivity * 0.5f;
             dY *= Time.DeltaTime;
 
             //apply to rotation around Up
