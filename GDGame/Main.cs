@@ -25,6 +25,9 @@ namespace GDGame
         private ContentDictionary<Model> _modelDictionary;
         private ContentDictionary<SpriteFont> _fontDictionary;
         private MeshRenderer _skyBoxBackRenderer;
+        private MeshRenderer _skyBoxLeftRenderer;
+        private MeshRenderer _skyBoxRightRenderer;
+        private MeshRenderer _skyBoxFrontRenderer;
 
         public Main()
         {
@@ -119,7 +122,7 @@ namespace GDGame
             _cameraGO.Transform.TranslateTo(new Vector3(0, 5, 150));
             //turn around as Forward is by default (0,0,1)
             _cameraGO.Transform.RotateEuler(
-                new Vector3(0, MathHelper.ToRadians(135), 0), true);
+                new Vector3(0, MathHelper.ToRadians(0), 0), true);
             //add camera component to the GO
             _camera = _cameraGO.AddComponent<Camera>();
             ////feed off whatever screen dimensions you set InitializeGraphics
@@ -134,13 +137,53 @@ namespace GDGame
 
         private void InitializeSkyBox()
         {
+            //back wall
             GameObject skyBoxQuad = null;
+            MeshFilter meshFilter = null;
+
             skyBoxQuad = new GameObject("back wall");
             skyBoxQuad.Transform.ScaleTo(new Vector3(500, 500, 1));
-            var meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
+            skyBoxQuad.Transform.TranslateTo(new Vector3(0,0,-250));
+            meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
             skyBoxQuad.AddComponent(meshFilter); //setting VB and IB data
             _skyBoxBackRenderer = skyBoxQuad.AddComponent<MeshRenderer>();
             _skyBoxBackRenderer._texture = _textureDictionary.Get("skybox_back");
+            _scene.AddGameObject(skyBoxQuad);
+
+            //left wall
+            skyBoxQuad = new GameObject("left wall");
+            skyBoxQuad.Transform.ScaleTo(new Vector3(500, 500, 1));
+            skyBoxQuad.Transform.RotateEuler(new Vector3(
+                0, MathHelper.ToRadians(90), 0), true);
+            skyBoxQuad.Transform.TranslateTo(new Vector3(-250, 0, 0));
+            meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
+            skyBoxQuad.AddComponent(meshFilter); //setting VB and IB data
+            _skyBoxLeftRenderer = skyBoxQuad.AddComponent<MeshRenderer>();
+            _skyBoxLeftRenderer._texture = _textureDictionary.Get("skybox_left");
+            _scene.AddGameObject(skyBoxQuad);
+
+            //right wall
+            skyBoxQuad = new GameObject("right wall");
+            skyBoxQuad.Transform.ScaleTo(new Vector3(500, 500, 1));
+            skyBoxQuad.Transform.RotateEuler(new Vector3(
+                0, MathHelper.ToRadians(-90), 0), true);
+            skyBoxQuad.Transform.TranslateTo(new Vector3(250, 0, 0));
+            meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
+            skyBoxQuad.AddComponent(meshFilter); //setting VB and IB data
+            _skyBoxRightRenderer = skyBoxQuad.AddComponent<MeshRenderer>();
+            _skyBoxRightRenderer._texture = _textureDictionary.Get("skybox_right");
+            _scene.AddGameObject(skyBoxQuad);
+
+            //right wall
+            skyBoxQuad = new GameObject("front wall");
+            skyBoxQuad.Transform.ScaleTo(new Vector3(500, 500, 1));
+            skyBoxQuad.Transform.RotateEuler(new Vector3(
+                0, MathHelper.ToRadians(180), 0), true);
+            skyBoxQuad.Transform.TranslateTo(new Vector3(0, 0, 250));
+            meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
+            skyBoxQuad.AddComponent(meshFilter); //setting VB and IB data
+            _skyBoxFrontRenderer = skyBoxQuad.AddComponent<MeshRenderer>();
+            _skyBoxFrontRenderer._texture = _textureDictionary.Get("skybox_front");
             _scene.AddGameObject(skyBoxQuad);
         }
 
@@ -183,8 +226,10 @@ namespace GDGame
             _grassQuadRenderer.Render(_graphics.GraphicsDevice, _camera);
 
             _skyBoxBackRenderer.Render(_graphics.GraphicsDevice, _camera);
-            
-            
+            _skyBoxLeftRenderer.Render(_graphics.GraphicsDevice, _camera);
+            _skyBoxRightRenderer.Render(_graphics.GraphicsDevice, _camera);
+            _skyBoxFrontRenderer.Render(_graphics.GraphicsDevice, _camera);
+
             base.Draw(gameTime);
         }
     }
