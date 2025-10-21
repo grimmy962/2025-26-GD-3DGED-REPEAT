@@ -73,9 +73,12 @@ namespace GDEngine.Core.Rendering
             _effect = new BasicEffect(device)
             {
                 VertexColorEnabled = false,  //in texturedquad the verts[] have COLOR
-                LightingEnabled = false,
+                LightingEnabled = true,
                 TextureEnabled = true
             };
+
+            _effect.PreferPerPixelLighting = true;
+            _effect.EnableDefaultLighting();
         }
         #endregion
 

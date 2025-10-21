@@ -139,11 +139,11 @@ namespace GDGame
         private void InitializeGround()
         {
             _grassQuadGO = new GameObject("ground");
-            var meshFilter = MeshFilterFactory.CreateQuadTextured(_graphics.GraphicsDevice);
+            var meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
             _grassQuadGO.Transform.ScaleBy(new Vector3(100, 100, 1));
             _grassQuadGO.AddComponent(meshFilter);
             _grassQuadRenderer = _grassQuadGO.AddComponent<MeshRenderer>();
-
+            //give the renderer the texture that it will put on the quad
             _grassQuadRenderer._texture = _textureDictionary.Get("ground_grass");
             _scene.AddGameObject(_grassQuadGO);
 
