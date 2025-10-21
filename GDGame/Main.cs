@@ -24,6 +24,7 @@ namespace GDGame
         private ContentDictionary<Texture2D> _textureDictionary;
         private ContentDictionary<Model> _modelDictionary;
         private ContentDictionary<SpriteFont> _fontDictionary;
+        private MeshRenderer _skyBoxBackRenderer;
 
         public Main()
         {
@@ -118,7 +119,7 @@ namespace GDGame
             _cameraGO.Transform.TranslateTo(new Vector3(0, 5, 150));
             //turn around as Forward is by default (0,0,1)
             _cameraGO.Transform.RotateEuler(
-                new Vector3(0, MathHelper.ToRadians(180), 0), true);
+                new Vector3(0, MathHelper.ToRadians(135), 0), true);
             //add camera component to the GO
             _camera = _cameraGO.AddComponent<Camera>();
             ////feed off whatever screen dimensions you set InitializeGraphics
@@ -133,14 +134,24 @@ namespace GDGame
 
         private void InitializeSkyBox()
         {
-         //   throw new NotImplementedException();
+            GameObject skyBoxQuad = null;
+            skyBoxQuad = new GameObject("back wall");
+            skyBoxQuad.Transform.ScaleTo(new Vector3(500, 500, 1));
+            var meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
+            skyBoxQuad.AddComponent(meshFilter); //setting VB and IB data
+            _skyBoxBackRenderer = skyBoxQuad.AddComponent<MeshRenderer>();
+            _skyBoxBackRenderer._texture = _textureDictionary.Get("skybox_back");
+            _scene.AddGameObject(skyBoxQuad);
         }
 
         private void InitializeGround()
         {
             _grassQuadGO = new GameObject("ground");
             var meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
-            _grassQuadGO.Transform.ScaleBy(new Vector3(100, 100, 1));
+            _grassQuadGO.Transform.ScaleBy(new Vector3(500, 500, 1));
+            _grassQuadGO.Transform.RotateEuler(new Vector3(
+                MathHelper.ToRadians(-90), 0, 0), true);
+
             _grassQuadGO.AddComponent(meshFilter);
             _grassQuadRenderer = _grassQuadGO.AddComponent<MeshRenderer>();
             //give the renderer the texture that it will put on the quad
@@ -167,8 +178,13 @@ namespace GDGame
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
+            
             //notice that we have to manually call render on each primitive - we really need a RenderSystem!
             _grassQuadRenderer.Render(_graphics.GraphicsDevice, _camera);
+
+            _skyBoxBackRenderer.Render(_graphics.GraphicsDevice, _camera);
+            
+            
             base.Draw(gameTime);
         }
     }
