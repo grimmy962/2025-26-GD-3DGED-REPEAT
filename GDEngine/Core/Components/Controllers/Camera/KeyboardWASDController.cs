@@ -53,10 +53,10 @@ namespace GDEngine.Core.Components
             if (Transform == null)
                 return;
 
-            if (direction.LengthSquared() == 0)
-                return;
-
+            //remove any incidental magnitude on the direction
             direction.Normalize();
+
+            //add on magnitude here
             Vector3 delta = direction * (speed * Time.DeltaTime);
 
             // we treat delta as a world vector.
@@ -92,8 +92,7 @@ namespace GDEngine.Core.Components
 
             // TODO - Add QE left/drop
 
-
-            if (dir != Vector3.Zero)
+            if (dir.LengthSquared() != 0)
                 Move(dir, speed);
         }
 

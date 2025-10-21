@@ -9,7 +9,12 @@ namespace GDEngine.Core.Components
     {
         private MouseState _newMouseState;
         private MouseState _oldMouseState;
-        private float _mouseSensitivity = 0.1f;
+        private float _mouseSensitivity = 0.4f;
+
+        protected override void Awake()
+        {
+            _oldMouseState = Mouse.GetState();
+        }
 
         protected override void Update(float deltaTime)
         {
@@ -23,13 +28,18 @@ namespace GDEngine.Core.Components
             float dX = _newMouseState.X - _oldMouseState.X;
 
             dX *= _mouseSensitivity;
-            dX += Time.DeltaTime;
+            dX *= Time.DeltaTime;
+
+            float dY = _newMouseState.Y - _oldMouseState.Y;
+            dY *= _mouseSensitivity;
+            dY *= Time.DeltaTime;
 
             //apply to rotation around Up
-            var yawQuaternion = Quaternion.CreateFromAxisAngle(
-                Vector3.Up, dX);
-
+            var yawQuaternion = Quaternion.CreateFromAxisAngle(Vector3.Up, dX);
             Transform.Rotate(yawQuaternion, true);
+
+            var pitchRotation = Quaternion.CreateFromAxisAngle(Transform.Right, -dY);
+            Transform.Rotate(pitchRotation, true);
 
             //store old state for delta calculation
             _oldMouseState = _newMouseState;

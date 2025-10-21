@@ -75,6 +75,8 @@ namespace GDGame
         private void InitializeMouse()
         {
             //TODO
+            Mouse.SetPosition(_graphics.PreferredBackBufferWidth / 2,
+                _graphics.PreferredBackBufferHeight / 2);
         }
 
         private void InitializeContext()
@@ -125,6 +127,7 @@ namespace GDGame
                 new Vector3(0, MathHelper.ToRadians(135), 0), true);
             //add camera component to the GO
             _camera = _cameraGO.AddComponent<Camera>();
+            _camera.FarPlane = 1000;
             ////feed off whatever screen dimensions you set InitializeGraphics
             _camera.AspectRatio = (float)_graphics.PreferredBackBufferWidth / _graphics.PreferredBackBufferHeight;
             //add to scene
