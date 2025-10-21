@@ -26,6 +26,7 @@ namespace GDGame
         private ContentDictionary<Model> _modelDictionary;
         private ContentDictionary<SpriteFont> _fontDictionary;
         private MeshRenderer _skyBoxBackRenderer, _skyBoxLeftRenderer, _skyBoxRightRenderer, _skyBoxFrontRenderer, _skyBoxSkyRenderer;
+        private AnimationCurve _animationCurve;
 
         public Main()
         {
@@ -50,6 +51,8 @@ namespace GDGame
 
             InitializeScene();
 
+            InitializeCameraCurves();
+
             InitializeCamera(new Vector3(0, 10, 5));
 
             int scale = 1000;
@@ -61,7 +64,18 @@ namespace GDGame
             base.Initialize();
         }
 
+        private void InitializeCameraCurves()
+        {
+            _animationCurve = new AnimationCurve();
+            _animationCurve.AddKey(new GDEngine.Core.Timing.CurveKey(0.1f,
+                0.8f, 0.5f, -0.5f));
+            _animationCurve.AddKey(new GDEngine.Core.Timing.CurveKey(0.5f,
+                0.4f, 0.5f, -0.5f));
+            _animationCurve.AddKey(new GDEngine.Core.Timing.CurveKey(1,
+                0.9f, 0.5f, -0.5f));
 
+            //smooth
+        }
 
         private void InitializeGraphics(int width, int height)
         {
@@ -233,6 +247,9 @@ namespace GDGame
 
             //update Scene
             _scene.Update(Time.DeltaTime);
+
+
+            System.Diagnostics.Debug.WriteLine($"Campos:{_cameraGO.Transform.Position}");
             
             base.Update(gameTime);
         }
