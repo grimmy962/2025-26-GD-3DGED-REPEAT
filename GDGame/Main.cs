@@ -195,12 +195,14 @@ namespace GDGame
                 MathHelper.ToRadians(90), 
                 0,
                 MathHelper.ToRadians(90)), true);
-            skyBoxQuad.Transform.TranslateTo(new Vector3(0, scale / 2, 00));
+            skyBoxQuad.Transform.TranslateTo(new Vector3(0, scale / 2, 0));
             meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
             skyBoxQuad.AddComponent(meshFilter); //setting VB and IB data
             _skyBoxSkyRenderer = skyBoxQuad.AddComponent<MeshRenderer>();
             _skyBoxSkyRenderer._texture = _textureDictionary.Get("skybox_sky");
             _scene.AddGameObject(skyBoxQuad);
+
+
         }
 
         private void InitializeGround(int scale = 500)
@@ -228,9 +230,6 @@ namespace GDGame
 
             //update Scene
             _scene.Update(Time.DeltaTime);
-
-            System.Diagnostics.Debug.WriteLine(_cameraGO.Transform.Position);
-
             
             base.Update(gameTime);
         }
