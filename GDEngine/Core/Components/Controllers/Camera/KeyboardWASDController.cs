@@ -20,9 +20,9 @@ namespace GDEngine.Core.Components
                 dir -= Transform.Forward;
 
             if (_newKBState.IsKeyDown(Keys.A))
-                dir -= Transform.Right;
-            else if (_newKBState.IsKeyDown(Keys.D))
                 dir += Transform.Right;
+            else if (_newKBState.IsKeyDown(Keys.D))
+                dir -= Transform.Right;
             //test if not zero
             if (dir.LengthSquared() > 0)
                 HandleMove(dir);
@@ -34,11 +34,12 @@ namespace GDEngine.Core.Components
             direction.Normalize();
 
             //scale by elapsed time (and speed later)
-            direction *= Time.DeltaTime; //speedMultiplier
+            direction *= Time.DeltaTime * 20;
 
             //apply delta vector
             Transform.TranslateBy(direction, true);
         }
 
+        //TODO - support speed, boost key, key re-mapping
     }
 }
