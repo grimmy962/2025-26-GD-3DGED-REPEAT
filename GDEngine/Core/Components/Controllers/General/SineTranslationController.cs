@@ -1,7 +1,7 @@
 ﻿using GDEngine.Core.Timing;
 using Microsoft.Xna.Framework;
 
-namespace GDEngine.Core.Components
+namespace GDEngine.Core.Components.Controllers.General
 {
     /// <summary>
     /// Oscillates the owning GameObject along a single direction using a sine wave.

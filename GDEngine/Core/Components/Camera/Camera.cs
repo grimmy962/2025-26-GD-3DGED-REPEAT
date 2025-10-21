@@ -117,11 +117,17 @@ namespace GDEngine.Core.Components
             _viewDirty = true;
             _projectionDirty = true;
 
+            if (Transform != null)
+                Transform.Changed += OnTransformChanged; // subscribe
+
             //NO-OP in base
             //base.Awake();
         }
 
-
+        private void OnTransformChanged(Transform transform, TransformChangeFlags flags)
+        {
+            _viewDirty = true;
+        }
 
         private void RecalculateView()
         {

@@ -10,9 +10,12 @@ namespace GDEngine.Core.Factories
     /// Produces MeshFilter components ready to attach to a <see cref="GameObject"/>.
     /// </summary>
     /// <see cref="MeshFilter"/>
-    /// <see cref="GameObject"/>
+    /// <see cref="Entities.GameObject"/>
     public class MeshFilterFactory
     {
+        #region Unlit
+
+        #region Wireframe
         public static MeshFilter CreateMyFirstInitial(GraphicsDevice device)
         {
             //TODO - Homework
@@ -93,9 +96,9 @@ namespace GDEngine.Core.Factories
         /// </summary>
         public static MeshFilter CreateWireGrid(GraphicsDevice device, int cols = 10, int rows = 10, float spacing = 1f)
         {
-            if (cols < 1) 
+            if (cols < 1)
                 cols = 1;
-            if (rows < 1) 
+            if (rows < 1)
                 rows = 1;
 
             int verticalLines = cols + 1;
@@ -181,6 +184,9 @@ namespace GDEngine.Core.Factories
             return mf;
         }
 
+        #endregion
+
+        #region Solid Colored
         /// <summary>
         /// Creates a colored triangle in the XY plane centered near the origin.
         /// </summary>
@@ -218,13 +224,13 @@ namespace GDEngine.Core.Factories
             verts[3] = new VertexPositionColor(
                new Vector3(hl, hl, 0), Color.Yellow);  //3 - TR
 
-            var indices = new short[] { 
+            var indices = new short[] {
                 2, 1, 0, //bottom triangle - winding order (LEFT HAND) clockwise
                 3, 1, 2  //top triangle  - winding order (LEFT HAND) clockwise
             };
 
             var meshFilter = new MeshFilter();
-            meshFilter.SetGeometry(device, verts, indices, 
+            meshFilter.SetGeometry(device, verts, indices,
                 PrimitiveType.TriangleList);
             return meshFilter;
         }
@@ -232,7 +238,7 @@ namespace GDEngine.Core.Factories
         /// <summary>
         /// Creates a solid (triangle) box centered at origin, aligned to axes.
         /// </summary>
-        public static MeshFilter CreateBox(GraphicsDevice device, Vector3? size = null)
+        public static MeshFilter CreateBoxColored(GraphicsDevice device, Vector3? size = null)
         {
             Vector3 s = size ?? Vector3.One;
             Vector3 h = s * 0.5f;
@@ -289,8 +295,71 @@ namespace GDEngine.Core.Factories
             mf.SetGeometry(device, v, i, PrimitiveType.TriangleList);
             return mf;
         }
+        #endregion
 
+        #region Solid Textured
+        /// <summary>
+        /// Creates a unit textured quad (1x1) on the XY plane centered at the origin.
+        /// Unlit variant: POSITION + TEXCOORD only.
+        /// </summary>
+        public static MeshFilter CreateQuadTextured(GraphicsDevice device)
+        {
+            var halfLength = 0.5f;
 
+            var verts = new VertexPositionTexture[4];
+            // 0-BL, 1-BR, 2-TL, 3-TR  (matches CreateQuadColored)
+            verts[0] = new VertexPositionTexture(new Vector3(-halfLength, -halfLength, 0f), new Vector2(0f, 1f)); // BL
+            verts[1] = new VertexPositionTexture(new Vector3(halfLength, -halfLength, 0f), new Vector2(1f, 1f)); // BR
+            verts[2] = new VertexPositionTexture(new Vector3(-halfLength, halfLength, 0f), new Vector2(0f, 0f)); // TL
+            verts[3] = new VertexPositionTexture(new Vector3(halfLength, halfLength, 0f), new Vector2(1f, 0f)); // TR
+
+            // Clockwise (left-hand) to match CreateQuadColored
+            var indices = new short[] {
+                            2, 1, 0,   // bottom tri
+                            3, 1, 2    // top tri
+                        };
+
+            var mf = new MeshFilter();
+            mf.SetGeometry(device, verts, indices, PrimitiveType.TriangleList);
+            return mf;
+        }
+
+        #endregion
+
+        #endregion
+
+        #region Lit
+
+        #region Solid Textured
+        /// <summary>
+        /// Creates a unit textured quad (1x1) on the XY plane centered at the origin,
+        /// with normals pointing +Z for basic lighting (e.g., BasicEffect LightingEnabled=true).
+        /// </summary>
+        public static MeshFilter CreateQuadTexturedLit(GraphicsDevice device)
+        {
+            var hl = 0.5f;
+            var n = new Vector3(0f, 0f, 1f);
+
+            var verts = new VertexPositionNormalTexture[4];
+            // 0-BL, 1-BR, 2-TL, 3-TR (same order as colored/textured)
+            verts[0] = new VertexPositionNormalTexture(new Vector3(-hl, -hl, 0f), n, new Vector2(0f, 1f)); // BL
+            verts[1] = new VertexPositionNormalTexture(new Vector3(hl, -hl, 0f), n, new Vector2(1f, 1f)); // BR
+            verts[2] = new VertexPositionNormalTexture(new Vector3(-hl, hl, 0f), n, new Vector2(0f, 0f)); // TL
+            verts[3] = new VertexPositionNormalTexture(new Vector3(hl, hl, 0f), n, new Vector2(1f, 0f)); // TR
+
+            var indices = new short[] {
+                            2, 1, 0,
+                            3, 1, 2
+                        };
+
+            var mf = new MeshFilter();
+            mf.SetGeometry(device, verts, indices, PrimitiveType.TriangleList);
+            return mf;
+        }
+
+        #endregion
+
+        #region Solid Colored
         /// <summary>
         /// Loads a compiled FBX content asset (MonoGame <see cref="Model"/>) and extracts one mesh part into a new <see cref="MeshFilter"/>.
         /// Copies vertex and index data into fresh GPU buffers owned by the returned <see cref="MeshFilter"/>.
@@ -372,6 +441,8 @@ namespace GDEngine.Core.Factories
             mf.SetGeometry(vb, ib, PrimitiveType.TriangleList, indexCount);
             return mf;
         }
+        #endregion
 
+        #endregion
     }
 }

@@ -39,10 +39,12 @@ This document contains a step-by-step development plan of MonoGame content cover
 
 ## Week 6
 - [x] Added LayerMask in preparation for 1st stage of camer culling
-- [ ] Add FBX loading in MeshFilterFactory
-- [ ] Add some assets for grass and skybox
+- [x] Add FBX loading in MeshFilterFactory
+- [x] Add some assets for grass and skybox
 - [ ] Add support for deep and shallow cloning on GameObject components
-- [ ] Add IMaterial support for effects other than BasicEffect in MashRenderer
+- [x] Added Material and RenderState classes to support multiple effect types
+- [x] Added ContentDictionary to store asset references
+- [ ] Add keyboard and mouse controllers for camera
 - [ ] Add `RenderingSystem` that gathers `(Transform, MeshFilter, MeshRenderer)`.
 - [ ] Add `RenderLayer` sorting in `RenderingSystem`.
 - [ ] Define `InputState` (Move, JumpPressed, Action1, Action2).

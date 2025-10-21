@@ -1,7 +1,7 @@
 ﻿using GDEngine.Core.Entities;
 using Microsoft.Xna.Framework;
 
-namespace GDEngine.Core.Components
+namespace GDEngine.Core.Components.Controllers.General
 {
     /// <summary>
     /// Rotates the owning <see cref="GameObject"/> around a configurable local-space axis
