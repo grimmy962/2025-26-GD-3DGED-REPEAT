@@ -1,440 +1,271 @@
 ﻿using Microsoft.Xna.Framework;
 
-namespace GDEngine.Core.Timing
+namespace GDLibrary.Core.Timing
 {
     /// <summary>
-    /// How t value is handled when outside [0,1] when evaluating the curve.
-    /// Clamp: clamp to [0,1]. Loop: repeat every 1.0. PingPong: bounce 0→1→0...
+    /// Scalar cubic-Hermite animation curve over time (milliseconds).
+    /// Rounds optionally, lazily recomputes tangents on mutation, supports sampling and presets.
+    /// Looping/clamping/ping-pong behavior is controlled by the <see cref="CurveLoopType"/> you pass to the constructor;
+    /// <see cref="Evaluate(double, int)"/> respects that mode automatically.
     /// </summary>
-    public enum CurveWrapMode
-    {
-        Clamp = 0,
-        Loop = 1,
-        PingPong = 2
-    }
-
-    /// <summary>
-    /// Per-segment interpolation between keyframes.
-    /// </summary>
-    public enum CurveInterpolation
-    {
-        Constant = 0,   // step
-        Linear = 1,     // straight line
-        Cubic = 2       // cubic Hermite using tangents
-    }
-
-    /// <summary>
-    /// A single keyframe defining the curve's shape at a specific time.
-    /// Times are expected in [0,1]. Values typically in [0,1], but are not clamped automatically.
-    /// Tangents are "value per normalized time" (dy/dt) in curve's 0..1 domain.
-    /// </summary>
-    public sealed class CurveKey
+    /// <example>
+    /// <code>
+    /// // Build a 2-second up-and-down curve (0 -> 1 -> 0) that ping-pongs forever.
+    /// // NOTE: Choose the loop type you want here; Evaluate() will honor it automatically.
+    /// var curve = new AnimationCurve(CurveLoopType.Oscillate);
+    /// curve.AddKey(0f,    0);
+    /// curve.AddKey(1f, 1000);
+    /// curve.AddKey(0f, 2000);
+    ///
+    /// // In your update loop (ms domain)
+    /// _elapsedMs += (int)(Time.DeltaTime * 1000f);
+    /// float y = curve.Evaluate(_elapsedMs); // honors CurveLoopType
+    /// </code>
+    /// </example>
+    /// <see cref="AnimationCurve2D"/>
+    /// <see cref="AnimationCurve3D"/>
+    public class AnimationCurve
     {
         #region Fields
-        public float Time;         // [0,1]
-        public float Value;        // usually [0,1]
-        public float InTangent;    // slope entering this key
-        public float OutTangent;   // slope exiting this key
-        #endregion
 
-        #region Constructors
-        /// <summary>
-        /// Create a key with explicit in/out tangents.
-        /// </summary>
-        public CurveKey(float time, float value, float inTangent, float outTangent)
-        {
-            Time = time;
-            Value = value;
-            InTangent = inTangent;
-            OutTangent = outTangent;
-        }
+        private readonly Curve _curve;
+        private readonly CurveLoopType _loop;
+        private bool _dirtyTangents;
 
-        /// <summary>
-        /// Create a key with flat tangents (0 slope).
-        /// </summary>
-        public CurveKey(float time, float value)
-        {
-            Time = time;
-            Value = value;
-            InTangent = 0f;
-            OutTangent = 0f;
-        }
-        #endregion
-    }
-
-    /// <summary>
-    /// Unity-like AnimationCurve for 0..1 time. Students can define bespoke shapes
-    /// and use them as easing functions (e.g., camera, movement, UI tweens).
-    /// Supports Constant/Linear/Cubic interpolation and Clamp/Loop/PingPong wrap.
-    /// </summary>
-    public sealed class AnimationCurve
-    {
-        #region Static Fields
-        #endregion
-
-        #region Fields
-        private CurveKey[] _keys = Array.Empty<CurveKey>();
-        private int _keyCount;
-        private CurveInterpolation _interpolation = CurveInterpolation.Cubic;
-        private CurveWrapMode _preWrap = CurveWrapMode.Clamp;
-        private CurveWrapMode _postWrap = CurveWrapMode.Clamp;
         #endregion
 
         #region Properties
-        /// <summary>Number of keys currently in the curve.</summary>
-        public int KeyCount => _keyCount;
 
-        /// <summary>How segments are interpolated.</summary>
-        public CurveInterpolation Interpolation
-        {
-            get => _interpolation;
-            set => _interpolation = value;
-        }
+        /// <summary>Looping behavior applied before/after the key domain and respected by Evaluate().</summary>
+        /// <see cref="CurveLoopType"/>
+        public CurveLoopType LoopType => _loop;
 
-        /// <summary>Wrap mode for t &lt; 0.</summary>
-        public CurveWrapMode PreWrapMode
-        {
-            get => _preWrap;
-            set => _preWrap = value;
-        }
+        /// <summary>Number of keys.</summary>
+        public int KeyCount => _curve.Keys.Count;
 
-        /// <summary>Wrap mode for t &gt; 1.</summary>
-        public CurveWrapMode PostWrapMode
-        {
-            get => _postWrap;
-            set => _postWrap = value;
-        }
+        /// <summary>True if there are no keys.</summary>
+        public bool IsEmpty => _curve.Keys.Count == 0;
+
+        /// <summary>Earliest key time in ms (0 if empty).</summary>
+        public int StartMs => IsEmpty ? 0 : (int)_curve.Keys[0].Position;
+
+        /// <summary>Latest key time in ms (0 if empty).</summary>
+        public int EndMs => IsEmpty ? 0 : (int)_curve.Keys[_curve.Keys.Count - 1].Position;
+
+        /// <summary>EndMs - StartMs (0 if empty).</summary>
+        public int DurationMs => IsEmpty ? 0 : EndMs - StartMs;
+
+        /// <summary>Access for editor visualisation.</summary>
+        public CurveKeyCollection Keys => _curve.Keys;
+
         #endregion
 
         #region Constructors
-        /// <summary>
-        /// Empty curve; add keys programmatically, then call <see cref="AutoTangents"/> or <see cref="SmoothTangents(float)"/>.
-        /// </summary>
-        public AnimationCurve() { }
 
         /// <summary>
-        /// Curve from an initial set of keys (unsorted allowed). Optionally auto-smooth.
+        /// Create a scalar animation curve (ms domain).
+        /// Pass desired loop behavior; Evaluate() will honor it via MonoGame's Curve.
         /// </summary>
-        public AnimationCurve(CurveKey[] keys, bool smoothTangents = true)
+        public AnimationCurve(CurveLoopType loopType = CurveLoopType.Cycle)
         {
-            SetKeys(keys);
-            if (smoothTangents) SmoothTangents(0.0f);
+            _curve = new Curve();
+            _curve.PreLoop = _curve.PostLoop = loopType; // let Curve do clamped/cycle/oscillate/etc.
+            _loop = loopType;
+            _dirtyTangents = true;
         }
 
-        /// <summary>
-        /// Prebuild a simple linear 0→1 curve.
-        /// </summary>
-        public static AnimationCurve Linear01()
-        {
-            var c = new AnimationCurve();
-            c.AddKey(new CurveKey(0f, 0f));
-            c.AddKey(new CurveKey(1f, 1f));
-            c.Interpolation = CurveInterpolation.Linear;
-            return c;
-        }
-
-        /// <summary>
-        /// Classic ease in-out using a smoothstep curve.
-        /// </summary>
-        public static AnimationCurve SmoothStep01()
-        {
-            var c = new AnimationCurve();
-            c.AddKey(new CurveKey(0f, 0f));
-            c.AddKey(new CurveKey(1f, 1f));
-            c.Interpolation = CurveInterpolation.Cubic;
-            c.SmoothTangents(0f);
-            return c;
-        }
         #endregion
 
         #region Methods
-        /// <summary>
-        /// Replace all keys.
-        /// </summary>
-        public void SetKeys(CurveKey[] keys)
+
+        /// <summary>Add a key at timeInMs.</summary>
+        public void AddKey(float value, int timeInMs)
         {
-            if (keys == null)
-                throw new ArgumentNullException(nameof(keys));
+            // If a key already exists at this time, overwrite its value (avoids duplicate-time exceptions)
+            for (int i = 0; i < Keys.Count; i++)
+            {
+                if (Keys[i].Position == timeInMs)
+                {
+                    var k = Keys[i];
+                    k.Value = value;
+                    Keys[i] = k;          // update in-place
+                    _dirtyTangents = true;
+                    return;
+                }
+            }
 
-            // Copy
-            _keys = new CurveKey[keys.Length];
-            for (int i = 0; i < keys.Length; i++)
-                _keys[i] = new CurveKey(keys[i].Time, keys[i].Value, keys[i].InTangent, keys[i].OutTangent);
-
-            _keyCount = _keys.Length;
-            SortKeys();
+            // Otherwise, Add() keeps the collection sorted by Position internally
+            Keys.Add(new CurveKey(timeInMs, value));
+            _dirtyTangents = true;
         }
 
-        /// <summary>
-        /// Add a key and return its index.
-        /// </summary>
-        public int AddKey(CurveKey key)
+
+
+        /// <summary>Set the value on an existing key.</summary>
+        public bool SetValue(int index, float newValue)
         {
-            EnsureCapacity(_keyCount + 1);
-            _keys[_keyCount] = new CurveKey(key.Time, key.Value, key.InTangent, key.OutTangent);
-            _keyCount++;
-            SortKeys();
-            return IndexOfTime(key.Time);
-        }
-
-        /// <summary>
-        /// Remove key at index. Returns true if removed.
-        /// </summary>
-        public bool RemoveKeyAt(int index)
-        {
-            if (index < 0 || index >= _keyCount)
-                return false;
-
-            for (int i = index; i < _keyCount - 1; i++)
-                _keys[i] = _keys[i + 1];
-
-            _keyCount--;
+            if (index < 0 || index >= _curve.Keys.Count) return false;
+            var k = _curve.Keys[index];
+            k.Value = newValue;
+            _curve.Keys[index] = k;
+            _dirtyTangents = true;
             return true;
         }
 
-        /// <summary>
-        /// Try get key at index.
-        /// </summary>
-        public bool TryGetKey(int index, out CurveKey? key)
+        /// <summary>Remove all keys.</summary>
+        public void Clear()
         {
-            if (index < 0 || index >= _keyCount)
+            _curve.Keys.Clear();
+            _dirtyTangents = true;
+        }
+
+        /// <summary>
+        /// Evaluate at timeInMs. If decimalPrecision &lt; 0, returns raw value; otherwise rounds for UI display.
+        /// Honors the loop/clamp/oscillate behavior provided at construction.
+        /// </summary>
+        public float Evaluate(double timeInMs, int decimalPrecision = -1)
+        {
+            if (IsEmpty) return 0f;
+            EnsureTangents();
+
+            float v = _curve.Evaluate((float)timeInMs);
+            if (decimalPrecision < 0) return v;
+
+            float dp = (float)Math.Pow(10, decimalPrecision);
+            return (float)(Math.Round(v * dp) / dp);
+        }
+
+        /// <summary>Uniformly sample the curve across [StartMs, EndMs].</summary>
+        public float[] Sample(int count, int decimalPrecision = -1)
+        {
+            if (count <= 0 || IsEmpty) return Array.Empty<float>();
+            if (DurationMs <= 0)
             {
-                key = null;
-                return false;
+                var v = Evaluate(StartMs, decimalPrecision);
+                var arr = new float[count];
+                for (int i = 0; i < count; i++) arr[i] = v;
+                return arr;
             }
 
-            key = _keys[index];
+            var data = new float[count];
+            for (int i = 0; i < count; i++)
+            {
+                float t = count == 1 ? 0f : (float)i / (count - 1);
+                double ms = StartMs + t * DurationMs;
+                data[i] = Evaluate(ms, decimalPrecision);
+            }
+            return data;
+        }
+
+        /// <summary>Get min/max across key values (fast heuristic for UI scaling).</summary>
+        public bool TryGetValueRange(out float min, out float max)
+        {
+            min = 0f; max = 0f;
+            if (IsEmpty) return false;
+
+            min = float.PositiveInfinity;
+            max = float.NegativeInfinity;
+
+            for (int i = 0; i < _curve.Keys.Count; i++)
+            {
+                float v = _curve.Keys[i].Value;
+                if (v < min) min = v;
+                if (v > max) max = v;
+            }
             return true;
         }
 
-        /// <summary>
-        /// Recompute all tangents using Catmull-Rom style finite differences.
-        /// <paramref name="tension"/> in [0,1] tightens the curve (0 = smoothest).
-        /// </summary>
-        public void SmoothTangents(float tension)
+        /// <summary>Create a simple linear ramp from start to end over durationMs.</summary>
+        public static AnimationCurve MakeRamp(float startValue, float endValue, int durationMs, CurveLoopType loop = CurveLoopType.Constant)
         {
-            if (_keyCount < 2)
-                return;
+            var c = new AnimationCurve(loop);
+            c.AddKey(startValue, 0);
+            c.AddKey(endValue, Math.Max(0, durationMs));
+            return c;
+        }
 
-            if (tension < 0f) tension = 0f;
-            if (tension > 1f) tension = 1f;
+        /// <summary>Create a pulse (low→high→low) with up/hold/down segments (ms).</summary>
+        public static AnimationCurve MakePulse(float low, float high, int upMs, int holdMs, int downMs, CurveLoopType loop = CurveLoopType.Constant)
+        {
+            var c = new AnimationCurve(loop);
+            int t0 = 0;
+            int t1 = t0 + Math.Max(0, upMs);
+            int t2 = t1 + Math.Max(0, holdMs);
+            int t3 = t2 + Math.Max(0, downMs);
 
-            for (int i = 0; i < _keyCount; i++)
+            c.AddKey(low, t0);
+            c.AddKey(high, t1);
+            c.AddKey(high, t2);
+            c.AddKey(low, t3);
+            return c;
+        }
+
+        #endregion
+
+        #region Lifecycle Methods
+
+        private void EnsureTangents()
+        {
+            if (!_dirtyTangents) return;
+            if (IsEmpty) return;
+
+            for (int i = 0; i < _curve.Keys.Count; i++)
+                ComputeTangentsForKey(i);
+
+            _dirtyTangents = false;
+        }
+
+        private void ComputeTangentsForKey(int i)
+        {
+            // Neighbour indices (non-cyclic for better endpoints; use self when missing)
+            int prev = i - 1; if (prev < 0) prev = i;
+            int next = i + 1; if (next >= _curve.Keys.Count) next = i;
+
+            var kPrev = _curve.Keys[prev];
+            var k = _curve.Keys[i];
+            var kNext = _curve.Keys[next];
+
+            float dtPrev = k.Position - kPrev.Position;
+            float dtNext = kNext.Position - k.Position;
+
+            float slopeIn, slopeOut;
+
+            if (i == prev && i == next)
             {
-                CurveKey prev = i > 0 ? _keys[i - 1] : _keys[i];
-                CurveKey next = i < _keyCount - 1 ? _keys[i + 1] : _keys[i];
-
-                float dt = next.Time - prev.Time;
-                if (dt <= 0f)
-                {
-                    _keys[i].InTangent = 0f;
-                    _keys[i].OutTangent = 0f;
-                }
-                else
-                {
-                    float slope = (next.Value - prev.Value) / dt;
-                    float s = slope * (1f - tension);
-                    _keys[i].InTangent = s;
-                    _keys[i].OutTangent = s;
-                }
+                slopeIn = slopeOut = 0f;
             }
-        }
-
-        /// <summary>
-        /// Set all tangents to zero (flat).
-        /// </summary>
-        public void AutoTangents()
-        {
-            for (int i = 0; i < _keyCount; i++)
+            else if (i == prev)
             {
-                _keys[i].InTangent = 0f;
-                _keys[i].OutTangent = 0f;
+                slopeIn = slopeOut = dtNext != 0 ? (kNext.Value - k.Value) / dtNext : 0f;
             }
-        }
-
-        /// <summary>
-        /// Evaluate the curve at normalized time t. Applies pre/post wrap and the selected interpolation.
-        /// </summary>
-        public float Evaluate(float t)
-        {
-            if (_keyCount == 0)
-                return 0f;
-
-            if (_keyCount == 1)
-                return _keys[0].Value;
-
-            float tn = ApplyWrap(t);
-            int k0 = FindKeyBefore(tn);
-            int k1 = k0 + 1;
-
-            // Exact key
-            if (Math.Abs(tn - _keys[k0].Time) <= float.Epsilon || k1 >= _keyCount)
-                return _keys[k0].Value;
-
-            CurveKey a = _keys[k0];
-            CurveKey b = _keys[k1];
-
-            float dt = b.Time - a.Time;
-            if (dt <= 0f)
-                return a.Value;
-
-            float u = (tn - a.Time) / dt;
-
-            switch (_interpolation)
+            else if (i == next)
             {
-                case CurveInterpolation.Constant:
-                    return a.Value;
-
-                case CurveInterpolation.Linear:
-                    return MathHelper.Lerp(a.Value, b.Value, u);
-
-                case CurveInterpolation.Cubic:
-                default:
-                    // Hermite basis (using a.OutTangent and b.InTangent).
-                    float m0 = a.OutTangent * dt;
-                    float m1 = b.InTangent * dt;
-
-                    float u2 = u * u;
-                    float u3 = u2 * u;
-
-                    float h00 = 2f * u3 - 3f * u2 + 1f;
-                    float h10 = u3 - 2f * u2 + u;
-                    float h01 = -2f * u3 + 3f * u2;
-                    float h11 = u3 - u2;
-
-                    return h00 * a.Value + h10 * m0 + h01 * b.Value + h11 * m1;
+                slopeIn = slopeOut = dtPrev != 0 ? (k.Value - kPrev.Value) / dtPrev : 0f;
             }
-        }
-
-        /// <summary>
-        /// Convert this curve into a delegate t→value so it can be used anywhere a Func&lt;float,float&gt; is accepted.
-        /// </summary>
-        public Func<float, float> ToFunc()
-        {
-            return (x) => Evaluate(x);
-        }
-
-        /// <summary>
-        /// Ensure internal array fits N items (simple grow-by-doubling).
-        /// </summary>
-        private void EnsureCapacity(int needed)
-        {
-            int cap = _keys.Length;
-            if (cap >= needed)
-                return;
-
-            int newCap = cap == 0 ? 4 : cap * 2;
-            while (newCap < needed)
-                newCap *= 2;
-
-            var arr = new CurveKey[newCap];
-            for (int i = 0; i < _keyCount; i++)
-                arr[i] = _keys[i];
-
-            _keys = arr;
-        }
-
-        /// <summary>
-        /// Sort keys by time ascending (in-place insertion sort—stable for our typical small key counts).
-        /// </summary>
-        private void SortKeys()
-        {
-            for (int i = 1; i < _keyCount; i++)
+            else
             {
-                var k = _keys[i];
-                int j = i - 1;
-                while (j >= 0 && _keys[j].Time > k.Time)
-                {
-                    _keys[j + 1] = _keys[j];
-                    j--;
-                }
-                _keys[j + 1] = k;
-            }
-        }
-
-        /// <summary>
-        /// Return the index of the last key with Time ≤ t (clamped into [0, KeyCount-2]).
-        /// </summary>
-        private int FindKeyBefore(float t)
-        {
-            // Linear scan is fine for small key counts; can be upgraded to binary search later.
-            int last = 0;
-            for (int i = 0; i < _keyCount; i++)
-            {
-                if (_keys[i].Time <= t)
-                    last = i;
-                else
-                    break;
+                float dt = kNext.Position - kPrev.Position;
+                float dv = kNext.Value - kPrev.Value;
+                float m = dt != 0 ? dv / dt : 0f;
+                slopeIn = m;
+                slopeOut = m;
             }
 
-            if (last >= _keyCount - 1)
-                last = _keyCount - 2;
+            k.TangentIn = slopeIn;
+            k.TangentOut = slopeOut;
 
-            if (last < 0)
-                last = 0;
-
-            return last;
+            _curve.Keys[i] = k;
         }
 
-        /// <summary>
-        /// Return the index of a key at an exact time, else -1.
-        /// </summary>
-        private int IndexOfTime(float time)
+        #endregion
+
+        #region Housekeeping Methods
+
+        public override string ToString()
         {
-            for (int i = 0; i < _keyCount; i++)
-                if (Math.Abs(_keys[i].Time - time) <= float.Epsilon)
-                    return i;
-
-            return -1;
+            return $"AnimationCurve(Keys={KeyCount}, StartMs={StartMs}, EndMs={EndMs}, Loop={_loop})";
         }
 
-        /// <summary>
-        /// Apply pre/post wrap to t and return a normalized time in [0,1].
-        /// </summary>
-        private float ApplyWrap(float t)
-        {
-            if (t >= 0f && t <= 1f)
-                return t;
-
-            if (t < 0f)
-                return Wrap(t, _preWrap);
-
-            return Wrap(t, _postWrap);
-        }
-
-        /// <summary>
-        /// Wrap helper for a given mode.
-        /// </summary>
-        private float Wrap(float t, CurveWrapMode mode)
-        {
-            switch (mode)
-            {
-                case CurveWrapMode.Clamp:
-                    if (t < 0f) return 0f;
-                    if (t > 1f) return 1f;
-                    return t;
-
-                case CurveWrapMode.Loop:
-                    // frac for negatives: t - floor(t)
-                    {
-                        float x = t - (float)Math.Floor(t);
-                        return x;
-                    }
-
-                case CurveWrapMode.PingPong:
-                default:
-                    {
-                        // Map to 0..2 range, then mirror the >1 region
-                        float x = t - (float)Math.Floor(t);
-                        // Now x ∈ [0,1) repeating; create 0→1→0 by reflecting every other cycle
-                        float twoT = (t - (float)Math.Floor(t)) * 2f;
-                        if (twoT <= 1f)
-                            return twoT;
-
-                        return 2f - twoT;
-                    }
-            }
-        }
         #endregion
     }
 }

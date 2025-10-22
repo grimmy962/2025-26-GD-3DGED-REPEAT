@@ -1,10 +1,12 @@
 ﻿using GDEngine.Core;
 using GDEngine.Core.Components;
+using GDEngine.Core.Components.Controllers.General;
 using GDEngine.Core.Entities;
 using GDEngine.Core.Factories;
 using GDEngine.Core.Rendering;
 using GDEngine.Core.Services;
 using GDEngine.Core.Timing;
+using GDLibrary.Core.Timing;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -27,6 +29,7 @@ namespace GDGame
         private ContentDictionary<SpriteFont> _fontDictionary;
         private MeshRenderer _skyBoxBackRenderer, _skyBoxLeftRenderer, _skyBoxRightRenderer, _skyBoxFrontRenderer, _skyBoxSkyRenderer;
         private AnimationCurve _animationCurve;
+        private MeshRenderer _testObjRenderer;
 
         public Main()
         {
@@ -53,28 +56,27 @@ namespace GDGame
 
             InitializeCameraCurves();
 
-            InitializeCamera(new Vector3(0, 10, 5));
+            InitializeCamera(new Vector3(0, 5, 25));
 
-            int scale = 1000;
+            int scale = 500;
 
             InitializeSkyBox(scale);
 
             InitializeGround(scale);
+
+            InitializeTestObject();
 
             base.Initialize();
         }
 
         private void InitializeCameraCurves()
         {
-            _animationCurve = new AnimationCurve();
-            _animationCurve.AddKey(new GDEngine.Core.Timing.CurveKey(0.1f,
-                0.8f, 0.5f, -0.5f));
-            _animationCurve.AddKey(new GDEngine.Core.Timing.CurveKey(0.5f,
-                0.4f, 0.5f, -0.5f));
-            _animationCurve.AddKey(new GDEngine.Core.Timing.CurveKey(1,
-                0.9f, 0.5f, -0.5f));
-
-            //smooth
+            _animationCurve = new AnimationCurve(CurveLoopType.Cycle);
+            _animationCurve.AddKey(0f, 0);
+            _animationCurve.AddKey(2f, 1000); //up
+            _animationCurve.AddKey(0f, 2000); //down
+            _animationCurve.AddKey(8f, 3000); //up further
+            _animationCurve.AddKey(0f, 4000); //down
         }
 
         private void InitializeGraphics(int width, int height)
@@ -117,6 +119,9 @@ namespace GDGame
             _textureDictionary.Add("skybox_left", "assets/textures/skybox/left");
             _textureDictionary.Add("skybox_right", "assets/textures/skybox/right");
             _textureDictionary.Add("skybox_sky", "assets/textures/skybox/sky");
+
+            //tree
+            _textureDictionary.Add("crate1", "assets/textures/props/crates/crate1");
         }
 
         private void InitializeEffects()
@@ -135,17 +140,17 @@ namespace GDGame
             //camera GO
             _cameraGO = new GameObject("First person camera");
             //set position 
-            _cameraGO.Transform.TranslateTo(new Vector3(0, 5, 150));
+            _cameraGO.Transform.TranslateTo(position);
             //turn around as Forward is by default (0,0,1)
             _cameraGO.Transform.RotateEuler(
-                new Vector3(0, MathHelper.ToRadians(135), 0), true);
+                new Vector3(0, MathHelper.ToRadians(180), 0), true);
             //add camera component to the GO
             _camera = _cameraGO.AddComponent<Camera>();
             _camera.FarPlane = 1000;
             ////feed off whatever screen dimensions you set InitializeGraphics
             _camera.AspectRatio = (float)_graphics.PreferredBackBufferWidth / _graphics.PreferredBackBufferHeight;
             //add to scene
-            _scene.AddGameObject(_cameraGO);
+            _scene.Add(_cameraGO);
 
             //decide on controller
             //_cameraGO.AddComponent<CameraController>();
@@ -167,7 +172,7 @@ namespace GDGame
             skyBoxQuad.AddComponent(meshFilter); //setting VB and IB data
             _skyBoxBackRenderer = skyBoxQuad.AddComponent<MeshRenderer>();
             _skyBoxBackRenderer._texture = _textureDictionary.Get("skybox_back");
-            _scene.AddGameObject(skyBoxQuad);
+            _scene.Add(skyBoxQuad);
 
             //left wall
             skyBoxQuad = new GameObject("left");
@@ -179,7 +184,7 @@ namespace GDGame
             skyBoxQuad.AddComponent(meshFilter); //setting VB and IB data
             _skyBoxLeftRenderer = skyBoxQuad.AddComponent<MeshRenderer>();
             _skyBoxLeftRenderer._texture = _textureDictionary.Get("skybox_left");
-            _scene.AddGameObject(skyBoxQuad);
+            _scene.Add(skyBoxQuad);
 
             //right wall
             skyBoxQuad = new GameObject("right");
@@ -191,7 +196,7 @@ namespace GDGame
             skyBoxQuad.AddComponent(meshFilter); //setting VB and IB data
             _skyBoxRightRenderer = skyBoxQuad.AddComponent<MeshRenderer>();
             _skyBoxRightRenderer._texture = _textureDictionary.Get("skybox_right");
-            _scene.AddGameObject(skyBoxQuad);
+            _scene.Add(skyBoxQuad);
 
             //right wall
             skyBoxQuad = new GameObject("front");
@@ -203,7 +208,7 @@ namespace GDGame
             skyBoxQuad.AddComponent(meshFilter); //setting VB and IB data
             _skyBoxFrontRenderer = skyBoxQuad.AddComponent<MeshRenderer>();
             _skyBoxFrontRenderer._texture = _textureDictionary.Get("skybox_front");
-            _scene.AddGameObject(skyBoxQuad);
+            _scene.Add(skyBoxQuad);
 
             //sky
             skyBoxQuad = new GameObject("sky");
@@ -217,7 +222,7 @@ namespace GDGame
             skyBoxQuad.AddComponent(meshFilter); //setting VB and IB data
             _skyBoxSkyRenderer = skyBoxQuad.AddComponent<MeshRenderer>();
             _skyBoxSkyRenderer._texture = _textureDictionary.Get("skybox_sky");
-            _scene.AddGameObject(skyBoxQuad);
+            _scene.Add(skyBoxQuad);
 
 
         }
@@ -234,7 +239,30 @@ namespace GDGame
             _grassQuadRenderer = _grassQuadGO.AddComponent<MeshRenderer>();
             //give the renderer the texture that it will put on the quad
             _grassQuadRenderer._texture = _textureDictionary.Get("ground_grass");
-            _scene.AddGameObject(_grassQuadGO);
+            _scene.Add(_grassQuadGO);
+
+        }
+
+        private void InitializeTestObject()
+        {
+            var testCrateGO = new GameObject("test crate textured cube");
+
+            //set position and scale
+            testCrateGO.Transform.TranslateTo(new Vector3(0, 5, 0));
+            testCrateGO.Transform.ScaleTo(Vector3.One * 8);
+
+            var meshFilter = MeshFilterFactory.CreateCubeTexturedLit(_graphics.GraphicsDevice);
+            testCrateGO.AddComponent(meshFilter);
+            _testObjRenderer = testCrateGO.AddComponent<MeshRenderer>();
+
+            //set texture
+            _testObjRenderer._texture = _textureDictionary.Get("crate1");
+            _scene.Add(testCrateGO);
+
+            //add our new CurveController
+            var curveController = new DemoAnimationCurveController(_animationCurve);
+            curveController.Direction = new Vector3(0, 1, 0); //try changing this
+            testCrateGO.AddComponent(curveController);
 
         }
         protected override void Update(GameTime gameTime)
@@ -246,7 +274,7 @@ namespace GDGame
             //Time.TimeScale = 4f;
 
             //update Scene
-            _scene.Update(Time.DeltaTime);
+            _scene.Update(Time.DeltaTimeSecs);
 
 
             System.Diagnostics.Debug.WriteLine($"Campos:{_cameraGO.Transform.Position}");
@@ -256,7 +284,7 @@ namespace GDGame
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
-            
+
             //notice that we have to manually call render on each primitive - we really need a RenderSystem!
             _grassQuadRenderer.Render(_graphics.GraphicsDevice, _camera);
 
@@ -265,6 +293,9 @@ namespace GDGame
             _skyBoxRightRenderer.Render(_graphics.GraphicsDevice, _camera);
             _skyBoxFrontRenderer.Render(_graphics.GraphicsDevice, _camera);
             _skyBoxSkyRenderer.Render(_graphics.GraphicsDevice, _camera);
+
+            _testObjRenderer.Render(_graphics.GraphicsDevice, _camera);
+
             base.Draw(gameTime);
         }
     }

@@ -8,7 +8,7 @@ namespace GDEngine.Core.Components.Controllers.General
         private Vector3 _originalLocalScale;
         protected override void Update(float deltaTime)
         {
-            float phase = (float)(Time.RealtimeSinceStartup * 10);
+            float phase = (float)(Time.RealtimeSinceStartupSecs * 10);
             float scale = MathF.Sin(phase); // [1, +1]
             Transform?.ScaleTo(_originalLocalScale 
                 + scale * new Vector3(0.25f, 1.25f, 0.25f) * 0.1f);      

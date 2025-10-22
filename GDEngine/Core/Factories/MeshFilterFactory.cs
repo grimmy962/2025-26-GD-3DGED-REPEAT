@@ -324,6 +324,84 @@ namespace GDEngine.Core.Factories
             return mf;
         }
 
+        /// <summary>
+        /// Creates a textured 1x1x1 cube centered at the origin.
+        /// (VertexPositionTexture). UVs are (0,1) BL, (1,1) BR, (1,0) TR, (0,0) TL per face.
+        /// </summary>
+        public static MeshFilter CreateCubeTextured(GraphicsDevice device)
+        {
+            float halfLength = 0.5f;
+
+            // 24 unique vertices (4 per face) so each face can have its own UVs.
+            var v = new VertexPositionTexture[24];
+
+            // UVs (BL, BR, TR, TL)
+            Vector2 uvBL = new Vector2(0f, 1f);
+            Vector2 uvBR = new Vector2(1f, 1f);
+            Vector2 uvTR = new Vector2(1f, 0f);
+            Vector2 uvTL = new Vector2(0f, 0f);
+
+            int k = 0;
+
+            // +Z (front)
+            v[k++] = new VertexPositionTexture(new Vector3(-halfLength, -halfLength, halfLength), uvBL); // 0
+            v[k++] = new VertexPositionTexture(new Vector3(halfLength, -halfLength, halfLength), uvBR); // 1
+            v[k++] = new VertexPositionTexture(new Vector3(halfLength, halfLength, halfLength), uvTR); // 2
+            v[k++] = new VertexPositionTexture(new Vector3(-halfLength, halfLength, halfLength), uvTL); // 3
+
+            // -Z (back)
+            v[k++] = new VertexPositionTexture(new Vector3(halfLength, -halfLength, -halfLength), uvBR); // 4
+            v[k++] = new VertexPositionTexture(new Vector3(-halfLength, -halfLength, -halfLength), uvBL); // 5
+            v[k++] = new VertexPositionTexture(new Vector3(-halfLength, halfLength, -halfLength), uvTL); // 6
+            v[k++] = new VertexPositionTexture(new Vector3(halfLength, halfLength, -halfLength), uvTR); // 7
+
+            // +X (right)
+            v[k++] = new VertexPositionTexture(new Vector3(halfLength, -halfLength, halfLength), uvBL); // 8
+            v[k++] = new VertexPositionTexture(new Vector3(halfLength, -halfLength, -halfLength), uvBR); // 9
+            v[k++] = new VertexPositionTexture(new Vector3(halfLength, halfLength, -halfLength), uvTR); //10
+            v[k++] = new VertexPositionTexture(new Vector3(halfLength, halfLength, halfLength), uvTL); //11
+
+            // -X (left)
+            v[k++] = new VertexPositionTexture(new Vector3(-halfLength, -halfLength, -halfLength), uvBR); //12
+            v[k++] = new VertexPositionTexture(new Vector3(-halfLength, -halfLength, halfLength), uvBL); //13
+            v[k++] = new VertexPositionTexture(new Vector3(-halfLength, halfLength, halfLength), uvTL); //14
+            v[k++] = new VertexPositionTexture(new Vector3(-halfLength, halfLength, -halfLength), uvTR); //15
+
+            // +Y (top)
+            v[k++] = new VertexPositionTexture(new Vector3(-halfLength, halfLength, halfLength), uvBL); //16
+            v[k++] = new VertexPositionTexture(new Vector3(halfLength, halfLength, halfLength), uvBR); //17
+            v[k++] = new VertexPositionTexture(new Vector3(halfLength, halfLength, -halfLength), uvTR); //18
+            v[k++] = new VertexPositionTexture(new Vector3(-halfLength, halfLength, -halfLength), uvTL); //19
+
+            // -Y (bottom)
+            v[k++] = new VertexPositionTexture(new Vector3(-halfLength, -halfLength, -halfLength), uvTL); //20
+            v[k++] = new VertexPositionTexture(new Vector3(halfLength, -halfLength, -halfLength), uvTR); //21
+            v[k++] = new VertexPositionTexture(new Vector3(halfLength, -halfLength, halfLength), uvBR); //22
+            v[k++] = new VertexPositionTexture(new Vector3(-halfLength, -halfLength, halfLength), uvBL); //23
+
+            // Indices with CW winding (visible outside with CullCounterClockwiseFace)
+            short[] iArr =
+            {
+                // front  (+Z)
+                0,2,1,  0,3,2,
+                // back   (-Z)
+                4,6,5,  4,7,6,
+                // right  (+X)
+                8,10,9, 8,11,10,
+                // left   (-X)
+                12,14,13, 12,15,14,
+                // top    (+Y)
+                16,18,17, 16,19,18,
+                // bottom (-Y)
+                20,22,21, 20,23,22
+            };
+
+            var mf = new MeshFilter();
+            mf.SetGeometry(device, v, iArr, PrimitiveType.TriangleList);
+            return mf;
+        }
+
+
         #endregion
 
         #endregion
@@ -357,6 +435,90 @@ namespace GDEngine.Core.Factories
             return mf;
         }
 
+        /// <summary>
+        /// Creates a textured 1x1x1 cube centered at the origin, with per-face normals
+        /// (VertexPositionNormalTexture). UVs are (0,1) BL, (1,1) BR, (1,0) TR, (0,0) TL per face.
+        /// </summary>
+        public static MeshFilter CreateCubeTexturedLit(GraphicsDevice device)
+        {
+            float halfLength = 0.5f;
+
+            // 24 unique verts (4 per face) so each face has its own normal + UVs
+            var v = new VertexPositionNormalTexture[24];
+
+            // UVs (BL, BR, TR, TL)
+            Vector2 uvBL = new Vector2(0f, 1f);
+            Vector2 uvBR = new Vector2(1f, 1f);
+            Vector2 uvTR = new Vector2(1f, 0f);
+            Vector2 uvTL = new Vector2(0f, 0f);
+
+            int k = 0;
+
+            // +Z (front)
+            Vector3 nF = new Vector3(0, 0, 1);
+            v[k++] = new VertexPositionNormalTexture(new Vector3(-halfLength, -halfLength, halfLength), nF, uvBL); // 0
+            v[k++] = new VertexPositionNormalTexture(new Vector3(halfLength, -halfLength, halfLength), nF, uvBR); // 1
+            v[k++] = new VertexPositionNormalTexture(new Vector3(halfLength, halfLength, halfLength), nF, uvTR); // 2
+            v[k++] = new VertexPositionNormalTexture(new Vector3(-halfLength, halfLength, halfLength), nF, uvTL); // 3
+
+            // -Z (back)
+            Vector3 nB = new Vector3(0, 0, -1);
+            v[k++] = new VertexPositionNormalTexture(new Vector3(halfLength, -halfLength, -halfLength), nB, uvBR); // 4
+            v[k++] = new VertexPositionNormalTexture(new Vector3(-halfLength, -halfLength, -halfLength), nB, uvBL); // 5
+            v[k++] = new VertexPositionNormalTexture(new Vector3(-halfLength, halfLength, -halfLength), nB, uvTL); // 6
+            v[k++] = new VertexPositionNormalTexture(new Vector3(halfLength, halfLength, -halfLength), nB, uvTR); // 7
+
+            // +X (right)
+            Vector3 nR = new Vector3(1, 0, 0);
+            v[k++] = new VertexPositionNormalTexture(new Vector3(halfLength, -halfLength, halfLength), nR, uvBL); // 8
+            v[k++] = new VertexPositionNormalTexture(new Vector3(halfLength, -halfLength, -halfLength), nR, uvBR); // 9
+            v[k++] = new VertexPositionNormalTexture(new Vector3(halfLength, halfLength, -halfLength), nR, uvTR); // 10
+            v[k++] = new VertexPositionNormalTexture(new Vector3(halfLength, halfLength, halfLength), nR, uvTL); // 11
+
+            // -X (left)
+            Vector3 nL = new Vector3(-1, 0, 0);
+            v[k++] = new VertexPositionNormalTexture(new Vector3(-halfLength, -halfLength, -halfLength), nL, uvBR); // 12
+            v[k++] = new VertexPositionNormalTexture(new Vector3(-halfLength, -halfLength, halfLength), nL, uvBL); // 13
+            v[k++] = new VertexPositionNormalTexture(new Vector3(-halfLength, halfLength, halfLength), nL, uvTL); // 14
+            v[k++] = new VertexPositionNormalTexture(new Vector3(-halfLength, halfLength, -halfLength), nL, uvTR); // 15
+
+            // +Y (top)
+            Vector3 nT = new Vector3(0, 1, 0);
+            v[k++] = new VertexPositionNormalTexture(new Vector3(-halfLength, halfLength, halfLength), nT, uvBL); // 16
+            v[k++] = new VertexPositionNormalTexture(new Vector3(halfLength, halfLength, halfLength), nT, uvBR); // 17
+            v[k++] = new VertexPositionNormalTexture(new Vector3(halfLength, halfLength, -halfLength), nT, uvTR); // 18
+            v[k++] = new VertexPositionNormalTexture(new Vector3(-halfLength, halfLength, -halfLength), nT, uvTL); // 19
+
+            // -Y (bottom)
+            Vector3 nD = new Vector3(0, -1, 0);
+            v[k++] = new VertexPositionNormalTexture(new Vector3(-halfLength, -halfLength, -halfLength), nD, uvTL); // 20
+            v[k++] = new VertexPositionNormalTexture(new Vector3(halfLength, -halfLength, -halfLength), nD, uvTR); // 21
+            v[k++] = new VertexPositionNormalTexture(new Vector3(halfLength, -halfLength, halfLength), nD, uvBR); // 22
+            v[k++] = new VertexPositionNormalTexture(new Vector3(-halfLength, -halfLength, halfLength), nD, uvBL); // 23
+
+            // Indices with CW winding (visible outside with CullCounterClockwiseFace)
+            short[] iArr =
+            {
+                // front  (+Z)
+                0,2,1,  0,3,2,
+                // back   (-Z)
+                4,6,5,  4,7,6,
+                // right  (+X)
+                8,10,9, 8,11,10,
+                // left   (-X)
+                12,14,13, 12,15,14,
+                // top    (+Y)
+                16,18,17, 16,19,18,
+                // bottom (-Y)
+                20,22,21, 20,23,22
+            };
+
+            var mf = new MeshFilter();
+            mf.SetGeometry(device, v, iArr, PrimitiveType.TriangleList);
+            return mf;
+        }
+
+
         #endregion
 
         #region Solid Colored
@@ -370,10 +532,10 @@ namespace GDEngine.Core.Factories
         /// <param name="meshIndex">Which ModelMesh to use (default 0).</param>
         /// <param name="partIndex">Which ModelMeshPart to use within the mesh (default 0).</param>
         public static MeshFilter CreateFromModel(ContentManager content,
-                                          GraphicsDevice device,
-                                          string assetName,
-                                          int meshIndex = 0,
-                                          int partIndex = 0)
+                                              GraphicsDevice device,
+                                              string assetName,
+                                              int meshIndex = 0,
+                                              int partIndex = 0)
         {
             if (content == null)
                 throw new ArgumentNullException(nameof(content));

@@ -2,7 +2,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 
-namespace GDEngine.Core.Components
+namespace GDEngine.Core.Components.Controllers.General
 {
     /// <summary>
     /// Keyboard mover (default: WASD): W/S forward/back along camera Forward; A/D strafe along camera Right.
@@ -57,7 +57,7 @@ namespace GDEngine.Core.Components
             direction.Normalize();
 
             //add on magnitude here
-            Vector3 delta = direction * (speed * Time.DeltaTime);
+            Vector3 delta = direction * (speed * Time.DeltaTimeSecs);
 
             // we treat delta as a world vector.
             // Because worldDir is built from the camera basis, it still "feels" camera-relative.
@@ -85,10 +85,10 @@ namespace GDEngine.Core.Components
                 dir -= Transform.Forward;
 
             if (kb.IsKeyDown(_right))
-                dir += Transform.Right;
+                dir -= Transform.Right;
 
             if (kb.IsKeyDown(_left))
-                dir -= Transform.Right;
+                dir += Transform.Right;
 
             // TODO - Add QE left/drop
 

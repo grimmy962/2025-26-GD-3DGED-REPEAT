@@ -66,7 +66,7 @@ namespace GDEngine.Core.Entities
         /// <summary>
         /// Adds a system to the scene; routes to the lifecycle bucket and sorts by Order within that bucket.
         /// </summary>
-        public void AddSystem(SystemBase system)
+        public void Add(SystemBase system)
         {
             if (system == null)
                 throw new ArgumentNullException(nameof(system));
@@ -92,7 +92,7 @@ namespace GDEngine.Core.Entities
         /// <summary>
         /// Adds an existing <see cref="GameObject"/> to the scene and runs Awake() on its components.
         /// </summary>
-        public GameObject AddGameObject(GameObject gameObject)
+        public GameObject Add(GameObject gameObject)
         {
             if (gameObject == null)
                 throw new ArgumentNullException(nameof(gameObject));

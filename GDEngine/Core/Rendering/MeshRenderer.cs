@@ -33,10 +33,10 @@ namespace GDEngine.Core.Rendering
         {
             //exit if the Transform isnt set
             if (Transform == null)
-                return;
+                throw new ArgumentNullException(nameof(Transform));
 
             if (_meshFilter == null)
-                return;
+                throw new ArgumentNullException(nameof(_meshFilter));
 
             // make sure we have an effect (material)
             EnsureEffect(device);
@@ -88,8 +88,8 @@ namespace GDEngine.Core.Rendering
                 TextureEnabled = true
             };
 
-        //  _effect.PreferPerPixelLighting = true;
-        //    _effect.EnableDefaultLighting();
+            _effect.PreferPerPixelLighting = true;
+            _effect.EnableDefaultLighting();
         }
         #endregion
 

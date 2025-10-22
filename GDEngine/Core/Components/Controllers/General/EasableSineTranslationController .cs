@@ -75,7 +75,7 @@ namespace GDEngine.Core.Components.Controllers.General
         protected override void Update(float deltaTime)
         {
             // Build the raw running angle using unscaled realtime 
-            float angleRaw = (float)Time.RealtimeSinceStartup * _angularSpeed + _phaseRadians;
+            float angleRaw = (float)Time.RealtimeSinceStartupSecs * _angularSpeed + _phaseRadians;
 
             // Ease the time within the cycle before applying sine
             float angle = ComputeEasedAngle(angleRaw);

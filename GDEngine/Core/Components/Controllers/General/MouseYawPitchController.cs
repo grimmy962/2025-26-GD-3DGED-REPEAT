@@ -3,7 +3,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 using System.Collections.Generic;
 
-namespace GDEngine.Core.Components
+namespace GDEngine.Core.Components.Controllers.General
 {
     public class MouseYawPitchController : Component
     {
@@ -28,11 +28,11 @@ namespace GDEngine.Core.Components
             float dX = _newMouseState.X - _oldMouseState.X;
 
             dX *= _mouseSensitivity;
-            dX *= Time.DeltaTime;
+            dX *= Time.DeltaTimeSecs;
 
             float dY = _newMouseState.Y - _oldMouseState.Y;
             dY *= _mouseSensitivity * 0.5f;
-            dY *= Time.DeltaTime;
+            dY *= Time.DeltaTimeSecs;
 
             //apply to rotation around Up
             var yawQuaternion = Quaternion.CreateFromAxisAngle(Vector3.Up, dX);

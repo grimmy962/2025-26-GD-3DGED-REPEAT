@@ -37,7 +37,7 @@ namespace GDEngine.Core.Components.Controllers.General
         protected override void Update(float deltaTime)
         {
             // MathF.Sin returns [-1, +1], giving a centered oscillation about the origin.
-            float phase = (float)(Time.RealtimeSinceStartup * _angularSpeed);
+            float phase = (float)(Time.RealtimeSinceStartupSecs * _angularSpeed);
             float distance = MathF.Sin(phase); // [1, +1]
 
             // Offset from the cached start position along the normalized direction, scaled by amplitude.
