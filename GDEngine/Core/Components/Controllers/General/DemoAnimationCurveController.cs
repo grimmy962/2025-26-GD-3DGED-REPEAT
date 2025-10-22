@@ -1,5 +1,4 @@
 ﻿using GDEngine.Core.Timing;
-using GDLibrary.Core.Timing;
 using Microsoft.Xna.Framework;
 
 namespace GDEngine.Core.Components
@@ -30,7 +29,7 @@ namespace GDEngine.Core.Components
 
             _totalElapsedTimeSecs += Time.UnscaledDeltaTimeSecs;
             
-           var delta = _curve.Evaluate(1000*_totalElapsedTimeSecs);
+           var delta = _curve.Evaluate(_totalElapsedTimeSecs, 2);
            Transform?.TranslateTo(_originalLocalPosition + delta * _direction);
         }
 

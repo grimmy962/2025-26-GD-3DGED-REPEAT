@@ -6,12 +6,9 @@ using GDEngine.Core.Factories;
 using GDEngine.Core.Rendering;
 using GDEngine.Core.Services;
 using GDEngine.Core.Timing;
-using GDLibrary.Core.Timing;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using SharpDX.Direct2D1.Effects;
-using System;
 using System.Windows.Forms;
 
 namespace GDGame
@@ -73,10 +70,10 @@ namespace GDGame
         {
             _animationCurve = new AnimationCurve(CurveLoopType.Cycle);
             _animationCurve.AddKey(0f, 0);
-            _animationCurve.AddKey(2f, 1000); //up
-            _animationCurve.AddKey(0f, 2000); //down
-            _animationCurve.AddKey(8f, 3000); //up further
-            _animationCurve.AddKey(0f, 4000); //down
+            _animationCurve.AddKey(2f, 1); //up
+            _animationCurve.AddKey(0f, 2); //down
+            _animationCurve.AddKey(8f, 3); //up further
+            _animationCurve.AddKey(0f, 4); //down
         }
 
         private void InitializeGraphics(int width, int height)
