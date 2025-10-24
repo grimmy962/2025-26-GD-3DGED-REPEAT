@@ -38,22 +38,35 @@ This document contains a step-by-step development plan of MonoGame content cover
 - [x] Add `MeshRenderer` with `BasicEffect` (`VertexColorEnabled=true`, depth on in renderer).
 
 ## Week 6
-- [x] Added LayerMask in preparation for 1st stage of camer culling
+- [x] Add LayerMask in preparation for 1st stage of camer culling
 - [x] Add FBX loading in MeshFilterFactory
 - [x] Add some assets for grass and skybox
 - [ ] Add support for deep and shallow cloning on GameObject components
-- [x] Added Material and RenderState classes to support multiple effect types
-- [x] Added ContentDictionary to store asset references
-- [ ] Add keyboard and mouse controllers for camera
+- [x] Add Material and RenderState classes to support multiple effect types
+- [x] Add ContentDictionary to store asset references
+- [x] Add keyboard and mouse controllers for camera
+- [x] Add AnimationCurve classes (1D, 2D, 3D) to support smooth movement along a curve
+- [x] Add DemoAnimationCurveController to move a gameobject along a user-defined curve
+- [x] Add lit and unlit textured cubes in MeshFilterFactory
+- [ ] Add perf HUD with FPS, verts, primitives stats
+- [ ] Add dictionary in MeshFilterFactory to reduce VB and IB usage on duplicate calls to a method
 - [ ] Add `RenderingSystem` that gathers `(Transform, MeshFilter, MeshRenderer)`.
 - [ ] Add `RenderLayer` sorting in `RenderingSystem`.
+- [ ] Add **material abstraction**: wrap `Effect` into a `Material` with parameters; pipeline for future shaders.
+
+## Reading Week
 - [ ] Define `InputState` (Move, JumpPressed, Action1, Action2).
 - [ ] Implement `IInputDevice` + `KeyboardInput`, `GamepadInput`.
 - [ ] Implement `IInputReceiver` (e.g., `PlayerController` component).
 - [ ] Add `InputSystem` that routes device → receiver; expose `SetDevice`, `SetReceiver`.
+- [ ] Add physics engine (physics and CDCR)
+
+## Week 7
 - [ ] Add **frustum culling** with `BoundingFrustum` against `MeshFilter.Bounds`.
-- [ ] Add **material abstraction**: wrap `Effect` into a `Material` with parameters; pipeline for future shaders.
-- [ ] Add **prefab/serialization**: simple JSON for spawning `GameObject` graphs.
 - [ ] Add **event bus**: lightweight pub/sub for decoupled messages between systems.
-- [ ] Add **audio hooks**: `AudioSystem` placeholder; service access via `EngineContext`.
+- [ ] Add **audio hooks**: `AudioSystem` to support 2D and 3D sound; service access via event bus.
+
+## Week 8
+- [ ] Add UI support for HUD and menu
+- [ ] Add **prefab/serialization**: simple JSON/XML for spawning `GameObject`.
 

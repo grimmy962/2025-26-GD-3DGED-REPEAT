@@ -3,9 +3,8 @@
 namespace GDEngine.Core.Timing
 {
     /// <remarks>
-    /// Scalar cubic-Hermite animation curve over time (SECONDS).
-    /// Evaluate() honors the CurveLoopType you pass to the constructor (Clamp/Cycle/Oscillate/etc.).
-    /// Lazy tangent recomputation on mutation. Sampling helpers and simple presets.
+    /// Scalar animation curve (SECONDS).
+    /// Evaluate() honors the chosen CurveLoopType.    /// Lazy tangent recomputation on mutation. Sampling helpers and simple presets.
     /// </remarks>
     /// <example>
     /// <code>
