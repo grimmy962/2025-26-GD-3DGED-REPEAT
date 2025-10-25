@@ -1,7 +1,7 @@
 ﻿using GDEngine.Core.Timing;
 using Microsoft.Xna.Framework;
 
-namespace GDEngine.Core.Components.Controllers.General
+namespace GDEngine.Core.Components.Controllers.General.Transform
 {
     public class SineScaleController : Component
     {

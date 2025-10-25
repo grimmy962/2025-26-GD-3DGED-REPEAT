@@ -1,7 +1,7 @@
 ﻿using GDEngine.Core.Timing;
 using Microsoft.Xna.Framework;
 
-namespace GDEngine.Core.Components
+namespace GDEngine.Core.Components.Controllers.General.Demo
 {
     public class DemoAnimationCurveController : Component
     {

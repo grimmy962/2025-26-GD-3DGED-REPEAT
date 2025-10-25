@@ -1,7 +1,7 @@
 ﻿using GDEngine.Core.Entities;
 using Microsoft.Xna.Framework;
 
-namespace GDEngine.Core.Components.Controllers.General
+namespace GDEngine.Core.Components.Controllers.General.Transform
 {
     /// <summary>
     /// Rotates the owning <see cref="GameObject"/> around a configurable local-space axis
@@ -44,7 +44,7 @@ namespace GDEngine.Core.Components.Controllers.General
             Quaternion delta = Quaternion.CreateFromAxisAngle(_rotationAxisNormalized, angle);
 
             //Apply rotation via delta quaternion
-            Transform?.Rotate(delta);
+            Transform?.RotateBy(delta);
         }
 
         /// <summary>

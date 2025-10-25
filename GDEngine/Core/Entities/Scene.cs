@@ -1,7 +1,9 @@
 ﻿using GDEngine.Core.Components;
 using GDEngine.Core.Enums;
+using GDEngine.Core.Rendering;
 using GDEngine.Core.Services;
 using GDEngine.Core.Systems;
+using SharpDX.MediaFoundation;
 
 namespace GDEngine.Core.Entities
 {
@@ -29,6 +31,11 @@ namespace GDEngine.Core.Entities
         // Systems bucketed by FrameLifecycle index (we know there are exactly 5 lifecycles)
         private readonly List<SystemBase>[] _systemsByLifecycle;
 
+
+        private List<MeshRenderer> _renderers = new List<MeshRenderer>(256);
+        public List<MeshRenderer> Renderers { get => _renderers; set => _renderers = value; }
+
+
         // Engine services container
         private readonly EngineContext _context;
         #endregion
@@ -43,7 +50,8 @@ namespace GDEngine.Core.Entities
 
         public IReadOnlyList<GameObject> GameObjects => _gameObjects;
         public IReadOnlyList<SystemBase> Systems => _systemsAll;
-        #endregion
+
+         #endregion
 
         #region Constructors
         /// <summary>
@@ -101,6 +109,13 @@ namespace GDEngine.Core.Entities
                 return gameObject;
 
             _gameObjects.Add(gameObject);
+
+            //TODO - add for remove()
+            //get all renderers for this game objects
+            var renderers = gameObject.GetComponents<MeshRenderer>();
+            //add all the renderers from this game object
+            if (renderers != null && renderers.Count > 0)
+                _renderers.AddRange(renderers);
 
             // Run Awake on all pre-existing components
             var comps = gameObject.Components;
@@ -183,7 +198,7 @@ namespace GDEngine.Core.Entities
         /// <summary>
         /// Dispatches Render and PostRender lifecycles in order.
         /// </summary>
-        public void Draw()
+        public void Draw(float deltaTime)
         {
             var renderSystems = _systemsByLifecycle[(int)FrameLifecycle.Render];
             for (int i = 0; i < renderSystems.Count; i++)
@@ -191,7 +206,7 @@ namespace GDEngine.Core.Entities
                 var system = renderSystems[i];
                 if (!system.Enabled)
                     continue;
-                system.Draw();
+                system.Draw(deltaTime);
             }
 
             var postRenderSystems = _systemsByLifecycle[(int)FrameLifecycle.PostRender];
@@ -200,7 +215,7 @@ namespace GDEngine.Core.Entities
                 var system = postRenderSystems[i];
                 if (!system.Enabled)
                     continue;
-                system.Draw();
+                system.Draw(deltaTime);
             }
         }
         #endregion

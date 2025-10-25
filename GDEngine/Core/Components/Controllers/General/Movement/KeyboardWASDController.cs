@@ -2,7 +2,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 
-namespace GDEngine.Core.Components.Controllers.General
+namespace GDEngine.Core.Components.Controllers.General.Movement
 {
     /// <summary>
     /// Keyboard mover (default: WASD): W/S forward/back along camera Forward; A/D strafe along camera Right.

@@ -265,7 +265,7 @@ namespace GDEngine.Core.Components
         /// </summary>
         /// <param name="delta">Rotation delta quaternion.</param>
         /// <param name="worldSpace">If true, apply delta in world space; otherwise local space.</param>
-        public void Rotate(in Quaternion delta, bool worldSpace = false)
+        public void RotateBy(in Quaternion delta, bool worldSpace = false)
         {
             Quaternion localDelta = delta;
 
@@ -287,9 +287,9 @@ namespace GDEngine.Core.Components
         /// </summary>
         /// <param name="eulerRadians">XYZ Euler angles in radians.</param>
         /// <param name="worldSpace">If true, apply in world space; otherwise local space.</param>
-        public void RotateEuler(in Vector3 eulerRadians, bool worldSpace = false)
+        public void RotateEulerBy(in Vector3 eulerRadians, bool worldSpace = false)
         {
-            Rotate(Quaternion.CreateFromYawPitchRoll(eulerRadians.Y, eulerRadians.X, eulerRadians.Z), 
+            RotateBy(Quaternion.CreateFromYawPitchRoll(eulerRadians.Y, eulerRadians.X, eulerRadians.Z), 
                 worldSpace);
         }
 

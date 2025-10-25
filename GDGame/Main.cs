@@ -1,10 +1,13 @@
 ﻿using GDEngine.Core;
 using GDEngine.Core.Components;
-using GDEngine.Core.Components.Controllers.General;
+using GDEngine.Core.Components.Controllers.General.Movement;
+using GDEngine.Core.Components.Controllers.General.Transform;
 using GDEngine.Core.Entities;
+using GDEngine.Core.Enums;
 using GDEngine.Core.Factories;
 using GDEngine.Core.Rendering;
 using GDEngine.Core.Services;
+using GDEngine.Core.Systems;
 using GDEngine.Core.Timing;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -27,6 +30,8 @@ namespace GDGame
         private MeshRenderer _skyBoxBackRenderer, _skyBoxLeftRenderer, _skyBoxRightRenderer, _skyBoxFrontRenderer, _skyBoxSkyRenderer;
         private AnimationCurve _animationCurve;
         private MeshRenderer _testObjRenderer;
+        private AnimationCurve3D _animationPositionCurve;
+        private AnimationCurve3D _animationRotationCurve;
 
         public Main()
         {
@@ -51,6 +56,8 @@ namespace GDGame
 
             InitializeScene();
 
+            InitializeSystems();
+
             InitializeCameraCurves();
 
             InitializeCamera(new Vector3(0, 5, 25));
@@ -66,14 +73,29 @@ namespace GDGame
             base.Initialize();
         }
 
-        private void InitializeCameraCurves()
+            private void InitializeCameraCurves()
         {
+            //1D animation curve demo (e.g. scale, audio volume, lerp factor for color, etc)
             _animationCurve = new AnimationCurve(CurveLoopType.Cycle);
-            _animationCurve.AddKey(0f, 0);
-            _animationCurve.AddKey(2f, 1); //up
-            _animationCurve.AddKey(0f, 2); //down
-            _animationCurve.AddKey(8f, 3); //up further
-            _animationCurve.AddKey(0f, 4); //down
+            _animationCurve.AddKey(0f, 10);
+            _animationCurve.AddKey(2f, 11); //up
+            _animationCurve.AddKey(0f, 12); //down
+            _animationCurve.AddKey(8f, 13); //up further
+            _animationCurve.AddKey(0f, 13.5f); //down
+
+            //3D animation curve demo
+            _animationPositionCurve = new AnimationCurve3D(CurveLoopType.Oscillate);
+            _animationPositionCurve.AddKey(new Vector3(0, 4, 0), 0);
+            _animationPositionCurve.AddKey(new Vector3(5, 8, 2), 1);
+            _animationPositionCurve.AddKey(new Vector3(10, 12, 4), 2);
+            _animationPositionCurve.AddKey(new Vector3(0, 4, 0), 3);
+
+            // Absolute yaw/pitch/roll angles (radians) over time
+            _animationRotationCurve = new AnimationCurve3D(CurveLoopType.Oscillate);
+            _animationRotationCurve.AddKey(new Vector3(0, 0, 0), 0);              // yaw, pitch, roll
+            _animationRotationCurve.AddKey(new Vector3(0, MathHelper.PiOver2, 0), 1);
+            _animationRotationCurve.AddKey(new Vector3(0, MathHelper.Pi, 0), 2);
+            _animationRotationCurve.AddKey(new Vector3(0, 0, 0), 3);
         }
 
         private void InitializeGraphics(int width, int height)
@@ -132,6 +154,11 @@ namespace GDGame
             _scene = new Scene(EngineContext.Instance, "outdoors - level 1");
         }
 
+        private void InitializeSystems()
+        {
+            _scene.Add(new RenderingSystem(FrameLifecycle.Render));
+        }
+
         private void InitializeCamera(Vector3 position)
         {
             //camera GO
@@ -139,7 +166,7 @@ namespace GDGame
             //set position 
             _cameraGO.Transform.TranslateTo(position);
             //turn around as Forward is by default (0,0,1)
-            _cameraGO.Transform.RotateEuler(
+            _cameraGO.Transform.RotateEulerBy(
                 new Vector3(0, MathHelper.ToRadians(180), 0), true);
             //add camera component to the GO
             _camera = _cameraGO.AddComponent<Camera>();
@@ -174,7 +201,7 @@ namespace GDGame
             //left wall
             skyBoxQuad = new GameObject("left");
             skyBoxQuad.Transform.ScaleTo(new Vector3(scale, scale, 1));
-            skyBoxQuad.Transform.RotateEuler(new Vector3(
+            skyBoxQuad.Transform.RotateEulerBy(new Vector3(
                 0, MathHelper.ToRadians(90), 0), true);
             skyBoxQuad.Transform.TranslateTo(new Vector3(-scale / 2, 0, 0));
             meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
@@ -186,7 +213,7 @@ namespace GDGame
             //right wall
             skyBoxQuad = new GameObject("right");
             skyBoxQuad.Transform.ScaleTo(new Vector3(scale, scale, 1));
-            skyBoxQuad.Transform.RotateEuler(new Vector3(
+            skyBoxQuad.Transform.RotateEulerBy(new Vector3(
                 0, MathHelper.ToRadians(-90), 0), true);
             skyBoxQuad.Transform.TranslateTo(new Vector3(scale / 2, 0, 0));
             meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
@@ -198,7 +225,7 @@ namespace GDGame
             //right wall
             skyBoxQuad = new GameObject("front");
             skyBoxQuad.Transform.ScaleTo(new Vector3(scale, scale, 1));
-            skyBoxQuad.Transform.RotateEuler(new Vector3(
+            skyBoxQuad.Transform.RotateEulerBy(new Vector3(
                 0, MathHelper.ToRadians(180), 0), true);
             skyBoxQuad.Transform.TranslateTo(new Vector3(0, 0, scale / 2));
             meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
@@ -210,7 +237,7 @@ namespace GDGame
             //sky
             skyBoxQuad = new GameObject("sky");
             skyBoxQuad.Transform.ScaleTo(new Vector3(scale, scale, 1));
-            skyBoxQuad.Transform.RotateEuler(new Vector3(
+            skyBoxQuad.Transform.RotateEulerBy(new Vector3(
                 MathHelper.ToRadians(90), 
                 0,
                 MathHelper.ToRadians(90)), true);
@@ -220,8 +247,6 @@ namespace GDGame
             _skyBoxSkyRenderer = skyBoxQuad.AddComponent<MeshRenderer>();
             _skyBoxSkyRenderer._texture = _textureDictionary.Get("skybox_sky");
             _scene.Add(skyBoxQuad);
-
-
         }
 
         private void InitializeGround(int scale = 500)
@@ -229,7 +254,7 @@ namespace GDGame
             _grassQuadGO = new GameObject("ground");
             var meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
             _grassQuadGO.Transform.ScaleBy(new Vector3(scale, scale, 1));
-            _grassQuadGO.Transform.RotateEuler(new Vector3(
+            _grassQuadGO.Transform.RotateEulerBy(new Vector3(
                 MathHelper.ToRadians(-90), 0, 0), true);
 
             _grassQuadGO.AddComponent(meshFilter);
@@ -257,9 +282,14 @@ namespace GDGame
             _scene.Add(testCrateGO);
 
             //add our new CurveController
-            var curveController = new DemoAnimationCurveController(_animationCurve);
-            curveController.Direction = new Vector3(0, 1, 0); //try changing this
-            testCrateGO.AddComponent(curveController);
+            //var curveController = new DemoAnimationCurveController(_animationCurve);
+            //curveController.Direction = new Vector3(0, 1, 0); //try changing this
+            //testCrateGO.AddComponent(curveController);
+
+            var posRotController = new PositionRotationController();
+            posRotController.RotationCurve = _animationRotationCurve;
+            posRotController.PositionCurve = _animationPositionCurve;
+            testCrateGO.AddComponent(posRotController);
 
         }
         protected override void Update(GameTime gameTime)
@@ -267,31 +297,28 @@ namespace GDGame
             //call time update
             Time.Update(gameTime);
 
-            // stop (0), run normall (1), slow (<1) and speed time(>1)
-            //Time.TimeScale = 4f;
-
             //update Scene
             _scene.Update(Time.DeltaTimeSecs);
 
-
-            System.Diagnostics.Debug.WriteLine($"Campos:{_cameraGO.Transform.Position}");
-            
             base.Update(gameTime);
         }
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
+            //just as called update, we now have to call draw to call the draw in the renderingsystem
+            _scene.Draw(Time.DeltaTimeSecs);
+
             //notice that we have to manually call render on each primitive - we really need a RenderSystem!
-            _grassQuadRenderer.Render(_graphics.GraphicsDevice, _camera);
+            //_grassQuadRenderer.Render(_graphics.GraphicsDevice, _camera);
 
-            _skyBoxBackRenderer.Render(_graphics.GraphicsDevice, _camera);
-            _skyBoxLeftRenderer.Render(_graphics.GraphicsDevice, _camera);
-            _skyBoxRightRenderer.Render(_graphics.GraphicsDevice, _camera);
-            _skyBoxFrontRenderer.Render(_graphics.GraphicsDevice, _camera);
-            _skyBoxSkyRenderer.Render(_graphics.GraphicsDevice, _camera);
+            //_skyBoxBackRenderer.Render(_graphics.GraphicsDevice, _camera);
+            //_skyBoxLeftRenderer.Render(_graphics.GraphicsDevice, _camera);
+            //_skyBoxRightRenderer.Render(_graphics.GraphicsDevice, _camera);
+            //_skyBoxFrontRenderer.Render(_graphics.GraphicsDevice, _camera);
+            //_skyBoxSkyRenderer.Render(_graphics.GraphicsDevice, _camera);
 
-            _testObjRenderer.Render(_graphics.GraphicsDevice, _camera);
+            //_testObjRenderer.Render(_graphics.GraphicsDevice, _camera);
 
             base.Draw(gameTime);
         }

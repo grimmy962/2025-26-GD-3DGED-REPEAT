@@ -1,9 +1,8 @@
 ﻿using GDEngine.Core.Timing;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
-using System.Collections.Generic;
 
-namespace GDEngine.Core.Components.Controllers.General
+namespace GDEngine.Core.Components.Controllers.General.Movement
 {
     public class MouseYawPitchController : Component
     {
@@ -36,10 +35,10 @@ namespace GDEngine.Core.Components.Controllers.General
 
             //apply to rotation around Up
             var yawQuaternion = Quaternion.CreateFromAxisAngle(Vector3.Up, dX);
-            Transform.Rotate(yawQuaternion, true);
+            Transform.RotateBy(yawQuaternion, true);
 
             var pitchRotation = Quaternion.CreateFromAxisAngle(Transform.Right, -dY);
-            Transform.Rotate(pitchRotation, true);
+            Transform.RotateBy(pitchRotation, true);
 
             //store old state for delta calculation
             _oldMouseState = _newMouseState;

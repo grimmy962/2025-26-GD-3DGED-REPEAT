@@ -13,6 +13,11 @@ namespace GDEngine.Core.Factories
     /// <see cref="Entities.GameObject"/>
     public class MeshFilterFactory
     {
+
+        //stores a single instance of meshfilter if class on a method
+        //with O(1) complexity
+        private static Dictionary<string, MeshFilter> registry = new();
+
         #region Unlit
 
         #region Wireframe
@@ -415,6 +420,10 @@ namespace GDEngine.Core.Factories
         /// </summary>
         public static MeshFilter CreateQuadTexturedLit(GraphicsDevice device)
         {
+            //TODO - can we get the name of the current method?
+            if (registry.ContainsKey("CreateQuadTexturedLit"))
+                return registry["CreateQuadTexturedLit"];
+
             var hl = 0.5f;
             var n = new Vector3(0f, 0f, 1f);
 
@@ -432,6 +441,9 @@ namespace GDEngine.Core.Factories
 
             var mf = new MeshFilter();
             mf.SetGeometry(device, verts, indices, PrimitiveType.TriangleList);
+
+            registry.Add("CreateQuadTexturedLit", mf);
+
             return mf;
         }
 

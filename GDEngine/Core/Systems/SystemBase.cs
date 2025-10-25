@@ -99,7 +99,7 @@ namespace GDEngine.Core.Systems
         /// Per-frame draw entry invoked by <see cref="Scene.Draw()"/>.
         /// Override to implement render work for Render/PostRender lifecycles.
         /// </summary>
-        public virtual void Draw() { }
+        public virtual void Draw(float deltaTime) { }
 
         /// <summary>
         /// Hook called after the system is attached to a scene.
