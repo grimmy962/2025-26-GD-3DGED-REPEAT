@@ -424,15 +424,15 @@ namespace GDEngine.Core.Factories
             if (registry.ContainsKey("CreateQuadTexturedLit"))
                 return registry["CreateQuadTexturedLit"];
 
-            var hl = 0.5f;
-            var n = new Vector3(0f, 0f, 1f);
+            var halfLength = 0.5f;
+            var normal = new Vector3(0f, 0f, 1f);
 
             var verts = new VertexPositionNormalTexture[4];
             // 0-BL, 1-BR, 2-TL, 3-TR (same order as colored/textured)
-            verts[0] = new VertexPositionNormalTexture(new Vector3(-hl, -hl, 0f), n, new Vector2(0f, 1f)); // BL
-            verts[1] = new VertexPositionNormalTexture(new Vector3(hl, -hl, 0f), n, new Vector2(1f, 1f)); // BR
-            verts[2] = new VertexPositionNormalTexture(new Vector3(-hl, hl, 0f), n, new Vector2(0f, 0f)); // TL
-            verts[3] = new VertexPositionNormalTexture(new Vector3(hl, hl, 0f), n, new Vector2(1f, 0f)); // TR
+            verts[0] = new VertexPositionNormalTexture(new Vector3(-halfLength, -halfLength, 0f), normal, new Vector2(0f, 1f)); // BL
+            verts[1] = new VertexPositionNormalTexture(new Vector3(halfLength, -halfLength, 0f), normal, new Vector2(1f, 1f)); // BR
+            verts[2] = new VertexPositionNormalTexture(new Vector3(-halfLength, halfLength, 0f), normal, new Vector2(0f, 0f)); // TL
+            verts[3] = new VertexPositionNormalTexture(new Vector3(halfLength, halfLength, 0f), normal, new Vector2(1f, 0f)); // TR
 
             var indices = new short[] {
                             2, 1, 0,

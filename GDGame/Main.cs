@@ -37,6 +37,7 @@ namespace GDGame
         private AnimationCurve3D _animationRotationCurve;
         private Material _matBasicUnlit;
         private Material _matBasicLit;
+        private Material _matAlphaCutout;
 
         public Main()
         {
@@ -74,6 +75,8 @@ namespace GDGame
             InitializeGround(scale);
 
             InitializeTestObject();
+
+            InitializeFoliage(new Vector3(0, 10 /*note Y=heightscale/2*/, 0), 12, 20); 
 
             base.Initialize();
         }
@@ -144,34 +147,60 @@ namespace GDGame
             _textureDictionary.Add("skybox_right", "assets/textures/skybox/right");
             _textureDictionary.Add("skybox_sky", "assets/textures/skybox/sky");
 
-            //tree
+            //crate
             _textureDictionary.Add("crate1", "assets/textures/props/crates/crate1");
+
+            //tree
+            _textureDictionary.Add("tree4", "assets/textures/foliage/trees/tree4");
+
         }
 
         private void InitializeEffects()
         {
-            // Unlit textured BasicEffect (students don’t need to know internals)
-            var beUnlit = new BasicEffect(_graphics.GraphicsDevice)
+            #region Unlit Textured BasicEffect 
+            var unlitBasicEffect = new BasicEffect(_graphics.GraphicsDevice)
             {
                 TextureEnabled = true,
                 LightingEnabled = false,
                 VertexColorEnabled = false
             };
-            _matBasicUnlit = new Material(beUnlit);
+            _matBasicUnlit = new Material(unlitBasicEffect);
             _matBasicUnlit.StateBlock = RenderStates.Opaque3D();      // depth on, cull CCW
             _matBasicUnlit.SamplerState = SamplerState.LinearClamp;   // helps avoid texture seams on sky
 
-            // (Optional) Lit textured BasicEffect (if you later add lights)
-            var beLit = new BasicEffect(_graphics.GraphicsDevice)
+            #endregion
+
+            #region Lit Textured BasicEffect 
+            var litBasicEffect = new BasicEffect(_graphics.GraphicsDevice)
             {
                 TextureEnabled = true,
                 LightingEnabled = true,
                 PreferPerPixelLighting = true,
                 VertexColorEnabled = false
             };
-            beLit.EnableDefaultLighting();
-            _matBasicLit = new Material(beLit);
+            litBasicEffect.EnableDefaultLighting();
+            _matBasicLit = new Material(litBasicEffect);
             _matBasicLit.StateBlock = RenderStates.Opaque3D();
+            #endregion
+
+            #region Alpha-test for foliage/billboards
+            var alphaFx = new AlphaTestEffect(GraphicsDevice)
+            {
+                VertexColorEnabled = false
+            };
+            _matAlphaCutout = new Material(alphaFx);
+
+            // Depth test/write on; no blending (cutout happens in the effect). 
+            // Make it two-sided so the quad is visible from both sides.
+            _matAlphaCutout.StateBlock = RenderStates.Cutout3D()
+                .WithRaster(new RasterizerState { CullMode = CullMode.None });
+
+            // Clamp avoids edge bleeding from transparent borders.
+            // (Use LinearWrap if your foliage textures tile.)
+            _matAlphaCutout.SamplerState = SamplerState.LinearClamp;
+
+            #endregion
+
         }
 
 
@@ -343,6 +372,33 @@ namespace GDGame
             testCrateGO.AddComponent(posRotController);
 
             testCrateGO.AddComponent(new DemoInputReceiverComponent());
+        }
+
+        private void InitializeFoliage(Vector3 position, float width, float height)
+        {
+            var go = new GameObject("tree");
+
+            // A unit quad facing +Z (your factory already supplies lit quad with UVs)
+            var mf = MeshFilterFactory.CreateQuadTexturedLit(GraphicsDevice);
+            go.AddComponent(mf);
+
+            var treeRenderer = go.AddComponent<MeshRenderer>();
+            treeRenderer.Material = _matAlphaCutout;
+
+            // Per-object properties via the overrides block
+            treeRenderer.Overrides.MainTexture = _textureDictionary.Get("tree4");
+
+            // AlphaTest: pixels with alpha below ReferenceAlpha are discarded (0–255).
+            // 128–160 is a good starting range for foliage; tweak to taste.
+            treeRenderer.Overrides.SetInt("ReferenceAlpha", 128);
+            treeRenderer.Overrides.Alpha = 1f; // overall alpha multiplier (kept at 1 for cutout)
+
+            // Scale the quad so it looks like a tree (aspect from your PNG)
+            go.Transform.ScaleTo(new Vector3(width, height, 1f));
+
+            go.Transform.TranslateTo(position);
+
+            _scene.Add(go);
         }
 
         protected override void Update(GameTime gameTime)
