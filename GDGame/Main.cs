@@ -35,6 +35,8 @@ namespace GDGame
         private MeshRenderer _testObjRenderer;
         private AnimationCurve3D _animationPositionCurve;
         private AnimationCurve3D _animationRotationCurve;
+        private Material _matBasicUnlit;
+        private Material _matBasicLit;
 
         public Main()
         {
@@ -148,8 +150,30 @@ namespace GDGame
 
         private void InitializeEffects()
         {
-            //TODO
+            // Unlit textured BasicEffect (students don’t need to know internals)
+            var beUnlit = new BasicEffect(_graphics.GraphicsDevice)
+            {
+                TextureEnabled = true,
+                LightingEnabled = false,
+                VertexColorEnabled = false
+            };
+            _matBasicUnlit = new Material(beUnlit);
+            _matBasicUnlit.StateBlock = RenderStates.Opaque3D();      // depth on, cull CCW
+            _matBasicUnlit.SamplerState = SamplerState.LinearClamp;   // helps avoid texture seams on sky
+
+            // (Optional) Lit textured BasicEffect (if you later add lights)
+            var beLit = new BasicEffect(_graphics.GraphicsDevice)
+            {
+                TextureEnabled = true,
+                LightingEnabled = true,
+                PreferPerPixelLighting = true,
+                VertexColorEnabled = false
+            };
+            beLit.EnableDefaultLighting();
+            _matBasicLit = new Material(beLit);
+            _matBasicLit.StateBlock = RenderStates.Opaque3D();
         }
+
 
         private void InitializeScene()
         {
@@ -215,117 +239,112 @@ namespace GDGame
 
         private void InitializeSkyBox(int scale = 500)
         {
-            //back wall
             GameObject skyBoxQuad = null;
             MeshFilter meshFilter = null;
 
+            // back
             skyBoxQuad = new GameObject("back");
             skyBoxQuad.Transform.ScaleTo(new Vector3(scale, scale, 1));
             skyBoxQuad.Transform.TranslateTo(new Vector3(0, 0, -scale / 2));
             meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
-            skyBoxQuad.AddComponent(meshFilter); //setting VB and IB data
+            skyBoxQuad.AddComponent(meshFilter);
             _skyBoxBackRenderer = skyBoxQuad.AddComponent<MeshRenderer>();
-            _skyBoxBackRenderer._texture = _textureDictionary.Get("skybox_back");
+            _skyBoxBackRenderer.Material = _matBasicUnlit;
+            _skyBoxBackRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_back");
             _scene.Add(skyBoxQuad);
 
-            //left wall
+            // left
             skyBoxQuad = new GameObject("left");
             skyBoxQuad.Transform.ScaleTo(new Vector3(scale, scale, 1));
-            skyBoxQuad.Transform.RotateEulerBy(new Vector3(
-                0, MathHelper.ToRadians(90), 0), true);
+            skyBoxQuad.Transform.RotateEulerBy(new Vector3(0, MathHelper.ToRadians(90), 0), true);
             skyBoxQuad.Transform.TranslateTo(new Vector3(-scale / 2, 0, 0));
             meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
-            skyBoxQuad.AddComponent(meshFilter); //setting VB and IB data
+            skyBoxQuad.AddComponent(meshFilter);
             _skyBoxLeftRenderer = skyBoxQuad.AddComponent<MeshRenderer>();
-            _skyBoxLeftRenderer._texture = _textureDictionary.Get("skybox_left");
+            _skyBoxLeftRenderer.Material = _matBasicUnlit;
+            _skyBoxLeftRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_left");
             _scene.Add(skyBoxQuad);
 
-            //right wall
+            // right
             skyBoxQuad = new GameObject("right");
             skyBoxQuad.Transform.ScaleTo(new Vector3(scale, scale, 1));
-            skyBoxQuad.Transform.RotateEulerBy(new Vector3(
-                0, MathHelper.ToRadians(-90), 0), true);
+            skyBoxQuad.Transform.RotateEulerBy(new Vector3(0, MathHelper.ToRadians(-90), 0), true);
             skyBoxQuad.Transform.TranslateTo(new Vector3(scale / 2, 0, 0));
             meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
-            skyBoxQuad.AddComponent(meshFilter); //setting VB and IB data
+            skyBoxQuad.AddComponent(meshFilter);
             _skyBoxRightRenderer = skyBoxQuad.AddComponent<MeshRenderer>();
-            _skyBoxRightRenderer._texture = _textureDictionary.Get("skybox_right");
+            _skyBoxRightRenderer.Material = _matBasicUnlit;
+            _skyBoxRightRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_right");
             _scene.Add(skyBoxQuad);
 
-            //right wall
+            // front
             skyBoxQuad = new GameObject("front");
             skyBoxQuad.Transform.ScaleTo(new Vector3(scale, scale, 1));
-            skyBoxQuad.Transform.RotateEulerBy(new Vector3(
-                0, MathHelper.ToRadians(180), 0), true);
+            skyBoxQuad.Transform.RotateEulerBy(new Vector3(0, MathHelper.ToRadians(180), 0), true);
             skyBoxQuad.Transform.TranslateTo(new Vector3(0, 0, scale / 2));
             meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
-            skyBoxQuad.AddComponent(meshFilter); //setting VB and IB data
+            skyBoxQuad.AddComponent(meshFilter);
             _skyBoxFrontRenderer = skyBoxQuad.AddComponent<MeshRenderer>();
-            _skyBoxFrontRenderer._texture = _textureDictionary.Get("skybox_front");
+            _skyBoxFrontRenderer.Material = _matBasicUnlit;
+            _skyBoxFrontRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_front");
             _scene.Add(skyBoxQuad);
 
-            //sky
+            // sky (top)
             skyBoxQuad = new GameObject("sky");
             skyBoxQuad.Transform.ScaleTo(new Vector3(scale, scale, 1));
-            skyBoxQuad.Transform.RotateEulerBy(new Vector3(
-                MathHelper.ToRadians(90),
-                0,
-                MathHelper.ToRadians(90)), true);
+            skyBoxQuad.Transform.RotateEulerBy(new Vector3(MathHelper.ToRadians(90), 0, MathHelper.ToRadians(90)), true);
             skyBoxQuad.Transform.TranslateTo(new Vector3(0, scale / 2, 0));
             meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
-            skyBoxQuad.AddComponent(meshFilter); //setting VB and IB data
+            skyBoxQuad.AddComponent(meshFilter);
             _skyBoxSkyRenderer = skyBoxQuad.AddComponent<MeshRenderer>();
-            _skyBoxSkyRenderer._texture = _textureDictionary.Get("skybox_sky");
+            _skyBoxSkyRenderer.Material = _matBasicUnlit;
+            _skyBoxSkyRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_sky");
             _scene.Add(skyBoxQuad);
         }
+
 
         private void InitializeGround(int scale = 500)
         {
             _grassQuadGO = new GameObject("ground");
             var meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
             _grassQuadGO.Transform.ScaleBy(new Vector3(scale, scale, 1));
-            _grassQuadGO.Transform.RotateEulerBy(new Vector3(
-                MathHelper.ToRadians(-90), 0, 0), true);
+            _grassQuadGO.Transform.RotateEulerBy(new Vector3(MathHelper.ToRadians(-90), 0, 0), true);
 
             _grassQuadGO.AddComponent(meshFilter);
             _grassQuadRenderer = _grassQuadGO.AddComponent<MeshRenderer>();
-            //give the renderer the texture that it will put on the quad
-            _grassQuadRenderer._texture = _textureDictionary.Get("ground_grass");
-            _scene.Add(_grassQuadGO);
+            _grassQuadRenderer.Material = _matBasicUnlit;
+            _grassQuadRenderer.Overrides.MainTexture = _textureDictionary.Get("ground_grass");
 
+            _scene.Add(_grassQuadGO);
         }
+
 
         private void InitializeTestObject()
         {
             var testCrateGO = new GameObject("test crate textured cube");
 
-            //set position and scale
             testCrateGO.Transform.TranslateTo(new Vector3(0, 5, 0));
             testCrateGO.Transform.ScaleTo(Vector3.One * 8);
 
             var meshFilter = MeshFilterFactory.CreateCubeTexturedLit(_graphics.GraphicsDevice);
             testCrateGO.AddComponent(meshFilter);
-            _testObjRenderer = testCrateGO.AddComponent<MeshRenderer>();
 
-            //set texture
-            _testObjRenderer._texture = _textureDictionary.Get("crate1");
+            _testObjRenderer = testCrateGO.AddComponent<MeshRenderer>();
+            _testObjRenderer.Material = _matBasicLit; //enable lighting for the crate
+            _testObjRenderer.Overrides.MainTexture = _textureDictionary.Get("crate1");
+
             _scene.Add(testCrateGO);
 
-            //add our new CurveController
-            //var curveController = new DemoAnimationCurveController(_animationCurve);
-            //curveController.Direction = new Vector3(0, 1, 0); //try changing this
-            //testCrateGO.AddComponent(curveController);
-
-            var posRotController = new PositionRotationController();
-            posRotController.RotationCurve = _animationRotationCurve;
-            posRotController.PositionCurve = _animationPositionCurve;
+            var posRotController = new PositionRotationController
+            {
+                RotationCurve = _animationRotationCurve,
+                PositionCurve = _animationPositionCurve
+            };
             testCrateGO.AddComponent(posRotController);
 
-            //add input receiver demo component
             testCrateGO.AddComponent(new DemoInputReceiverComponent());
-
-
         }
+
         protected override void Update(GameTime gameTime)
         {
             //call time update

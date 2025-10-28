@@ -55,10 +55,11 @@ This document contains a step-by-step development plan of MonoGame content cover
 - [ ] Add **material abstraction**: wrap `Effect` into a `Material` with parameters; pipeline for future shaders.
 
 ## Reading Week
-- [ ] Define `InputState` (Move, JumpPressed, Action1, Action2).
-- [ ] Implement `IInputDevice` + `KeyboardInput`, `GamepadInput`.
-- [ ] Implement `IInputReceiver` (e.g., `PlayerController` component).
-- [ ] Add `InputSystem` that routes device → receiver; expose `SetDevice`, `SetReceiver`.
+- [x] Define `InputState` (Move, JumpPressed, Action1, Action2).
+- [x] Implement `IInputDevice` + `KeyboardInput`, `GamepadInput`.
+- [x] Implement `IInputReceiver` (e.g., `PlayerController` component).
+- [x] Add `InputSystem` that routes device → receiver; expose `SetDevice`, `SetReceiver`.
+- [ ] Add support for MonoGame effect types in `Material` and `MeshRenderer`.
 - [ ] Add physics engine (physics and CDCR)
 
 ## Week 7
