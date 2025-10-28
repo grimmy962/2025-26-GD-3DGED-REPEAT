@@ -31,7 +31,7 @@ It is designed for **incremental classroom live-coding** and emphasizes clear se
   /Core        (EngineContext, Scene, GameObject, Component, SystemBase)
   /Components  (Transform, Camera, MeshFilter, MeshRenderer, PlayerController, Rotator)
   /Systems     (RenderingSystem, InputSystem)
-  /Input       (IInputDevice, KeyboardInput, GamepadInput, IInputReceiver)
+  /Input       (IInputDevice, IInputReceiver, InputAction, KeyboardInput,  MouseInput, GamepadInput)
 /Game          (Main bootstrap)
 /Content       (MonoGame Content Pipeline)
 ```

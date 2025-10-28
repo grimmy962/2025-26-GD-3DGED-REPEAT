@@ -13,6 +13,7 @@ namespace GDEngine.Core.Entities
         #region Fields
         private readonly Transform _transform;
         private readonly List<Component> _components = new();
+        private Scene scene;
         #endregion
 
         #region Properties
@@ -20,6 +21,8 @@ namespace GDEngine.Core.Entities
         public bool Enabled { get; set; } = true;
         public Transform Transform => _transform;
         public IReadOnlyList<Component> Components => _components;
+        public Scene Scene { get => scene; set => scene = value; }
+
         #endregion
 
         #region Constructors

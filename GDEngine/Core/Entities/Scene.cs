@@ -3,6 +3,7 @@ using GDEngine.Core.Enums;
 using GDEngine.Core.Rendering;
 using GDEngine.Core.Services;
 using GDEngine.Core.Systems;
+using Microsoft.Xna.Framework.Input;
 using SharpDX.MediaFoundation;
 
 namespace GDEngine.Core.Entities
@@ -107,7 +108,7 @@ namespace GDEngine.Core.Entities
 
             if (_gameObjects.Contains(gameObject))
                 return gameObject;
-
+       
             _gameObjects.Add(gameObject);
 
             //TODO - add for remove()
@@ -126,6 +127,8 @@ namespace GDEngine.Core.Entities
             var cam = gameObject.GetComponent<Camera>();
             if (ActiveCamera == null && cam != null && cam.Enabled)
                 ActiveCamera = cam;
+
+            gameObject.Scene = this;
 
             return gameObject;
         }

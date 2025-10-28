@@ -1,8 +1,13 @@
-﻿using GDEngine.Core.Timing;
+﻿using GDEngine.Core.Components;
+using GDEngine.Core.Timing;
 using Microsoft.Xna.Framework;
+using System;
 
-namespace GDEngine.Core.Components.Controllers.General.Demo
+namespace GDGame.Demos.Animation
 {
+    /// <summary>
+    /// Demos a crude controller to move a gameobject based on a 1D animation curve
+    /// </summary>
     public class DemoAnimationCurveController : Component
     {
         #region Fields

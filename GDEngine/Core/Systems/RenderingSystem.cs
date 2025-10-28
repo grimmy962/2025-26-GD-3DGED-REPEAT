@@ -19,8 +19,8 @@ namespace GDEngine.Core.Systems
         private List<MeshRenderer> _renderers;
         private Camera? _camera;
 
-        public RenderingSystem(FrameLifecycle frameLifecycle)
-            : base(frameLifecycle)
+        public RenderingSystem()
+            : base(FrameLifecycle.Render, order: 0)
         {
   
         }

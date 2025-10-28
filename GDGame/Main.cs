@@ -1,17 +1,20 @@
 ﻿using GDEngine.Core;
 using GDEngine.Core.Components;
 using GDEngine.Core.Components.Controllers.General.Movement;
-using GDEngine.Core.Components.Controllers.General.Transform;
 using GDEngine.Core.Entities;
 using GDEngine.Core.Enums;
 using GDEngine.Core.Factories;
+using GDEngine.Core.Input.Data;
+using GDEngine.Core.Input.Devices;
 using GDEngine.Core.Rendering;
 using GDEngine.Core.Services;
 using GDEngine.Core.Systems;
 using GDEngine.Core.Timing;
+using GDEngine.Samples;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System;
 using System.Windows.Forms;
 
 namespace GDGame
@@ -73,7 +76,7 @@ namespace GDGame
             base.Initialize();
         }
 
-            private void InitializeCameraCurves()
+        private void InitializeCameraCurves()
         {
             //1D animation curve demo (e.g. scale, audio volume, lerp factor for color, etc)
             _animationCurve = new AnimationCurve(CurveLoopType.Cycle);
@@ -100,7 +103,7 @@ namespace GDGame
 
         private void InitializeGraphics(int width, int height)
         {
-             Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
+            Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
 
             _graphics.PreferredBackBufferWidth = width;
             _graphics.PreferredBackBufferHeight = height;
@@ -124,7 +127,7 @@ namespace GDGame
             _textureDictionary = new ContentDictionary<Texture2D>();
             _modelDictionary = new ContentDictionary<Model>();
             _fontDictionary = new ContentDictionary<SpriteFont>();
-            
+
         }
 
         private void LoadAssets()
@@ -145,7 +148,7 @@ namespace GDGame
 
         private void InitializeEffects()
         {
-           //TODO
+            //TODO
         }
 
         private void InitializeScene()
@@ -156,7 +159,34 @@ namespace GDGame
 
         private void InitializeSystems()
         {
-            _scene.Add(new RenderingSystem(FrameLifecycle.Render));
+            InitializeRenderingSystem();
+            InitializeInputSystem();
+        }
+
+        private void InitializeRenderingSystem()
+        {
+            _scene.Add(new RenderingSystem());
+        }
+
+        private void InitializeInputSystem()
+        {
+            //set mouse, keyboard binding keys (e.g. WASD)
+            var bindings = InputBindings.Default;
+            // optional tuning
+            bindings.MouseSensitivity = 0.12f;  // mouse look scale
+            bindings.DebounceMs = 60;           // key/mouse debounce in ms
+            bindings.EnableKeyRepeat = true;    // hold-to-repeat
+            bindings.KeyRepeatMs = 300;         // repeat rate in ms
+
+            // Create the input system 
+            var inputSystem = new InputSystem();
+
+            //register all the devices, you dont have to, but its for the demo
+            inputSystem.Add(new GDKeyboardInput(bindings));
+            inputSystem.Add(new GDMouseInput(bindings));
+            inputSystem.Add(new GDGamepadInput(PlayerIndex.One, "Gamepad P1"));
+
+            _scene.Add(inputSystem);
         }
 
         private void InitializeCamera(Vector3 position)
@@ -191,7 +221,7 @@ namespace GDGame
 
             skyBoxQuad = new GameObject("back");
             skyBoxQuad.Transform.ScaleTo(new Vector3(scale, scale, 1));
-            skyBoxQuad.Transform.TranslateTo(new Vector3(0,0,-scale/2));
+            skyBoxQuad.Transform.TranslateTo(new Vector3(0, 0, -scale / 2));
             meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
             skyBoxQuad.AddComponent(meshFilter); //setting VB and IB data
             _skyBoxBackRenderer = skyBoxQuad.AddComponent<MeshRenderer>();
@@ -238,7 +268,7 @@ namespace GDGame
             skyBoxQuad = new GameObject("sky");
             skyBoxQuad.Transform.ScaleTo(new Vector3(scale, scale, 1));
             skyBoxQuad.Transform.RotateEulerBy(new Vector3(
-                MathHelper.ToRadians(90), 
+                MathHelper.ToRadians(90),
                 0,
                 MathHelper.ToRadians(90)), true);
             skyBoxQuad.Transform.TranslateTo(new Vector3(0, scale / 2, 0));
@@ -290,6 +320,10 @@ namespace GDGame
             posRotController.RotationCurve = _animationRotationCurve;
             posRotController.PositionCurve = _animationPositionCurve;
             testCrateGO.AddComponent(posRotController);
+
+            //add input receiver demo component
+            testCrateGO.AddComponent(new DemoInputReceiverComponent());
+
 
         }
         protected override void Update(GameTime gameTime)
