@@ -9,7 +9,7 @@ namespace GDEngine.Core.Collections
     /// <see cref="List{T}"/>
     /// <see cref="Dictionary{TKey, TValue}"/>
     /// <see cref="IEnumerable{T}"/>
-    public class IndexedCollection<T> : IEnumerable<T> where T : class
+    public class IndexedCollection<T> : IEnumerable<T>, IDisposable where T : class
     {
         #region Static Fields
         private const int _minCapacity = 16;
@@ -19,6 +19,7 @@ namespace GDEngine.Core.Collections
         private T[] _items;
         private readonly Dictionary<T, int> _indices;
         private int _count;
+        private bool _disposed = false;
         #endregion
 
         #region Properties
@@ -238,7 +239,41 @@ namespace GDEngine.Core.Collections
         #endregion
 
         #region Housekeeping Methods
-        // ToString/Dispose/Clone/etc. not required here.
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                // Dispose any items that implement IDisposable
+                for (int i = 0; i < _count; i++)
+                {
+                    if (_items[i] is IDisposable disposable)
+                    {
+                        disposable.Dispose();
+                    }
+                    _items[i] = null;
+                }
+
+                // Clear the dictionary
+                _indices.Clear();
+                _count = 0;
+            }
+
+            _disposed = true;
+        }
+
+        ~IndexedCollection()
+        {
+            Dispose(false);
+        }
         #endregion
     }
 }

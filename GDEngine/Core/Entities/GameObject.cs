@@ -7,13 +7,15 @@ namespace GDEngine.Core.Entities
     /// </summary>
     /// <see cref="Transform"/>
     /// <see cref="Component"/>
-    public sealed class GameObject
+    public sealed class GameObject : IDisposable
     {
 
         #region Fields
         private readonly Transform _transform;
         private readonly List<Component> _components = new();
         private Scene scene;
+        private bool _disposed = false;
+
         #endregion
 
         #region Properties
@@ -143,11 +145,20 @@ namespace GDEngine.Core.Entities
         /// </summary>
         public void Destroy()
         {
+            if (_disposed)
+                return;
+
             for (int i = _components.Count - 1; i >= 0; i--)
             {
                 var c = _components[i];
                 if (c is Transform)
                     continue;
+
+                // Dispose if component implements IDisposable
+                if (c is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
 
                 c.InternalDestroy();
                 _components.RemoveAt(i);
@@ -155,6 +166,19 @@ namespace GDEngine.Core.Entities
 
             _transform.InternalDestroy();
             _components.Clear();
+
+            _disposed = true;
+        }
+
+        public void Dispose()
+        {
+            Destroy();
+            GC.SuppressFinalize(this);
+        }
+
+        ~GameObject()
+        {
+            Dispose();
         }
         #endregion
     }

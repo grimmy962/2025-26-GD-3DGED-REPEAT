@@ -12,10 +12,14 @@ namespace GDEngine.Core.Services
     /// <see cref="GameObject"/>
     /// <see cref="Camera"/>
     /// <see cref="https://www.geeksforgeeks.org/system-design/solid-principle-in-programming-understand-with-real-life-examples/"/>
-    public class EngineContext : IDisposable       //TODO - add thread lock, implement IDisposable
+    public class EngineContext : IDisposable       //TODO - add thread lock
     {
         #region Static Fields
         private static EngineContext? _instance;
+        #endregion
+
+        #region Fields
+        private bool _disposed = false; 
         #endregion
 
         #region Properties
@@ -54,10 +58,33 @@ namespace GDEngine.Core.Services
         #endregion
 
         #region Housekeeping Methods
+
         public void Dispose()
         {
-            //TODO - Wk5 - Dispose any disposables!
-        } 
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                // Dispose managed resources
+                SpriteBatch?.Dispose();
+                Content?.Dispose();
+                // Note: GraphicsDevice is typically owned by the Game class, so we don't dispose it here
+            }
+
+            _disposed = true;
+        }
+
+        ~EngineContext()
+        {
+            Dispose(false);
+        }
         #endregion
     }
 }

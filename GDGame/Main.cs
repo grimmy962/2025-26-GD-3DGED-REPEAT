@@ -1,8 +1,7 @@
-﻿using GDEngine.Core;
+﻿using GDEngine.Core.Collections;
 using GDEngine.Core.Components;
 using GDEngine.Core.Components.Controllers.General.Movement;
 using GDEngine.Core.Entities;
-using GDEngine.Core.Enums;
 using GDEngine.Core.Factories;
 using GDEngine.Core.Input.Data;
 using GDEngine.Core.Input.Devices;
@@ -14,22 +13,26 @@ using GDEngine.Samples;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using System;
 using System.Windows.Forms;
 
 namespace GDGame
 {
     public class Main : Game
     {
+        #region Core Fields
         private GraphicsDeviceManager _graphics;
-        private Scene _scene;
-        private GameObject _cameraGO;
-        private Camera _camera;
-        private GameObject _grassQuadGO;
-        private MeshRenderer _grassQuadRenderer;
         private ContentDictionary<Texture2D> _textureDictionary;
         private ContentDictionary<Model> _modelDictionary;
         private ContentDictionary<SpriteFont> _fontDictionary;
+        private Scene _scene;
+        private Camera _camera;
+        private bool _disposed = false;
+        #endregion
+
+        #region Demo Fields (remove in your game)
+        private GameObject _cameraGO;
+        private GameObject _grassQuadGO;
+        private MeshRenderer _grassQuadRenderer;
         private MeshRenderer _skyBoxBackRenderer, _skyBoxLeftRenderer, _skyBoxRightRenderer, _skyBoxFrontRenderer, _skyBoxSkyRenderer;
         private AnimationCurve _animationCurve;
         private MeshRenderer _testObjRenderer;
@@ -37,7 +40,8 @@ namespace GDGame
         private AnimationCurve3D _animationRotationCurve;
         private Material _matBasicUnlit;
         private Material _matBasicLit;
-        private Material _matAlphaCutout;
+        private Material _matAlphaCutout; 
+        #endregion
 
         public Main()
         {
@@ -48,7 +52,7 @@ namespace GDGame
 
         protected override void Initialize()
         {
-            InitializeGraphics(1280, 720);
+            InitializeGraphics(1920, 1080);
 
             InitializeMouse();
 
@@ -76,7 +80,7 @@ namespace GDGame
 
             InitializeTestObject();
 
-            InitializeFoliage(new Vector3(0, 10 /*note Y=heightscale/2*/, 0), 12, 20); 
+            InitializeFoliage(new Vector3(0, 10 /*note Y=heightscale/2*/, 0), 12, 20);
 
             base.Initialize();
         }
@@ -256,6 +260,7 @@ namespace GDGame
             _camera.FarPlane = 1000;
             ////feed off whatever screen dimensions you set InitializeGraphics
             _camera.AspectRatio = (float)_graphics.PreferredBackBufferWidth / _graphics.PreferredBackBufferHeight;
+
             //add to scene
             _scene.Add(_cameraGO);
 
@@ -371,6 +376,7 @@ namespace GDGame
             };
             testCrateGO.AddComponent(posRotController);
 
+            //demo the new input system support for keyboard, mouse and gamepad
             testCrateGO.AddComponent(new DemoInputReceiverComponent());
         }
 
@@ -430,6 +436,83 @@ namespace GDGame
             //_testObjRenderer.Render(_graphics.GraphicsDevice, _camera);
 
             base.Draw(gameTime);
+        }
+
+        /// <summary>
+        /// Override Dispose to clean up engine resources.
+        /// MonoGame's Game class already implements IDisposable, so we override its Dispose method.
+        /// </summary>
+        /// <param name="disposing">True if called from Dispose(), false if called from finalizer.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (_disposed)
+            {
+                base.Dispose(disposing);
+                return;
+            }
+
+            if (disposing)
+            {
+                System.Diagnostics.Debug.WriteLine("Disposing Main...");
+
+                // 1. Dispose Scene (which will cascade to GameObjects and Components)
+                System.Diagnostics.Debug.WriteLine("Disposing Scene");
+                _scene?.Dispose();
+                _scene = null;
+
+                // 2. Dispose Materials (which may own Effects)
+                System.Diagnostics.Debug.WriteLine("Disposing Materials");
+                _matBasicUnlit?.Dispose();
+                _matBasicUnlit = null;
+
+                _matBasicLit?.Dispose();
+                _matBasicLit = null;
+
+                _matAlphaCutout?.Dispose();
+                _matAlphaCutout = null;
+
+                // 3. Clear cached MeshFilters in factory registry
+                System.Diagnostics.Debug.WriteLine("Clearing MeshFilter Registry");
+                MeshFilterFactory.ClearRegistry();
+
+                // 4. Dispose content dictionaries (now they implement IDisposable!)
+                System.Diagnostics.Debug.WriteLine("Disposing Content Dictionaries");
+                _textureDictionary?.Dispose();
+                _textureDictionary = null;
+
+                _modelDictionary?.Dispose();
+                _modelDictionary = null;
+
+                _fontDictionary?.Dispose();
+                _fontDictionary = null;
+
+                // 5. Dispose EngineContext (which owns SpriteBatch and Content)
+                System.Diagnostics.Debug.WriteLine("Disposing EngineContext");
+                EngineContext.Instance?.Dispose();
+
+                // 6. Clear references to help GC
+                System.Diagnostics.Debug.WriteLine("Clearing References");
+                _cameraGO = null;
+                _camera = null;
+                _grassQuadGO = null;
+                _grassQuadRenderer = null;
+                _skyBoxBackRenderer = null;
+                _skyBoxLeftRenderer = null;
+                _skyBoxRightRenderer = null;
+                _skyBoxFrontRenderer = null;
+                _skyBoxSkyRenderer = null;
+                _testObjRenderer = null;
+                _animationCurve = null;
+                _animationPositionCurve = null;
+                _animationRotationCurve = null;
+
+                System.Diagnostics.Debug.WriteLine("Main disposal complete");
+            }
+
+            _disposed = true;
+
+            // Always call base.Dispose
+            base.Dispose(disposing);
         }
     }
 }

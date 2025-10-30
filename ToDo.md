@@ -59,7 +59,8 @@ This document contains a step-by-step development plan of MonoGame content cover
 - [x] Implement `IInputDevice` + `KeyboardInput`, `GamepadInput`.
 - [x] Implement `IInputReceiver` (e.g., `PlayerController` component).
 - [x] Add `InputSystem` that routes device → receiver; expose `SetDevice`, `SetReceiver`.
-- [ ] Add support for MonoGame effect types in `Material` and `MeshRenderer`.
+- [x] Add `IDisposable` to core classes
+- [x] Add support for MonoGame effect types in `Material` and `MeshRenderer`.
 - [ ] Add physics engine (physics and CDCR)
 
 ## Week 7

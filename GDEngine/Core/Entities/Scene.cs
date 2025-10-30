@@ -3,8 +3,6 @@ using GDEngine.Core.Enums;
 using GDEngine.Core.Rendering;
 using GDEngine.Core.Services;
 using GDEngine.Core.Systems;
-using Microsoft.Xna.Framework.Input;
-using SharpDX.MediaFoundation;
 
 namespace GDEngine.Core.Entities
 {
@@ -17,7 +15,7 @@ namespace GDEngine.Core.Entities
     /// <see cref="SystemBase"/>
     /// <see cref="FrameLifecycle"/>
     /// <see cref="EngineContext"/>
-    public sealed class Scene
+    public sealed class Scene : IDisposable
     {
         #region Fields
         // Owned objects
@@ -36,9 +34,10 @@ namespace GDEngine.Core.Entities
         private List<MeshRenderer> _renderers = new List<MeshRenderer>(256);
         public List<MeshRenderer> Renderers { get => _renderers; set => _renderers = value; }
 
-
-        // Engine services container
         private readonly EngineContext _context;
+
+        private bool _disposed = false;
+
         #endregion
 
         #region Properties
@@ -228,6 +227,57 @@ namespace GDEngine.Core.Entities
         #endregion
 
         #region Housekeeping Methods
+        private void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                // Dispose all GameObjects and their components
+                for (int i = 0; i < _gameObjects.Count; i++)
+                {
+                    var go = _gameObjects[i];
+                    var components = go.Components;
+
+                    // Dispose components that implement IDisposable
+                    for (int j = 0; j < components.Count; j++)
+                    {
+                        if (components[j] is IDisposable disposable)
+                        {
+                            disposable.Dispose();
+                        }
+                    }
+
+                    go.Destroy();
+                }
+
+                // Dispose systems that implement IDisposable
+                for (int i = 0; i < _systemsAll.Count; i++)
+                {
+                    if (_systemsAll[i] is IDisposable disposable)
+                    {
+                        disposable.Dispose();
+                    }
+                }
+
+                Clear();
+            }
+
+            _disposed = true;
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        ~Scene()
+        {
+            Dispose(false);
+        }
+
         /// <summary>
         /// Removes all objects and systems from the scene and clears lifecycle state.
         /// </summary>
@@ -237,6 +287,7 @@ namespace GDEngine.Core.Entities
                 _gameObjects[i].Destroy();
 
             _gameObjects.Clear();
+            _renderers.Clear();
             _started.Clear();
             _systemsAll.Clear();
 

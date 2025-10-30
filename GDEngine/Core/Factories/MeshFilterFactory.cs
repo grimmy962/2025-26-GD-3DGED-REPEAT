@@ -618,5 +618,20 @@ namespace GDEngine.Core.Factories
         #endregion
 
         #endregion
+
+        #region Housekeeping Methods
+        /// <summary>
+        /// Disposes all cached MeshFilters in the registry and clears it.
+        /// Call this when shutting down the application or changing scenes.
+        /// </summary>
+        public static void ClearRegistry()
+        {
+            foreach (var kvp in registry)
+            {
+                kvp.Value?.Dispose();
+            }
+            registry.Clear();
+        } 
+        #endregion
     }
 }

@@ -7,7 +7,7 @@ namespace GDEngine.Core.Rendering
     /// Minimal wrapper around an <see cref="Effect"/>.
     /// Holds render states and exposes a single Apply that works for all Effect types.
     /// </summary>
-    public sealed class Material
+    public sealed class Material : IDisposable
     {
         #region Static Fields
         #endregion
@@ -16,6 +16,8 @@ namespace GDEngine.Core.Rendering
         private readonly Effect _effect;
         private RenderStates.RenderStateBlock _stateBlock;
         private SamplerState _samplerState = SamplerState.LinearWrap;
+        private bool _disposed = false;
+        private readonly bool _ownsEffect; // Track if we should dispose the effect
         #endregion
 
         #region Properties
@@ -35,10 +37,11 @@ namespace GDEngine.Core.Rendering
         #endregion
 
         #region Constructors
-        public Material(Effect effect)
+        public Material(Effect effect, bool ownsEffect = false)
         {
             _effect = effect ?? throw new ArgumentNullException(nameof(effect));
             _stateBlock = RenderStates.Default3D();
+            _ownsEffect = ownsEffect;
         }
         #endregion
 
@@ -79,6 +82,34 @@ namespace GDEngine.Core.Rendering
         #endregion
 
         #region Housekeeping Methods
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                // Only dispose the effect if we own it
+                if (_ownsEffect)
+                {
+                    _effect?.Dispose();
+                }
+                // Note: SamplerState instances are typically static/shared, so we don't dispose them
+            }
+
+            _disposed = true;
+        }
+
+        ~Material()
+        {
+            Dispose(false);
+        }
         #endregion
     }
 }

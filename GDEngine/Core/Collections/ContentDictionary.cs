@@ -1,13 +1,13 @@
 ﻿using GDEngine.Core.Services;
 using Microsoft.Xna.Framework.Content;
 
-namespace GDEngine.Core
+namespace GDEngine.Core.Collections
 {
     /// <summary>
     /// Generic content dictionary with just Add/Remove/Get/Clear.
     /// Uses cached <see cref="EngineContext"/> to load assets on demand.
     /// </summary>
-    public sealed class ContentDictionary<T> where T : class
+    public sealed class ContentDictionary<T> : IDisposable where T : class
     {
         #region Static Fields
         #endregion
@@ -17,6 +17,7 @@ namespace GDEngine.Core
         private readonly Dictionary<string, string> _paths;
         private readonly ContentManager _content;
         private readonly string _name;
+        private bool _disposed = false;
         #endregion
 
         #region Properties
@@ -44,7 +45,7 @@ namespace GDEngine.Core
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException("Dictionary name must be non-empty.", nameof(name));
 
-            if(EngineContext.Instance == null)
+            if (EngineContext.Instance == null)
                 throw new InvalidOperationException("EngineContext.Content is null. Ensure Content is initialized.");
 
             _content = EngineContext.Instance.Content;
@@ -76,7 +77,7 @@ namespace GDEngine.Core
             }
 
             return false;
-           
+
         }
 
         /// <summary>
@@ -120,6 +121,44 @@ namespace GDEngine.Core
         #endregion
 
         #region Housekeeping Methods
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                // Dispose items if they implement IDisposable
+                // Note: Texture2D, Model, etc. loaded by ContentManager are typically
+                // owned by the ContentManager, which will dispose them when it's disposed.
+                // However, if you have custom content types, this will dispose them.
+                foreach (var kvp in _items)
+                {
+                    if (kvp.Value is IDisposable disposable)
+                    {
+                        disposable.Dispose();
+                    }
+                }
+
+                // Clear the dictionaries
+                _items.Clear();
+                _paths.Clear();
+            }
+
+            _disposed = true;
+        }
+
+        ~ContentDictionary()
+        {
+            Dispose(false);
+        }
+
         public override string ToString()
         {
             return $"ContentDictionary<{typeof(T).Name}>(Name={_name}, Count={_items.Count})";

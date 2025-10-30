@@ -1,19 +1,33 @@
 ﻿using Microsoft.Xna.Framework;
+using GDEngine.Core.Rendering; 
 
 namespace GDEngine.Core.Components
 {
     /// <summary>
-    /// Perspective camera with lazy view/projection using dirty flags.
+    /// Camera with switchable Perspective/Orthographic projection and a LayerMask culling mask.
+    /// Uses lazy view/projection recomputation via dirty flags.
     /// </summary>
     /// <see cref="Transform"/>
     /// <see cref="Component"/>
     public sealed class Camera : Component
     {
+        #region Static Fields
+        #endregion
+
         #region Fields
         private float _fieldOfView = MathHelper.PiOver4;
         private float _aspectRatio = 16f / 9f;
         private float _nearPlane = 0.1f;
         private float _farPlane = 1000f;
+
+        // Orthographic controls
+        private float _orthographicSize = 10f; // half-height in world units
+
+        // Projection mode
+        private ProjectionType _projectionType = ProjectionType.Perspective;
+
+        // LayerMask culling
+        private LayerMask _cullingMask = LayerMask.All;
 
         private Matrix _view;
         private Matrix _projection;
@@ -25,7 +39,7 @@ namespace GDEngine.Core.Components
 
         #region Properties
 
-        //TODO - Wk5 - Add checks on values and deltas to avoid thrashing dirty flag
+        // Matrices (lazy)
         public Matrix View
         {
             get
@@ -56,12 +70,13 @@ namespace GDEngine.Core.Components
             }
         }
 
+        // Perspective
         public float FieldOfView
         {
             get => _fieldOfView;
             set
             {
-                if (_fieldOfView != value) //TODO - Wk5/6 - thrashing
+                if (_fieldOfView != value)
                 {
                     _fieldOfView = value;
                     _projectionDirty = true;
@@ -69,6 +84,7 @@ namespace GDEngine.Core.Components
             }
         }
 
+        // Shared
         public float AspectRatio
         {
             get => _aspectRatio;
@@ -107,21 +123,52 @@ namespace GDEngine.Core.Components
                 }
             }
         }
+
+        // Orthographic
+        public float OrthographicSize
+        {
+            get => _orthographicSize;
+            set
+            {
+                if (_orthographicSize != value)
+                {
+                    _orthographicSize = value;
+                    _projectionDirty = true;
+                }
+            }
+        }
+
+        // Mode
+        public ProjectionType ProjectionMode
+        {
+            get => _projectionType;
+            set
+            {
+                if (_projectionType != value)
+                {
+                    _projectionType = value;
+                    _projectionDirty = true;
+                }
+            }
+        }
+
+        // Layer culling
+        public LayerMask CullingMask
+        {
+            get => _cullingMask;
+            set => _cullingMask = value;
+        }
         #endregion
 
-        #region Lifecycle Methods
+        #region Constructors
+        #endregion
 
-        protected override void Awake()
+        #region Methods
+        public void ToggleProjection()
         {
-            // if we never mark at start as dirty then matrices MAY never be set (hence we will have a problem with effect.View)
-            _viewDirty = true;
-            _projectionDirty = true;
-
-            if (Transform != null)
-                Transform.Changed += OnTransformChanged; // subscribe
-
-            //NO-OP in base
-            //base.Awake();
+            ProjectionMode = _projectionType == ProjectionType.Perspective
+                ? ProjectionType.Orthographic
+                : ProjectionType.Perspective;
         }
 
         private void OnTransformChanged(Transform transform, TransformChangeFlags flags)
@@ -144,12 +191,29 @@ namespace GDEngine.Core.Components
 
         private void RecalculateProjection()
         {
-            _projection = Matrix.CreatePerspectiveFieldOfView(
-                _fieldOfView,
-                _aspectRatio,
-                _nearPlane,
-                _farPlane
-            );
+            if (_projectionType == ProjectionType.Perspective)
+            {
+                _projection = Matrix.CreatePerspectiveFieldOfView(
+                    _fieldOfView,
+                    _aspectRatio,
+                    _nearPlane,
+                    _farPlane
+                );
+            }
+            else
+            {
+                // size = half-height; width depends on aspect ratio
+                float height = 2f * _orthographicSize;
+                float width = height * _aspectRatio;
+
+                _projection = Matrix.CreateOrthographic(
+                    width,
+                    height,
+                    _nearPlane,
+                    _farPlane
+                );
+            }
+
             _projectionDirty = false;
         }
 
@@ -161,31 +225,30 @@ namespace GDEngine.Core.Components
                 RecalculateProjection();
 
             _viewProjection = _view * _projection;
-        } 
+        }
         #endregion
 
-        /*
-        public Ray ScreenPointToRay(Vector2 screenPoint, Viewport viewport)
+        #region Lifecycle Methods
+        protected override void Awake()
         {
-            var nearPoint = viewport.Unproject(
-                new Vector3(screenPoint, 0),
-                Projection,
-                View,
-                Matrix.Identity
-            );
+            _viewDirty = true;
+            _projectionDirty = true;
 
-            var farPoint = viewport.Unproject(
-                new Vector3(screenPoint, 1),
-                Projection,
-                View,
-                Matrix.Identity
-            );
-
-            var direction = Vector3.Normalize(farPoint - nearPoint);
-            return new Ray(nearPoint, direction);
+            if (Transform != null)
+                Transform.Changed += OnTransformChanged;
         }
-        */
+        #endregion
 
-        //TODO - Wk5 - set View and Projection on Start
+        #region Housekeeping Methods
+        #endregion
+    }
+
+    /// <summary>
+    /// Camera projection modes.
+    /// </summary>
+    public enum ProjectionType : sbyte
+    {
+        Perspective = 0,
+        Orthographic = 1
     }
 }

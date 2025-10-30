@@ -9,7 +9,7 @@ namespace GDEngine.Core.Rendering
     /// </summary>
     /// <see cref="MeshRenderer"/>
     /// <see cref="GameObject"/>
-    public sealed class MeshFilter : Component
+    public sealed class MeshFilter : Component, IDisposable
     {
         #region Fields
         private VertexBuffer? _vertexBuffer;
@@ -18,6 +18,8 @@ namespace GDEngine.Core.Rendering
         private int _primitiveCount;
         private int _vertexCount;
         private int _indexCount;
+        private bool _disposed = false;
+
         #endregion
 
         #region Properties
@@ -94,7 +96,42 @@ namespace GDEngine.Core.Rendering
         #endregion
 
         #region Housekeeping Methods
-        //TODO - Wk5 - Dispose
+  
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        private void Dispose(bool disposing)
+        {
+            if (_disposed)
+                return;
+
+            if (disposing)
+            {
+                // Dispose managed resources (GPU buffers)
+                _vertexBuffer?.Dispose();
+                _vertexBuffer = null;
+
+                _indexBuffer?.Dispose();
+                _indexBuffer = null;
+            }
+
+            _disposed = true;
+        }
+
+        ~MeshFilter()
+        {
+            Dispose(false);
+        }
+
+        // Override OnDestroy to ensure disposal when component is destroyed
+        protected override void OnDestroy()
+        {
+            Dispose();
+            base.OnDestroy();
+        }
         #endregion
     }
 }
