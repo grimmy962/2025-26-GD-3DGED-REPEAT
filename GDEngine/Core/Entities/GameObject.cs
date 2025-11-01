@@ -10,7 +10,6 @@ namespace GDEngine.Core.Entities
     /// <see cref="Component"/>
     public sealed class GameObject : IDisposable
     {
-
         #region Fields
         private readonly Transform _transform;
         private readonly List<Component> _components = new();

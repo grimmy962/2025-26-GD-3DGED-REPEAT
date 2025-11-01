@@ -11,6 +11,7 @@ namespace GDEngine.Core.Systems
     /// <summary>
     /// Sorts into the Render phase and checks for an active camera.
     /// Later this will iterate visible renderables (MeshRenderer, SpriteRenderer, etc).
+    /// Supports camera layer mask culling to skip rendering objects that don't match the camera's culling mask.
     /// </summary>
     public class RenderingSystem : SystemBase
     {
@@ -50,9 +51,18 @@ namespace GDEngine.Core.Systems
                 return;
 
             int count = _renderers.Count;
+            LayerMask cullingMask = _camera.CullingMask;
 
             for (int i = 0; i < count; i++)
-                _scene.Renderers[i].Render(_device, _camera);
+            {
+                MeshRenderer renderer = _scene.Renderers[i];
+
+                // Skip rendering if the GameObject's layer doesn't overlap with the camera's culling mask
+                if (renderer.GameObject != null && !cullingMask.Overlaps(renderer.GameObject.Layer))
+                    continue;
+
+                renderer.Render(_device, _camera);
+            }
         }
         #endregion
     }
