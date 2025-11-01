@@ -15,8 +15,8 @@ namespace GDEngine.Core.Rendering
         #endregion
 
         #region Fields
-        private MeshFilter _meshFilter;
-        private Material _material;
+        private MeshFilter? _meshFilter;
+        private Material? _material;
         private readonly EffectPropertyBlock _overrides = new();
         #endregion
 
@@ -54,7 +54,10 @@ namespace GDEngine.Core.Rendering
         #region Lifecycle Methods
         protected override void Start()
         {
-            _meshFilter = GameObject?.GetComponent<MeshFilter>();
+            if (GameObject == null)
+                return;
+
+            _meshFilter = GameObject.GetComponent<MeshFilter>();
         }
         #endregion
 

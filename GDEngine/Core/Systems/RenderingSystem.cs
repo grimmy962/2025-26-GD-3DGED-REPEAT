@@ -1,4 +1,5 @@
-﻿using GDEngine.Core.Components;
+﻿#nullable enable
+using GDEngine.Core.Components;
 using GDEngine.Core.Entities;
 using GDEngine.Core.Enums;
 using GDEngine.Core.Rendering;
@@ -13,21 +14,28 @@ namespace GDEngine.Core.Systems
     /// </summary>
     public class RenderingSystem : SystemBase
     {
-        private Scene _scene;
-        private EngineContext _context;
-        private GraphicsDevice _device;
-        private List<MeshRenderer> _renderers;
+        #region Fields
+        private Scene _scene = null!;
+        private EngineContext _context = null!;
+        private GraphicsDevice _device = null!;
+        private List<MeshRenderer> _renderers = new List<MeshRenderer>(0);
         private Camera? _camera;
+        #endregion
 
+        #region Constructors
         public RenderingSystem()
             : base(FrameLifecycle.Render, order: 0)
         {
-  
         }
+        #endregion
 
+        #region Lifecycle Methods
         protected override void OnAdded()
         {
-            //cache for fast access
+            if (Scene == null)
+                throw new NullReferenceException(nameof(Scene));
+
+            // Cache for fast access
             _scene = Scene;
             _context = Scene.Context;
             _device = _context.GraphicsDevice;
@@ -41,11 +49,11 @@ namespace GDEngine.Core.Systems
             if (_renderers == null || _camera == null)
                 return;
 
-           int count = _renderers.Count;
+            int count = _renderers.Count;
 
             for (int i = 0; i < count; i++)
                 _scene.Renderers[i].Render(_device, _camera);
         }
+        #endregion
     }
 }
-

@@ -50,7 +50,7 @@ Use these questions to consider the architectural requirements:
 
 ### Transform & hierarchy
 - Why separate `Transform` from `GameObject` fields?  
-- How should parent→child S·R·T compose into a world matrix, and where do `Forward/Right/Up` live?
+- How should parent->child S·R·T compose into a world matrix, and where do `Forward/Right/Up` live?
 
 ### Camera
 - What data does a camera need (FOV, aspect, near, far)?  

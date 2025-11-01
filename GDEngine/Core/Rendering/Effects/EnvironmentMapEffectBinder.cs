@@ -22,10 +22,10 @@ namespace GDEngine.Core.Rendering
         {
             var ee = (EnvironmentMapEffect)effect;
 
-            if (block.TryGet(PropertyKeys.MainTexture, out Texture2D baseTex))
+            if (block.TryGet(PropertyKeys.MainTexture, out Texture2D? baseTex))
                 ee.Texture = baseTex;
 
-            if (block.TryGet(PropertyKeys.EnvironmentMap, out TextureCube cube))
+            if (block.TryGet(PropertyKeys.EnvironmentMap, out TextureCube? cube))
                 ee.EnvironmentMap = cube;
 
             if (block.TryGet(PropertyKeys.EnvAmount, out float amt))

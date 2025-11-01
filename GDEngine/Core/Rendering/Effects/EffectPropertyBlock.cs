@@ -47,7 +47,7 @@ namespace GDEngine.Core.Rendering
         public void SetMatrices(string key, Matrix[] ms) => _values[key] = ms;
         public void SetSampler(string key, SamplerState s) => _values[key] = s;
 
-        public bool TryGet<T>(string key, out T value)
+        public bool TryGet<T>(string key, out T? value)
         {
             if (_values.TryGetValue(key, out var obj) && obj is T t)
             {

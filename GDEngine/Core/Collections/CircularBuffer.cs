@@ -1,4 +1,6 @@
-﻿using System.Collections;
+﻿#nullable enable
+using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace GDEngine.Core.Collections
 {
@@ -10,7 +12,7 @@ namespace GDEngine.Core.Collections
     /// <typeparam name="T">Type of items to store.</typeparam>
     /// <see cref="Queue{T}"/>
     /// <see cref="List{T}"/>
-    public class CircularBuffer<T> : IEnumerable<T>
+    public sealed class CircularBuffer<T> : IEnumerable<T>, IDisposable
     {
         #region Static Fields
         private const int _minCapacity = 4;
@@ -18,7 +20,7 @@ namespace GDEngine.Core.Collections
         #endregion
 
         #region Fields
-        private T[] _buffer;
+        private readonly T[] _buffer;
         private int _head;       // Index of next write position
         private int _tail;       // Index of oldest item
         private int _count;      // Number of items currently in buffer
@@ -116,6 +118,7 @@ namespace GDEngine.Core.Collections
         /// </summary>
         /// <param name="item">Item to add.</param>
         /// <returns>The item that was overwritten, or default(T) if buffer wasn't full.</returns>
+        [return: MaybeNull]
         public T Push(T item)
         {
             lock (_lock)
@@ -123,10 +126,9 @@ namespace GDEngine.Core.Collections
                 if (_disposed)
                     throw new ObjectDisposedException(nameof(CircularBuffer<T>));
 
-                T overwritten = default(T);
+                T overwritten = default!;
                 bool wasOverwritten = false;
 
-                // If full, we're about to overwrite the oldest item
                 if (_count == _capacity)
                 {
                     overwritten = _buffer[_tail];
@@ -138,11 +140,10 @@ namespace GDEngine.Core.Collections
                     _count++;
                 }
 
-                // Write new item at head
                 _buffer[_head] = item;
                 _head = (_head + 1) % _capacity;
 
-                return wasOverwritten ? overwritten : default(T);
+                return wasOverwritten ? overwritten : default!;
             }
         }
 
@@ -162,7 +163,7 @@ namespace GDEngine.Core.Collections
                     throw new InvalidOperationException("Buffer is empty.");
 
                 var item = _buffer[_tail];
-                _buffer[_tail] = default(T); // Clear for GC
+                _buffer[_tail] = default!; // clear for GC on reference types
                 _tail = (_tail + 1) % _capacity;
                 _count--;
 
@@ -175,18 +176,18 @@ namespace GDEngine.Core.Collections
         /// </summary>
         /// <param name="item">The oldest item, or default(T) if buffer is empty.</param>
         /// <returns>True if an item was removed, false if buffer was empty.</returns>
-        public bool TryPop(out T item)
+        public bool TryPop([MaybeNullWhen(false)] out T item)
         {
             lock (_lock)
             {
                 if (_disposed || _count == 0)
                 {
-                    item = default(T);
+                    item = default!;
                     return false;
                 }
 
                 item = _buffer[_tail];
-                _buffer[_tail] = default(T); // Clear for GC
+                _buffer[_tail] = default!;
                 _tail = (_tail + 1) % _capacity;
                 _count--;
 
@@ -218,13 +219,13 @@ namespace GDEngine.Core.Collections
         /// </summary>
         /// <param name="item">The oldest item, or default(T) if buffer is empty.</param>
         /// <returns>True if an item exists, false if buffer was empty.</returns>
-        public bool TryPeek(out T item)
+        public bool TryPeek([MaybeNullWhen(false)] out T item)
         {
             lock (_lock)
             {
                 if (_disposed || _count == 0)
                 {
-                    item = default(T);
+                    item = default!;
                     return false;
                 }
 
@@ -258,13 +259,13 @@ namespace GDEngine.Core.Collections
         /// </summary>
         /// <param name="item">The newest item, or default(T) if buffer is empty.</param>
         /// <returns>True if an item exists, false if buffer was empty.</returns>
-        public bool TryPeekNewest(out T item)
+        public bool TryPeekNewest([MaybeNullWhen(false)] out T item)
         {
             lock (_lock)
             {
                 if (_disposed || _count == 0)
                 {
-                    item = default(T);
+                    item = default!;
                     return false;
                 }
 
@@ -284,9 +285,8 @@ namespace GDEngine.Core.Collections
                 if (_disposed)
                     return;
 
-                // Clear references for GC (especially important for reference types)
                 for (int i = 0; i < _capacity; i++)
-                    _buffer[i] = default(T);
+                    _buffer[i] = default!;
 
                 _head = 0;
                 _tail = 0;
@@ -297,7 +297,6 @@ namespace GDEngine.Core.Collections
         /// <summary>
         /// Copies all items to an array in chronological order (oldest to newest).
         /// </summary>
-        /// <returns>New array containing all items.</returns>
         public T[] ToArray()
         {
             lock (_lock)
@@ -309,12 +308,10 @@ namespace GDEngine.Core.Collections
 
                 if (_tail < _head)
                 {
-                    // Contiguous block: just copy
                     Array.Copy(_buffer, _tail, result, 0, _count);
                 }
                 else
                 {
-                    // Wrapped: copy tail to end, then start to head
                     var tailLength = _capacity - _tail;
                     Array.Copy(_buffer, _tail, result, 0, tailLength);
                     Array.Copy(_buffer, 0, result, tailLength, _head);
@@ -327,8 +324,6 @@ namespace GDEngine.Core.Collections
         /// <summary>
         /// Copies all items to the destination array starting at arrayIndex.
         /// </summary>
-        /// <param name="array">Destination array.</param>
-        /// <param name="arrayIndex">Starting index in destination.</param>
         public void CopyTo(T[] array, int arrayIndex)
         {
             if (array == null)
@@ -344,12 +339,10 @@ namespace GDEngine.Core.Collections
 
                 if (_tail < _head)
                 {
-                    // Contiguous
                     Array.Copy(_buffer, _tail, array, arrayIndex, _count);
                 }
                 else
                 {
-                    // Wrapped
                     var tailLength = _capacity - _tail;
                     Array.Copy(_buffer, _tail, array, arrayIndex, tailLength);
                     Array.Copy(_buffer, 0, array, arrayIndex + tailLength, _head);
@@ -360,8 +353,6 @@ namespace GDEngine.Core.Collections
         /// <summary>
         /// Checks if the buffer contains the specified item.
         /// </summary>
-        /// <param name="item">Item to search for.</param>
-        /// <returns>True if found, false otherwise.</returns>
         public bool Contains(T item)
         {
             lock (_lock)
@@ -385,8 +376,6 @@ namespace GDEngine.Core.Collections
         /// <summary>
         /// Returns items matching the predicate.
         /// </summary>
-        /// <param name="predicate">Filter condition.</param>
-        /// <returns>List of matching items in chronological order.</returns>
         public List<T> FindAll(Predicate<T> predicate)
         {
             if (predicate == null)
@@ -412,7 +401,6 @@ namespace GDEngine.Core.Collections
         /// <summary>
         /// Executes an action on each item in chronological order.
         /// </summary>
-        /// <param name="action">Action to perform on each item.</param>
         public void ForEach(Action<T> action)
         {
             if (action == null)
@@ -433,16 +421,23 @@ namespace GDEngine.Core.Collections
         /// </summary>
         public IEnumerator<T> GetEnumerator()
         {
-            // Snapshot to avoid issues with modifications during enumeration
             var snapshot = ToArray();
-            foreach (var item in snapshot)
-                yield return item;
+            for (int i = 0; i < snapshot.Length; i++)
+                yield return snapshot[i];
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
         }
+        public override string ToString()
+        {
+            lock (_lock)
+            {
+                return $"CircularBuffer<{typeof(T).Name}>(Count={_count}, Capacity={_capacity}, Full={IsFull})";
+            }
+        }
+
         #endregion
 
         #region Lifecycle Methods
@@ -459,7 +454,7 @@ namespace GDEngine.Core.Collections
             GC.SuppressFinalize(this);
         }
 
-        protected virtual void Dispose(bool disposing)
+        private void Dispose(bool disposing)
         {
             if (_disposed)
                 return;
@@ -472,8 +467,8 @@ namespace GDEngine.Core.Collections
                     for (int i = 0; i < _count; i++)
                     {
                         var physicalIndex = (_tail + i) % _capacity;
-                        if (_buffer[physicalIndex] is IDisposable disposable)
-                            disposable.Dispose();
+                        if (_buffer[physicalIndex] is IDisposable d)
+                            d.Dispose();
                     }
 
                     Clear();
@@ -487,14 +482,7 @@ namespace GDEngine.Core.Collections
         {
             Dispose(false);
         }
-
-        public override string ToString()
-        {
-            lock (_lock)
-            {
-                return $"CircularBuffer<{typeof(T).Name}>(Count={_count}, Capacity={_capacity}, Full={IsFull})";
-            }
-        }
         #endregion
+     
     }
 }

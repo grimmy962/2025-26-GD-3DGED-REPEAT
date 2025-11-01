@@ -6,8 +6,8 @@ namespace GDEngine.Core.Components
     public class PositionRotationController : Component
     {
         #region Fields
-        private AnimationCurve3D _positionCurve;
-        private AnimationCurve3D _rotationCurve;
+        private AnimationCurve3D? _positionCurve;
+        private AnimationCurve3D? _rotationCurve;
 
         private float totalElapsedTimeSecs;
         private Quaternion _originalLocalRotation;
@@ -15,13 +15,13 @@ namespace GDEngine.Core.Components
 
         #endregion
         #region Properties
-        public AnimationCurve3D PositionCurve { get => _positionCurve; set => _positionCurve = value; }
-        public AnimationCurve3D RotationCurve { get => _rotationCurve; set => _rotationCurve = value; }
+        public AnimationCurve3D? PositionCurve { get => _positionCurve; set => _positionCurve = value; }
+        public AnimationCurve3D? RotationCurve { get => _rotationCurve; set => _rotationCurve = value; }
 
         #endregion
         protected override void Update(float deltaTime)
         {
-            if (Transform == null)
+            if (Transform == null || _positionCurve == null || _rotationCurve == null)
                 return;
 
             totalElapsedTimeSecs += Time.DeltaTimeSecs;
@@ -41,6 +41,9 @@ namespace GDEngine.Core.Components
 
         protected override void Awake()
         {
+            if (Transform == null)
+                throw new NullReferenceException(nameof(Transform));
+
             _originalLocalRotation = Transform.LocalRotation;
             _oldYawPitchRoll = Vector3.Zero;
         }

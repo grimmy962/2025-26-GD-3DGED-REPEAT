@@ -16,8 +16,9 @@ namespace GDEngine.Core.Components.Controllers.General.Transform
 
         protected override void Awake()
         {
-           // if (Transform == null)
-            //    throw new Exception();
+            if (Transform == null)
+                throw new NullReferenceException(nameof(Transform));
+
             _originalLocalScale = Transform.LocalScale;
         }
     }

@@ -70,6 +70,9 @@ namespace GDEngine.Core.Components.Controllers.General.Movement
         // Build direction from camera basis each frame; apply boost; translate.
         protected override void Update(float deltaTime)
         {
+            if (Transform == null)
+                return;
+
             var kb = Keyboard.GetState();
 
             float speed = _moveSpeed;

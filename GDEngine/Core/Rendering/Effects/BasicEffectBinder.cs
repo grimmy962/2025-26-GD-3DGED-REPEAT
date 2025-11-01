@@ -22,7 +22,7 @@ namespace GDEngine.Core.Rendering
         {
             var be = (BasicEffect)effect;
 
-            if (block.TryGet(PropertyKeys.MainTexture, out Texture2D tex))
+            if (block.TryGet(PropertyKeys.MainTexture, out Texture2D? tex))
             {
                 be.TextureEnabled = tex != null;
                 be.Texture = tex;

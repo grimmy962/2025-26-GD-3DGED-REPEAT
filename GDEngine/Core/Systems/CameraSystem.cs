@@ -16,7 +16,7 @@ namespace GDEngine.Core.Systems
         private readonly List<Camera> _cameras = new List<Camera>();
         private readonly Dictionary<Camera, BoundingFrustum> _frusta = new Dictionary<Camera, BoundingFrustum>();
 
-        private Camera _activeCamera;
+        private Camera? _activeCamera;
         private GraphicsDevice _graphicsDevice;
         private int _backbufferWidth;
         private int _backbufferHeight;
@@ -25,7 +25,7 @@ namespace GDEngine.Core.Systems
         #endregion
 
         #region Properties
-        public Camera ActiveCamera
+        public Camera? ActiveCamera
         {
             get => _activeCamera;
             set
@@ -205,7 +205,7 @@ namespace GDEngine.Core.Systems
             camera.AspectRatio = (float)_backbufferWidth / Math.Max(1, _backbufferHeight);
         }
 
-        private void EnsureFrustum(Camera camera)
+        private void EnsureFrustum(Camera? camera)
         {
             if (camera == null)
                 return;

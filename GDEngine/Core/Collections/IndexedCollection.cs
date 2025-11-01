@@ -1,4 +1,7 @@
-﻿using System.Collections;
+﻿#nullable enable
+using System;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace GDEngine.Core.Collections
 {
@@ -9,37 +12,30 @@ namespace GDEngine.Core.Collections
     /// <see cref="List{T}"/>
     /// <see cref="Dictionary{TKey, TValue}"/>
     /// <see cref="IEnumerable{T}"/>
-    public class IndexedCollection<T> : IEnumerable<T>, IDisposable where T : class
+    public sealed class IndexedCollection<T> : IEnumerable<T>, IDisposable where T : class
     {
         #region Static Fields
         private const int _minCapacity = 16;
         #endregion
 
         #region Fields
-        private T[] _items;
         private readonly Dictionary<T, int> _indices;
+        private T[] _items;
         private int _count;
-        private bool _disposed = false;
+        private bool _disposed;
         #endregion
 
         #region Properties
         /// <summary>Current number of items.</summary>
-        public int Count
-        {
-            get => _count;
-        }
+        public int Count => _count;
 
         /// <summary>Current array capacity.</summary>
-        public int Capacity
-        {
-            get => _items.Length;
-        }
+        public int Capacity => _items.Length;
 
-        /// <summary>Direct access to the backing array for zero-allocation loops (use only [0..Count-1]).</summary>
-        public T[] Items
-        {
-            get => _items;
-        }
+        /// <summary>
+        /// Direct access to the backing array for zero-allocation loops (use only indices [0..Count-1]).
+        /// </summary>
+        public T[] Items => _items;
 
         /// <summary>Indexed access with bounds checking.</summary>
         public T this[int index]
@@ -55,9 +51,7 @@ namespace GDEngine.Core.Collections
         #endregion
 
         #region Constructors
-        /// <summary>
-        /// Create with an initial capacity (minimum 16).
-        /// </summary>
+        /// <summary>Create with an initial capacity (minimum 16).</summary>
         public IndexedCollection(int initialCapacity = _minCapacity)
         {
             if (initialCapacity < _minCapacity)
@@ -66,13 +60,12 @@ namespace GDEngine.Core.Collections
             _items = new T[initialCapacity];
             _indices = new Dictionary<T, int>(initialCapacity);
             _count = 0;
+            _disposed = false;
         }
         #endregion
 
         #region Methods
-        /// <summary>
-        /// Add to end (O(1) amortized). Ignores duplicates. Throws if item is null.
-        /// </summary>
+        /// <summary>Add to end (O(1) amortized). Ignores duplicates. Throws if item is null.</summary>
         public void Add(T item)
         {
             if (item == null)
@@ -89,16 +82,13 @@ namespace GDEngine.Core.Collections
             _count++;
         }
 
-        /// <summary>
-        /// Remove via swap-remove (O(1)). Returns false if null or not present.
-        /// </summary>
+        /// <summary>Remove via swap-remove (O(1)). Returns false if null or not present.</summary>
         public bool Remove(T item)
         {
             if (item == null)
                 return false;
 
-            int index;
-            if (!_indices.TryGetValue(item, out index))
+            if (!_indices.TryGetValue(item, out int index))
                 return false;
 
             int last = _count - 1;
@@ -110,16 +100,14 @@ namespace GDEngine.Core.Collections
                 _indices[moved] = index;
             }
 
-            _items[last] = null;
+            _items[last] = default!; // clear for GC on reference types
             _indices.Remove(item);
             _count--;
 
             return true;
         }
 
-        /// <summary>
-        /// O(1) existence check.
-        /// </summary>
+        /// <summary>O(1) existence check.</summary>
         public bool Contains(T item)
         {
             if (item == null)
@@ -128,36 +116,26 @@ namespace GDEngine.Core.Collections
             return _indices.ContainsKey(item);
         }
 
-        /// <summary>
-        /// O(1) index lookup; returns -1 if not found.
-        /// </summary>
+        /// <summary>O(1) index lookup; returns -1 if not found.</summary>
         public int IndexOf(T item)
         {
             if (item == null)
                 return -1;
 
-            int idx;
-            if (_indices.TryGetValue(item, out idx))
-                return idx;
-
-            return -1;
+            return _indices.TryGetValue(item, out int idx) ? idx : -1;
         }
 
-        /// <summary>
-        /// Remove all items and clear array slots to enable GC.
-        /// </summary>
+        /// <summary>Remove all items and clear array slots to enable GC.</summary>
         public void Clear()
         {
             for (int i = 0; i < _count; i++)
-                _items[i] = null;
+                _items[i] = default!;
 
             _indices.Clear();
             _count = 0;
         }
 
-        /// <summary>
-        /// Ensure backing capacity is at least the requested value (powers-of-two growth).
-        /// </summary>
+        /// <summary>Ensure backing capacity is at least the requested value (powers-of-two growth).</summary>
         public void EnsureCapacity(int capacity)
         {
             if (capacity <= _items.Length)
@@ -170,9 +148,7 @@ namespace GDEngine.Core.Collections
             Resize(newCap);
         }
 
-        /// <summary>
-        /// Copy live items [0..Count-1] into the destination array starting at arrayIndex.
-        /// </summary>
+        /// <summary>Copy live items [0..Count-1] into the destination array starting at arrayIndex.</summary>
         public void CopyTo(T[] array, int arrayIndex)
         {
             if (array == null)
@@ -187,9 +163,7 @@ namespace GDEngine.Core.Collections
             Array.Copy(_items, 0, array, arrayIndex, _count);
         }
 
-        /// <summary>
-        /// Debug-only integrity validation. Throws if an invariant is broken.
-        /// </summary>
+        /// <summary>Debug-only integrity validation. Throws if an invariant is broken.</summary>
         public void ValidateIntegrity()
         {
             if (_count != _indices.Count)
@@ -201,8 +175,7 @@ namespace GDEngine.Core.Collections
                 if (it == null)
                     throw new InvalidOperationException($"Null item at index {i}");
 
-                int mapped;
-                if (!_indices.TryGetValue(it, out mapped))
+                if (!_indices.TryGetValue(it, out int mapped))
                     throw new InvalidOperationException($"Item at index {i} missing from dictionary");
 
                 if (mapped != i)
@@ -210,9 +183,7 @@ namespace GDEngine.Core.Collections
             }
         }
 
-        /// <summary>
-        /// Enumerator over the live region [0..Count-1].
-        /// </summary>
+        /// <summary>Enumerator over the live region [0..Count-1].</summary>
         public IEnumerator<T> GetEnumerator()
         {
             for (int i = 0; i < _count; i++)
@@ -239,40 +210,31 @@ namespace GDEngine.Core.Collections
         #endregion
 
         #region Housekeeping Methods
+        /// <summary>Disposes the collection, disposing items that implement IDisposable and clearing references.</summary>
         public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
         {
             if (_disposed)
                 return;
 
-            if (disposing)
+            // Dispose any items that implement IDisposable
+            for (int i = 0; i < _count; i++)
             {
-                // Dispose any items that implement IDisposable
-                for (int i = 0; i < _count; i++)
-                {
-                    if (_items[i] is IDisposable disposable)
-                    {
-                        disposable.Dispose();
-                    }
-                    _items[i] = null;
-                }
+                if (_items[i] is IDisposable d)
+                    d.Dispose();
 
-                // Clear the dictionary
-                _indices.Clear();
-                _count = 0;
+                _items[i] = default!;
             }
 
+            _indices.Clear();
+            _count = 0;
             _disposed = true;
+
+            GC.SuppressFinalize(this);
         }
 
-        ~IndexedCollection()
+        public override string ToString()
         {
-            Dispose(false);
+            return $"IndexedCollection<{typeof(T).Name}>(Count={_count}, Capacity={_items.Length})";
         }
         #endregion
     }

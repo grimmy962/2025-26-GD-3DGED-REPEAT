@@ -17,6 +17,7 @@ namespace GDEngine.Core.Entities
         private Scene scene;
         private bool _disposed = false;
         private LayerMask _layer = LayerMask.All;
+        private bool _isStatic;
         #endregion
 
         #region Properties
@@ -32,6 +33,14 @@ namespace GDEngine.Core.Entities
         {
             get => _layer;
             set => _layer = value;
+        }
+        /// <summary>
+        /// Marks this object as immovable (eligible for static octree/bakes).
+        /// </summary>
+        public bool IsStatic
+        {
+            get => _isStatic;
+            set => _isStatic = value;
         }
         #endregion
 

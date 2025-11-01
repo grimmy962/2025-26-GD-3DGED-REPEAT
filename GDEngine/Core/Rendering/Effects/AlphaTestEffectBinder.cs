@@ -22,7 +22,7 @@ namespace GDEngine.Core.Rendering
         {
             var ae = (AlphaTestEffect)effect;
 
-            if (block.TryGet(PropertyKeys.MainTexture, out Texture2D tex))
+            if (block.TryGet(PropertyKeys.MainTexture, out Texture2D? tex))
                 ae.Texture = tex;
 
             if (block.TryGet(PropertyKeys.Alpha, out float alpha))

@@ -22,10 +22,10 @@ namespace GDEngine.Core.Rendering
         {
             var de = (DualTextureEffect)effect;
 
-            if (block.TryGet(PropertyKeys.MainTexture, out Texture2D t1))
+            if (block.TryGet(PropertyKeys.MainTexture, out Texture2D? t1))
                 de.Texture = t1;
 
-            if (block.TryGet(PropertyKeys.Texture2, out Texture2D t2))
+            if (block.TryGet(PropertyKeys.Texture2, out Texture2D? t2))
                 de.Texture2 = t2;
 
             if (block.TryGet(PropertyKeys.Tint, out Color tint))
