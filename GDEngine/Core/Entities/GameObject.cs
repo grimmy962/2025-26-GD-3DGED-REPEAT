@@ -1,4 +1,5 @@
 ﻿using GDEngine.Core.Components;
+using GDEngine.Core.Rendering;
 
 namespace GDEngine.Core.Entities
 {
@@ -15,7 +16,7 @@ namespace GDEngine.Core.Entities
         private readonly List<Component> _components = new();
         private Scene scene;
         private bool _disposed = false;
-
+        private LayerMask _layer = LayerMask.All;
         #endregion
 
         #region Properties
@@ -24,7 +25,14 @@ namespace GDEngine.Core.Entities
         public Transform Transform => _transform;
         public IReadOnlyList<Component> Components => _components;
         public Scene Scene { get => scene; set => scene = value; }
-
+        /// <summary>
+        /// Per-object layer mask used for camera culling.
+        /// </summary>
+        public LayerMask Layer
+        {
+            get => _layer;
+            set => _layer = value;
+        }
         #endregion
 
         #region Constructors

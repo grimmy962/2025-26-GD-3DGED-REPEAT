@@ -133,6 +133,20 @@ namespace GDEngine.Core.Entities
         }
 
         /// <summary>
+        /// Returns a specific system if one is already added; otherwise returns null.
+        /// </summary>
+        public T? GetSystem<T>() where T : SystemBase
+        {
+            for (int i = 0; i < _systemsAll.Count; i++)
+            {
+                if (_systemsAll[i] is T t)
+                    return t;
+            }
+            return null;
+        }
+
+
+        /// <summary>
         /// Advances non-render lifecycles and drives component lifecycle. Call once per frame.
         /// </summary>
         public void Update(float deltaTime)

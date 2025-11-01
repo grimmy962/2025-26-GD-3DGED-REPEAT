@@ -13,6 +13,7 @@ using GDEngine.Samples;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System;
 using System.Windows.Forms;
 
 namespace GDGame
@@ -216,8 +217,15 @@ namespace GDGame
 
         private void InitializeSystems()
         {
+            InitializeCameraSystem();
             InitializeRenderingSystem();
             InitializeInputSystem();
+        }
+
+        private void InitializeCameraSystem()
+        {
+            var cameraSystem = new CameraSystem(_graphics.GraphicsDevice, -100);
+            _scene.Add(cameraSystem);
         }
 
         private void InitializeRenderingSystem()
@@ -261,18 +269,33 @@ namespace GDGame
             ////feed off whatever screen dimensions you set InitializeGraphics
             _camera.AspectRatio = (float)_graphics.PreferredBackBufferWidth / _graphics.PreferredBackBufferHeight;
 
-            //add to scene
-            _scene.Add(_cameraGO);
-
-            //decide on controller
-            //_cameraGO.AddComponent<CameraController>();
-
             _cameraGO.AddComponent<KeyboardWASDController>();
             _cameraGO.AddComponent<MouseYawPitchController>();
+
+            //dont forget to add the camera to the camera system in the scene
+            _scene.GetSystem<CameraSystem>().Add(_camera);
+           
+            //finally add it to the scene
+            _scene.Add(_cameraGO);
         }
+
 
         private void InitializeSkyBox(int scale = 500)
         {
+            #region Add parent root at origin to rotate the sky
+            //add a parent at origin so we can rotate the sky around Y-axis
+            var skyboxRoot = new GameObject("SkyboxRoot");
+            var rot = skyboxRoot.AddComponent<GDEngine.Core.Components.Controllers.General.Transform.RotationController>();
+
+            // Turntable spin around local +Y
+            rot._rotationAxisNormalized = Vector3.Up;
+
+            // Dramatised fast drift at 2 deg/sec. 
+            rot._rotationSpeedInRadiansPerSecond = MathHelper.ToRadians(2f);
+
+            _scene.Add(skyboxRoot); 
+            #endregion
+
             GameObject skyBoxQuad = null;
             MeshFilter meshFilter = null;
 
@@ -287,6 +310,9 @@ namespace GDGame
             _skyBoxBackRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_back");
             _scene.Add(skyBoxQuad);
 
+            //set parent to allow rotation
+            skyBoxQuad.Transform.SetParent(skyboxRoot.Transform);
+
             // left
             skyBoxQuad = new GameObject("left");
             skyBoxQuad.Transform.ScaleTo(new Vector3(scale, scale, 1));
@@ -298,6 +324,10 @@ namespace GDGame
             _skyBoxLeftRenderer.Material = _matBasicUnlit;
             _skyBoxLeftRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_left");
             _scene.Add(skyBoxQuad);
+
+            //set parent to allow rotation
+            skyBoxQuad.Transform.SetParent(skyboxRoot.Transform);
+
 
             // right
             skyBoxQuad = new GameObject("right");
@@ -311,6 +341,9 @@ namespace GDGame
             _skyBoxRightRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_right");
             _scene.Add(skyBoxQuad);
 
+            //set parent to allow rotation
+            skyBoxQuad.Transform.SetParent(skyboxRoot.Transform);
+
             // front
             skyBoxQuad = new GameObject("front");
             skyBoxQuad.Transform.ScaleTo(new Vector3(scale, scale, 1));
@@ -323,6 +356,9 @@ namespace GDGame
             _skyBoxFrontRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_front");
             _scene.Add(skyBoxQuad);
 
+            //set parent to allow rotation
+            skyBoxQuad.Transform.SetParent(skyboxRoot.Transform);
+
             // sky (top)
             skyBoxQuad = new GameObject("sky");
             skyBoxQuad.Transform.ScaleTo(new Vector3(scale, scale, 1));
@@ -334,6 +370,10 @@ namespace GDGame
             _skyBoxSkyRenderer.Material = _matBasicUnlit;
             _skyBoxSkyRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_sky");
             _scene.Add(skyBoxQuad);
+
+            //set parent to allow rotation
+            skyBoxQuad.Transform.SetParent(skyboxRoot.Transform);
+
         }
 
 

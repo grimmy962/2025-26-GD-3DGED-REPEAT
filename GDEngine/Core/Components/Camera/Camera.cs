@@ -1,11 +1,11 @@
-﻿using Microsoft.Xna.Framework;
-using GDEngine.Core.Rendering; 
+﻿using GDEngine.Core.Rendering;
+using Microsoft.Xna.Framework;
 
 namespace GDEngine.Core.Components
 {
     /// <summary>
-    /// Camera with switchable Perspective/Orthographic projection and a LayerMask culling mask.
-    /// Uses lazy view/projection recomputation via dirty flags.
+    /// Camera component with switchable Perspective/Orthographic projection, LayerMask culling,
+    /// and per-camera clear/stack settings. Uses lazy view/projection recomputation via dirty flags.
     /// </summary>
     /// <see cref="Transform"/>
     /// <see cref="Component"/>
@@ -29,6 +29,12 @@ namespace GDEngine.Core.Components
         // LayerMask culling
         private LayerMask _cullingMask = LayerMask.All;
 
+        // Camera stack / clearing
+        private CameraClearFlags _clearFlags = CameraClearFlags.Color;
+        private Color _clearColor = Color.CornflowerBlue;
+        private CameraStackRole _stackRole = CameraStackRole.Base;
+        private int _depth;
+
         private Matrix _view;
         private Matrix _projection;
         private Matrix _viewProjection;
@@ -38,39 +44,54 @@ namespace GDEngine.Core.Components
         #endregion
 
         #region Properties
-
-        // Matrices (lazy)
+        /// <summary>
+        /// View matrix (recalculated on demand).
+        /// </summary>
         public Matrix View
         {
             get
             {
                 if (_viewDirty)
+                {
                     RecalculateView();
+                }
                 return _view;
             }
         }
 
+        /// <summary>
+        /// Projection matrix (recalculated on demand).
+        /// </summary>
         public Matrix Projection
         {
             get
             {
                 if (_projectionDirty)
+                {
                     RecalculateProjection();
+                }
                 return _projection;
             }
         }
 
+        /// <summary>
+        /// ViewProjection matrix (recalculated on demand).
+        /// </summary>
         public Matrix ViewProjection
         {
             get
             {
                 if (_viewDirty || _projectionDirty)
+                {
                     RecalculateViewProjection();
+                }
                 return _viewProjection;
             }
         }
 
-        // Perspective
+        /// <summary>
+        /// Perspective field of view in radians.
+        /// </summary>
         public float FieldOfView
         {
             get => _fieldOfView;
@@ -84,7 +105,9 @@ namespace GDEngine.Core.Components
             }
         }
 
-        // Shared
+        /// <summary>
+        /// Aspect ratio (width / height).
+        /// </summary>
         public float AspectRatio
         {
             get => _aspectRatio;
@@ -98,6 +121,9 @@ namespace GDEngine.Core.Components
             }
         }
 
+        /// <summary>
+        /// Near clip plane distance.
+        /// </summary>
         public float NearPlane
         {
             get => _nearPlane;
@@ -111,6 +137,9 @@ namespace GDEngine.Core.Components
             }
         }
 
+        /// <summary>
+        /// Far clip plane distance.
+        /// </summary>
         public float FarPlane
         {
             get => _farPlane;
@@ -124,7 +153,9 @@ namespace GDEngine.Core.Components
             }
         }
 
-        // Orthographic
+        /// <summary>
+        /// Orthographic half-height (world units). Width is derived from aspect ratio.
+        /// </summary>
         public float OrthographicSize
         {
             get => _orthographicSize;
@@ -138,7 +169,9 @@ namespace GDEngine.Core.Components
             }
         }
 
-        // Mode
+        /// <summary>
+        /// Current projection mode.
+        /// </summary>
         public ProjectionType ProjectionMode
         {
             get => _projectionType;
@@ -152,11 +185,49 @@ namespace GDEngine.Core.Components
             }
         }
 
-        // Layer culling
+        /// <summary>
+        /// Per-camera layer mask for culling.
+        /// </summary>
         public LayerMask CullingMask
         {
             get => _cullingMask;
             set => _cullingMask = value;
+        }
+
+        /// <summary>
+        /// Camera clear policy.
+        /// </summary>
+        public CameraClearFlags ClearFlags
+        {
+            get => _clearFlags;
+            set => _clearFlags = value;
+        }
+
+        /// <summary>
+        /// Color used when clearing with <see cref="CameraClearFlags.Color"/>.
+        /// </summary>
+        public Color ClearColor
+        {
+            get => _clearColor;
+            set => _clearColor = value;
+        }
+
+        /// <summary>
+        /// Stack role (Base or Overlay).
+        /// </summary>
+        public CameraStackRole StackRole
+        {
+            get => _stackRole;
+            set => _stackRole = value;
+        }
+
+        /// <summary>
+        /// Depth sort key within the same stack role (lower draws first).
+        /// </summary>
+        public int Depth
+        {
+            get => _depth;
+            set => _depth = value;
         }
         #endregion
 
@@ -164,11 +235,19 @@ namespace GDEngine.Core.Components
         #endregion
 
         #region Methods
+        /// <summary>
+        /// Toggle between Perspective and Orthographic projection.
+        /// </summary>
         public void ToggleProjection()
         {
-            ProjectionMode = _projectionType == ProjectionType.Perspective
-                ? ProjectionType.Orthographic
-                : ProjectionType.Perspective;
+            if (_projectionType == ProjectionType.Perspective)
+            {
+                ProjectionMode = ProjectionType.Orthographic;
+            }
+            else
+            {
+                ProjectionMode = ProjectionType.Perspective;
+            }
         }
 
         private void OnTransformChanged(Transform transform, TransformChangeFlags flags)
@@ -179,11 +258,13 @@ namespace GDEngine.Core.Components
         private void RecalculateView()
         {
             if (Transform == null)
+            {
                 throw new NullReferenceException(nameof(Transform));
+            }
 
-            var position = Transform.Position;
-            var forward = Transform.Forward;
-            var up = Transform.Up;
+            Vector3 position = Transform.Position;
+            Vector3 forward = Transform.Forward;
+            Vector3 up = Transform.Up;
 
             _view = Matrix.CreateLookAt(position, position + forward, up);
             _viewDirty = false;
@@ -202,7 +283,6 @@ namespace GDEngine.Core.Components
             }
             else
             {
-                // size = half-height; width depends on aspect ratio
                 float height = 2f * _orthographicSize;
                 float width = height * _aspectRatio;
 
@@ -220,9 +300,13 @@ namespace GDEngine.Core.Components
         private void RecalculateViewProjection()
         {
             if (_viewDirty)
+            {
                 RecalculateView();
+            }
             if (_projectionDirty)
+            {
                 RecalculateProjection();
+            }
 
             _viewProjection = _view * _projection;
         }
@@ -235,7 +319,9 @@ namespace GDEngine.Core.Components
             _projectionDirty = true;
 
             if (Transform != null)
+            {
                 Transform.Changed += OnTransformChanged;
+            }
         }
         #endregion
 
@@ -250,5 +336,25 @@ namespace GDEngine.Core.Components
     {
         Perspective = 0,
         Orthographic = 1
+    }
+
+    /// <summary>
+    /// Camera clear policies.
+    /// </summary>
+    public enum CameraClearFlags : sbyte
+    {
+        Skybox = 0,   // reserved; currently same as Color unless a skybox pass is added
+        Color = 1,
+        DepthOnly = 2,
+        None = 3
+    }
+
+    /// <summary>
+    /// Camera stack role used for sorting and composition.
+    /// </summary>
+    public enum CameraStackRole : sbyte
+    {
+        Base = 0,
+        Overlay = 1
     }
 }
