@@ -151,7 +151,7 @@ namespace GDEngine.Core.Timing
             return c;
         }
 
-        // Create a pulse (low→high→low) with up/hold/down segments (seconds).
+        // Create a pulse (low->high->low) with up/hold/down segments (seconds).
         public static AnimationCurve MakePulse(float low, float high, double upSeconds, double holdSeconds, double downSeconds, CurveLoopType loop = CurveLoopType.Cycle)
         {
             var c = new AnimationCurve(loop);
@@ -340,7 +340,7 @@ namespace GDEngine.Core.Timing
             return c;
         }
 
-        // Factory: pulse (low→high→low) segments in seconds.
+        // Factory: pulse (low->high->low) segments in seconds.
         public static AnimationCurve2D MakePulse(Vector2 low, Vector2 high, double upSeconds, double holdSeconds, double downSeconds, CurveLoopType loop = CurveLoopType.Cycle)
         {
             var c = new AnimationCurve2D(loop);
@@ -477,7 +477,7 @@ namespace GDEngine.Core.Timing
             return c;
         }
 
-        // Factory: pulse (low→high→low) segments in seconds.
+        // Factory: pulse (low->high->low) segments in seconds.
         public static AnimationCurve3D MakePulse(Vector3 low, Vector3 high, double upSeconds, double holdSeconds, double downSeconds, CurveLoopType loop = CurveLoopType.Cycle)
         {
             var c = new AnimationCurve3D(loop);

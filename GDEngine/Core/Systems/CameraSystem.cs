@@ -179,7 +179,7 @@ namespace GDEngine.Core.Systems
         // Runs in the Render lifecycle (Scene.Draw dispatches this). Use Draw() for “pre-render” prep.
         public override void Draw(float deltaTime)
         {
-            // Handle resize → aspect sync
+            // Handle resize which requires an update to aspect sync
             var presentation = _graphicsDevice.PresentationParameters;
             if (presentation.BackBufferWidth != _backbufferWidth || presentation.BackBufferHeight != _backbufferHeight)
             {

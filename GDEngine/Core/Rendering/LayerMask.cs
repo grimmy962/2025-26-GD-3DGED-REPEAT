@@ -72,7 +72,7 @@
         }
 
         /// <summary>
-        /// 32-bit binary string for this mask (MSB→LSB), zero-padded.
+        /// 32-bit binary string for this mask (MSB to LSB), zero-padded.
         /// </summary>
         public string ToBinary32()
         {
