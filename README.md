@@ -35,7 +35,7 @@ It is designed for **incremental classroom live-coding** and emphasizes clear se
     /Services      (EngineContext)
   /Rendering       (Material, RenderStates, LayerMask, IEffectBinder, MeshFilter, MeshRenderer)
   /Timing          (Time, Ease, AnimationCurve, AnimationCurve2D, AnimationCurve3D)
-  /Collections     (IndexedCollection, CircularBuffer)
+  /Collections     (IndexedCollection, CircularBuffer, ContentDictionary, ObjectPool)
   /Input
     /Devices       (GDKeyboardInput, GDGamepadInput, MouseInput)
     (IInputDevice, IInputReceiver, InputAction/Bindings)
