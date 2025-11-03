@@ -30,8 +30,7 @@ namespace GDEngine.Core.Entities
         // Systems bucketed by FrameLifecycle index (we know there are exactly 5 lifecycles)
         private readonly List<SystemBase>[] _systemsByLifecycle;
 
-
-        private List<MeshRenderer> _renderers = new List<MeshRenderer>(256);
+        private List<MeshRenderer> _renderers = new List<MeshRenderer>(512);
         public List<MeshRenderer> Renderers { get => _renderers; set => _renderers = value; }
 
         private readonly EngineContext _context;
@@ -110,7 +109,6 @@ namespace GDEngine.Core.Entities
        
             _gameObjects.Add(gameObject);
 
-            //TODO - add for remove()
             //get all renderers for this game objects
             var renderers = gameObject.GetComponents<MeshRenderer>();
             //add all the renderers from this game object

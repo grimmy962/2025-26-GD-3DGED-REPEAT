@@ -13,7 +13,6 @@ using GDEngine.Samples;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using System;
 using System.Windows.Forms;
 
 namespace GDGame
@@ -41,7 +40,8 @@ namespace GDGame
         private AnimationCurve3D _animationRotationCurve;
         private Material _matBasicUnlit;
         private Material _matBasicLit;
-        private Material _matAlphaCutout; 
+        private Material _matAlphaCutout;
+        private GameObject _pipCameraGO;
         #endregion
 
         public Main()
@@ -85,6 +85,8 @@ namespace GDGame
 
             base.Initialize();
         }
+
+      
 
         private void InitializeCameraCurves()
         {
@@ -279,7 +281,7 @@ namespace GDGame
             _scene.Add(_cameraGO);
         }
 
-
+      
         private void InitializeSkyBox(int scale = 500)
         {
             #region Add parent root at origin to rotate the sky
@@ -457,6 +459,7 @@ namespace GDGame
 
             base.Update(gameTime);
         }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "<Pending>")]
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);

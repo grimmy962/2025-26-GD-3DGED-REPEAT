@@ -1,5 +1,5 @@
 ﻿using GDEngine.Core.Components;
-using GDEngine.Core.Enums;      
+using GDEngine.Core.Enums;
 using GDEngine.Core.Rendering;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -17,7 +17,7 @@ namespace GDEngine.Core.Systems
         private readonly Dictionary<Camera, BoundingFrustum> _frusta = new Dictionary<Camera, BoundingFrustum>();
 
         private Camera? _activeCamera;
-        private GraphicsDevice _graphicsDevice;
+        private GraphicsDevice _graphicsDevice = null!;
         private int _backbufferWidth;
         private int _backbufferHeight;
 
@@ -85,6 +85,10 @@ namespace GDEngine.Core.Systems
             }
         }
 
+        /// <summary>
+        /// Fills <paramref name="destinationList"/> with cameras sorted by stack role, then by Depth.
+        /// Base cameras first (ascending Depth), then Overlay cameras (ascending Depth).
+        /// </summary>
         public void GetSortedStack(List<Camera> destinationList)
         {
             if (destinationList == null)
@@ -103,6 +107,9 @@ namespace GDEngine.Core.Systems
             });
         }
 
+        /// <summary>
+        /// Applies the clear operation for a given camera. For PiP overlays, expect ClearFlags == None.
+        /// </summary>
         public void ApplyClears(Camera camera)
         {
             if (camera == null)
@@ -110,20 +117,23 @@ namespace GDEngine.Core.Systems
 
             switch (camera.ClearFlags)
             {
-                case CameraClearFlags.Color:
-                case CameraClearFlags.Skybox:
+                case Camera.ClearFlagsType.Color:
+                case Camera.ClearFlagsType.Skybox:
                     _graphicsDevice.Clear(ClearOptions.Target | ClearOptions.DepthBuffer, camera.ClearColor, 1f, 0);
                     break;
 
-                case CameraClearFlags.DepthOnly:
+                case Camera.ClearFlagsType.DepthOnly:
                     _graphicsDevice.Clear(ClearOptions.DepthBuffer, Color.Transparent, 1f, 0);
                     break;
 
-                case CameraClearFlags.None:
+                case Camera.ClearFlagsType.None:
                     break;
             }
         }
 
+        /// <summary>
+        /// Builds a visible set using layer-mask filtering. (Bounding tests can be added when bounds are exposed.)
+        /// </summary>
         public void BuildVisibleSet(Camera camera, IEnumerable<MeshRenderer> allRenderers, List<MeshRenderer> destinationList)
         {
             if (destinationList == null)
@@ -151,21 +161,30 @@ namespace GDEngine.Core.Systems
             }
         }
 
+        /// <summary>
+        /// Converts screen space (pixels) to world using this camera's effective viewport (PiP-aware).
+        /// </summary>
         public Vector3 ScreenToWorld(Camera camera, Vector3 screenPoint)
         {
-            var viewport = _graphicsDevice.Viewport;
+            var viewport = camera.GetViewport(_graphicsDevice);
             return viewport.Unproject(screenPoint, camera.Projection, camera.View, Matrix.Identity);
         }
 
+        /// <summary>
+        /// Converts world to screen space (pixels) using this camera's effective viewport (PiP-aware).
+        /// </summary>
         public Vector3 WorldToScreen(Camera camera, Vector3 worldPoint)
         {
-            var viewport = _graphicsDevice.Viewport;
+            var viewport = camera.GetViewport(_graphicsDevice);
             return viewport.Project(worldPoint, camera.Projection, camera.View, Matrix.Identity);
         }
 
+        /// <summary>
+        /// Returns a picking ray from this camera using its effective viewport (PiP-aware).
+        /// </summary>
         public Ray ScreenPointToRay(Camera camera, Vector2 screenPixel)
         {
-            var viewport = _graphicsDevice.Viewport;
+            var viewport = camera.GetViewport(_graphicsDevice);
 
             Vector3 nearPoint = viewport.Unproject(new Vector3(screenPixel, 0f), camera.Projection, camera.View, Matrix.Identity);
             Vector3 farPoint = viewport.Unproject(new Vector3(screenPixel, 1f), camera.Projection, camera.View, Matrix.Identity);
@@ -175,7 +194,6 @@ namespace GDEngine.Core.Systems
         #endregion
 
         #region Lifecycle Methods
-
         // Runs in the Render lifecycle (Scene.Draw dispatches this). Use Draw() for “pre-render” prep.
         public override void Draw(float deltaTime)
         {
@@ -185,9 +203,6 @@ namespace GDEngine.Core.Systems
             {
                 _backbufferWidth = presentation.BackBufferWidth;
                 _backbufferHeight = presentation.BackBufferHeight;
-
-                for (int i = 0; i < _cameras.Count; i++)
-                    SyncAspect(_cameras[i]);
             }
 
             // Refresh frusta from latest camera matrices (after components’ LateUpdate)
@@ -202,7 +217,10 @@ namespace GDEngine.Core.Systems
             if (camera == null)
                 return;
 
-            camera.AspectRatio = (float)_backbufferWidth / Math.Max(1, _backbufferHeight);
+            // If the camera is PiP (PixelViewport set), its projection derives aspect from that.
+            // Otherwise, keep the camera's default aspect equal to backbuffer aspect.
+            if (camera.Viewport.HasValue == false)
+                camera.AspectRatio = (float)_backbufferWidth / Math.Max(1, _backbufferHeight);
         }
 
         private void EnsureFrustum(Camera? camera)

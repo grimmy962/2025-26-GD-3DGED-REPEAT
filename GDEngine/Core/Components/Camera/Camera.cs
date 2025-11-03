@@ -1,5 +1,6 @@
 ﻿using GDEngine.Core.Rendering;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace GDEngine.Core.Components
 {
@@ -11,6 +12,37 @@ namespace GDEngine.Core.Components
     /// <see cref="Component"/>
     public sealed class Camera : Component
     {
+        #region Enums
+        /// <summary>
+        /// Camera projection modes.
+        /// </summary>
+        public enum ProjectionType : sbyte
+        {
+            Perspective = 0,
+            Orthographic = 1
+        }
+
+        /// <summary>
+        /// Camera clear policies.
+        /// </summary>
+        public enum ClearFlagsType : sbyte
+        {
+            Skybox = 0,   // reserved; currently same as Color unless a skybox pass is added
+            Color = 1,
+            DepthOnly = 2,
+            None = 3
+        }
+
+        /// <summary>
+        /// Camera stack role used for sorting and composition.
+        /// </summary>
+        public enum StackType : sbyte
+        {
+            Base = 0,
+            Overlay = 1
+        } 
+        #endregion
+
         #region Static Fields
         #endregion
 
@@ -30,10 +62,13 @@ namespace GDEngine.Core.Components
         private LayerMask _cullingMask = LayerMask.All;
 
         // Camera stack / clearing
-        private CameraClearFlags _clearFlags = CameraClearFlags.Color;
+        private ClearFlagsType _clearFlags = ClearFlagsType.Color;
         private Color _clearColor = Color.CornflowerBlue;
-        private CameraStackRole _stackRole = CameraStackRole.Base;
+        private StackType _stackRole = StackType.Base;
         private int _depth;
+
+        // PiP / per-camera viewport in pixels (null => full backbuffer)
+        private Viewport? _viewport;
 
         private Matrix _view;
         private Matrix _projection;
@@ -106,7 +141,7 @@ namespace GDEngine.Core.Components
         }
 
         /// <summary>
-        /// Aspect ratio (width / height).
+        /// Aspect ratio (width / height) used when no PixelViewport is set.
         /// </summary>
         public float AspectRatio
         {
@@ -197,14 +232,14 @@ namespace GDEngine.Core.Components
         /// <summary>
         /// Camera clear policy.
         /// </summary>
-        public CameraClearFlags ClearFlags
+        public ClearFlagsType ClearFlags
         {
             get => _clearFlags;
             set => _clearFlags = value;
         }
 
         /// <summary>
-        /// Color used when clearing with <see cref="CameraClearFlags.Color"/>.
+        /// Color used when clearing with <see cref="ClearFlagsType.Color"/>.
         /// </summary>
         public Color ClearColor
         {
@@ -215,19 +250,33 @@ namespace GDEngine.Core.Components
         /// <summary>
         /// Stack role (Base or Overlay).
         /// </summary>
-        public CameraStackRole StackRole
+        public StackType StackRole
         {
             get => _stackRole;
             set => _stackRole = value;
         }
 
         /// <summary>
-        /// Depth sort key within the same stack role (lower draws first).
+        /// Depth sort key within the same stack role (lower draws first). Use a higher value for PiP overlays.
         /// </summary>
         public int Depth
         {
             get => _depth;
             set => _depth = value;
+        }
+
+        /// <summary>
+        /// Optional pixel-space viewport for this camera (null = full backbuffer).
+        /// When set, projection aspect is derived from this rectangle.
+        /// </summary>
+        public Viewport? Viewport
+        {
+            get => _viewport;
+            set
+            {
+                _viewport = value;
+                _projectionDirty = true;
+            }
         }
         #endregion
 
@@ -250,7 +299,21 @@ namespace GDEngine.Core.Components
             }
         }
 
-        private void OnTransformChanged(Transform transform, TransformChangeFlags flags)
+        /// <summary>
+        /// Returns the effective graphics Viewport for this camera (uses PixelViewport if set, else full backbuffer).
+        /// </summary>
+        public Viewport GetViewport(GraphicsDevice graphicsDevice)
+        {
+            if (_viewport != null)
+            {
+                var r = _viewport.Value;
+                return new Viewport(r.X, r.Y, r.Width, r.Height);
+            }
+
+            return graphicsDevice.Viewport;
+        }
+
+        private void OnTransformChanged(Transform transform, Transform.ChangeFlags flags)
         {
             _viewDirty = true;
         }
@@ -272,11 +335,21 @@ namespace GDEngine.Core.Components
 
         private void RecalculateProjection()
         {
+            float aspect = _aspectRatio;
+
+            // If a PiP / per-camera viewport is set, derive aspect from it
+            if (_viewport.HasValue)
+            {
+                var r = _viewport.Value;
+                int h = r.Height <= 0 ? 1 : r.Height;
+                aspect = (float)r.Width / h;
+            }
+
             if (_projectionType == ProjectionType.Perspective)
             {
                 _projection = Matrix.CreatePerspectiveFieldOfView(
                     _fieldOfView,
-                    _aspectRatio,
+                    aspect,
                     _nearPlane,
                     _farPlane
                 );
@@ -284,7 +357,7 @@ namespace GDEngine.Core.Components
             else
             {
                 float height = 2f * _orthographicSize;
-                float width = height * _aspectRatio;
+                float width = height * aspect;
 
                 _projection = Matrix.CreateOrthographic(
                     width,
@@ -327,34 +400,5 @@ namespace GDEngine.Core.Components
 
         #region Housekeeping Methods
         #endregion
-    }
-
-    /// <summary>
-    /// Camera projection modes.
-    /// </summary>
-    public enum ProjectionType : sbyte
-    {
-        Perspective = 0,
-        Orthographic = 1
-    }
-
-    /// <summary>
-    /// Camera clear policies.
-    /// </summary>
-    public enum CameraClearFlags : sbyte
-    {
-        Skybox = 0,   // reserved; currently same as Color unless a skybox pass is added
-        Color = 1,
-        DepthOnly = 2,
-        None = 3
-    }
-
-    /// <summary>
-    /// Camera stack role used for sorting and composition.
-    /// </summary>
-    public enum CameraStackRole : sbyte
-    {
-        Base = 0,
-        Overlay = 1
     }
 }

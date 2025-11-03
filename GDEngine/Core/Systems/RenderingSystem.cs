@@ -9,9 +9,10 @@ using Microsoft.Xna.Framework.Graphics;
 namespace GDEngine.Core.Systems
 {
     /// <summary>
-    /// Sorts into the Render phase and checks for an active camera.
-    /// Later this will iterate visible renderables (MeshRenderer, SpriteRenderer, etc).
-    /// Supports camera layer mask culling to skip rendering objects that don't match the camera's culling mask.
+    /// Renders the scene for all cameras each frame.
+    /// - Iterates cameras in stack order (Base -> Overlay, then by Depth).
+    /// - For each camera: sets the device viewport from PixelViewport, applies camera clear, and renders visible renderers.
+    /// - Restores the full backbuffer viewport at the end so UI/post systems can assume full-screen.
     /// </summary>
     public class RenderingSystem : SystemBase
     {
@@ -19,8 +20,9 @@ namespace GDEngine.Core.Systems
         private Scene _scene = null!;
         private EngineContext _context = null!;
         private GraphicsDevice _device = null!;
-        private List<MeshRenderer> _renderers = new List<MeshRenderer>(0);
-        private Camera? _camera;
+        private CameraSystem _cameraSystem = null!;
+        private readonly List<Camera> _cameraStack = new List<Camera>(8);
+        private readonly List<MeshRenderer> _visible = new List<MeshRenderer>(128);
         #endregion
 
         #region Constructors
@@ -36,33 +38,51 @@ namespace GDEngine.Core.Systems
             if (Scene == null)
                 throw new NullReferenceException(nameof(Scene));
 
-            // Cache for fast access
             _scene = Scene;
             _context = Scene.Context;
             _device = _context.GraphicsDevice;
+
+            _cameraSystem = _scene.GetSystem<CameraSystem>();
         }
 
         public override void Draw(float deltaTime)
         {
-            _renderers = _scene.Renderers;
-            _camera = _scene.ActiveCamera;
-
-            if (_renderers == null || _camera == null)
+            // No renderables? early out
+            var sceneRenderers = _scene.Renderers;
+            if (sceneRenderers == null || sceneRenderers.Count == 0)
                 return;
 
-            int count = _renderers.Count;
-            LayerMask cullingMask = _camera.CullingMask;
+            // Build camera stack (Base then Overlay; within each, ascending Depth)
+            _cameraSystem.GetSortedStack(_cameraStack);
+            if (_cameraStack.Count == 0)
+                return;
 
-            for (int i = 0; i < count; i++)
+            // Keep a copy of the full backbuffer viewport so we can restore it later
+            var fullViewport = _device.Viewport;
+
+            // For each camera: set viewport, clear (if any), filter by mask, then draw
+            for (int i = 0; i < _cameraStack.Count; i++)
             {
-                MeshRenderer renderer = _scene.Renderers[i];
+                var camera = _cameraStack[i];
 
-                // Skip rendering if the GameObject's layer doesn't overlap with the camera's culling mask
-                if (renderer.GameObject != null && !cullingMask.Overlaps(renderer.GameObject.Layer))
-                    continue;
+                // Apply this camera's viewport 
+                _device.Viewport = camera.GetViewport(_device);
 
-                renderer.Render(_device, _camera);
+                // Clear per camera (for overlays, ClearFlags is typically None)
+                _cameraSystem.ApplyClears(camera);
+
+                // Build visible set (mask + later bounds test)
+                _cameraSystem.BuildVisibleSet(camera, sceneRenderers, _visible);
+
+                // Render each visible renderer with this camera
+                for (int j = 0; j < _visible.Count; j++)
+                {
+                    _visible[j].Render(_device, camera);
+                }
             }
+
+            // Restore full-screen viewport so UI/Post systems behave as expected
+            _device.Viewport = fullViewport;
         }
         #endregion
     }

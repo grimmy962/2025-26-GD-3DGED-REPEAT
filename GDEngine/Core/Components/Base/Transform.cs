@@ -4,19 +4,6 @@ using Microsoft.Xna.Framework;
 namespace GDEngine.Core.Components
 {
 
-    [Flags]
-    public enum TransformChangeFlags
-    {
-        None = 0,
-        Position = 1 << 0,
-        Rotation = 1 << 1,
-        Scale = 1 << 2,
-        Parent = 1 << 3,
-        Local = 1 << 4,
-        World = 1 << 5,
-        FromParent = 1 << 6
-    }
-
     /// <summary>
     /// Hierarchical transform with cached TRS, dirty-flag propagation, and convenience mutators.
     /// </summary>
@@ -24,6 +11,21 @@ namespace GDEngine.Core.Components
     /// <see cref="GameObject"/>
     public sealed class Transform : Component
     {
+        #region Enums
+        [Flags]
+        public enum ChangeFlags : sbyte
+        {
+            None = 0,
+            Position = 1 << 0,
+            Rotation = 1 << 1,
+            Scale = 1 << 2,
+            Parent = 1 << 3,
+            Local = 1 << 4,
+            World = 1 << 5,
+            FromParent = 1 << 6
+        } 
+        #endregion
+
         #region Fields
         private Vector3 _localPosition = Vector3.Zero;
         private Quaternion _localRotation = Quaternion.Identity;
@@ -41,7 +43,7 @@ namespace GDEngine.Core.Components
         private bool _worldDirty = true;
 
         // Raised after any local or parent-driven change that affects world.</summary>
-        public event Action<Transform, TransformChangeFlags>? Changed;
+        public event Action<Transform, ChangeFlags>? Changed;
 
         #endregion
 
@@ -57,7 +59,7 @@ namespace GDEngine.Core.Components
                 if (_localPosition == value)
                     return;
                 _localPosition = value;
-                MarkLocalDirty(TransformChangeFlags.Position);
+                MarkLocalDirty(ChangeFlags.Position);
             }
         }
 
@@ -69,7 +71,7 @@ namespace GDEngine.Core.Components
                 if (_localRotation == value)
                     return;
                 _localRotation = value;
-                MarkLocalDirty(TransformChangeFlags.Rotation);
+                MarkLocalDirty(ChangeFlags.Rotation);
             }
         }
 
@@ -81,7 +83,7 @@ namespace GDEngine.Core.Components
                 if (_localScale == value)
                     return;
                 _localScale = value;
-                MarkLocalDirty(TransformChangeFlags.Scale);
+                MarkLocalDirty(ChangeFlags.Scale);
             }
         }
 
@@ -218,7 +220,7 @@ namespace GDEngine.Core.Components
             _parent = newParent;
             _parent?._children.Add(this);
 
-            MarkWorldDirty(TransformChangeFlags.Parent);
+            MarkWorldDirty(ChangeFlags.Parent);
         }
 
         /// <summary>
@@ -228,7 +230,7 @@ namespace GDEngine.Core.Components
         public void TranslateTo(in Vector3 target)
         {
             _localPosition = target;
-            MarkLocalDirty(TransformChangeFlags.Position);
+            MarkLocalDirty(ChangeFlags.Position);
         }
 
         /// <summary>
@@ -241,7 +243,7 @@ namespace GDEngine.Core.Components
             if (!worldSpace)
             {
                 _localPosition += delta;
-                MarkLocalDirty(TransformChangeFlags.Position);
+                MarkLocalDirty(ChangeFlags.Position);
                 return;
             }
 
@@ -257,7 +259,7 @@ namespace GDEngine.Core.Components
                 _localPosition += localDelta;
             }
 
-            MarkLocalDirty(TransformChangeFlags.Position);
+            MarkLocalDirty(ChangeFlags.Position);
         }
 
         /// <summary>
@@ -279,7 +281,7 @@ namespace GDEngine.Core.Components
 
             // Pre-multiply to apply delta before current local orientation
             _localRotation = Quaternion.Normalize(Quaternion.Concatenate(localDelta, _localRotation));
-            MarkLocalDirty(TransformChangeFlags.Rotation);
+            MarkLocalDirty(ChangeFlags.Rotation);
         }
 
         /// <summary>
@@ -300,7 +302,7 @@ namespace GDEngine.Core.Components
         public void ScaleTo(in Vector3 scaleTo)
         {
             _localScale = scaleTo;
-            MarkLocalDirty(TransformChangeFlags.Scale);
+            MarkLocalDirty(ChangeFlags.Scale);
         }
 
         /// <summary>
@@ -310,7 +312,7 @@ namespace GDEngine.Core.Components
         public void ScaleBy(in Vector3 scaleBy)
         {
             _localScale *= scaleBy;
-            MarkLocalDirty(TransformChangeFlags.Scale);
+            MarkLocalDirty(ChangeFlags.Scale);
         }
 
         /// <summary>
@@ -320,26 +322,26 @@ namespace GDEngine.Core.Components
         public void ScaleBy(float scaleBy)
         {
             _localScale *= scaleBy;
-            MarkLocalDirty(TransformChangeFlags.Scale);
+            MarkLocalDirty(ChangeFlags.Scale);
         }
 
         // ----- Dirty helpers -----
 
-        private void MarkLocalDirty(TransformChangeFlags reason)
+        private void MarkLocalDirty(ChangeFlags reason)
         {
             _localDirty = true;
-            MarkWorldDirty(reason | TransformChangeFlags.Local);
+            MarkWorldDirty(reason | ChangeFlags.Local);
         }
 
-        private void MarkWorldDirty(TransformChangeFlags reason)
+        private void MarkWorldDirty(ChangeFlags reason)
         {
             if (!_worldDirty)
                 _worldDirty = true;
 
-            Changed?.Invoke(this, reason | TransformChangeFlags.World);
+            Changed?.Invoke(this, reason | ChangeFlags.World);
 
             for (int i = 0; i < _children.Count; i++)
-                _children[i].MarkWorldDirty(reason | TransformChangeFlags.FromParent);
+                _children[i].MarkWorldDirty(reason | ChangeFlags.FromParent);
         }
         #endregion
 
