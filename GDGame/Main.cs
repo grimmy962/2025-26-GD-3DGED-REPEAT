@@ -92,9 +92,9 @@ namespace GDGame
             InitializeFoliage(new Vector3(0, 10 /*note Y=heightscale/2*/, 0), 12, 20);
             //TODO - Wk7
 
-            InitializeModel(new Vector3(-10, 5, 0),
-                new Vector3(0, 0, 0),
-                new Vector3(5, 5, 5),
+            InitializeModel(new Vector3(-10, 10, 0),
+                new Vector3(-90, 0, 0),
+                5 * Vector3.One,
                 "checkerboard",
                 "monkey1",
                 "my first monkey game object");
@@ -523,8 +523,10 @@ namespace GDGame
             var model = _modelDictionary.Get(modelName);
             var texture = _textureDictionary.Get(textureName);
             var meshFilter = MeshFilterFactory.CreateFromModel(model, _graphics.GraphicsDevice, 0, 0);
+            go.AddComponent(meshFilter);
 
             var meshRenderer = go.AddComponent<MeshRenderer>();
+
             meshRenderer.Material = _matBasicLit;
             meshRenderer.Overrides.MainTexture = texture;
 
