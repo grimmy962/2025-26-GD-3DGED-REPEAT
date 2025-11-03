@@ -91,7 +91,13 @@ namespace GDGame
             InitializeTestObject();
             InitializeFoliage(new Vector3(0, 10 /*note Y=heightscale/2*/, 0), 12, 20);
             //TODO - Wk7
-            InitializeModel();
+
+            InitializeModel(new Vector3(-10, 5, 0),
+                new Vector3(0, 0, 0),
+                new Vector3(5, 5, 5),
+                "checkerboard",
+                "monkey1",
+                "my first monkey game object");
 
             base.Initialize();
         }
@@ -205,7 +211,7 @@ namespace GDGame
 
         private void LoadModels()
         {
-            //TODO - class exercise
+            _modelDictionary.Add("monkey1", "assets/models/monkey1");
         }
 
         private void InitializeEffects()
