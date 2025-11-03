@@ -28,12 +28,17 @@ It is designed for **incremental classroom live-coding** and emphasizes clear se
 ## Project Folder Structure
 ```
 /Engine
-  /Core        (EngineContext, Scene, GameObject, Component, SystemBase)
-  /Components  (Transform, Camera, MeshFilter, MeshRenderer, PlayerController, Rotator)
-  /Systems     (RenderingSystem, InputSystem)
-  /Input       (IInputDevice, IInputReceiver, InputAction, KeyboardInput,  MouseInput, GamepadInput)
-/Game          (Main bootstrap)
-/Content       (MonoGame Content Pipeline)
+  /Core
+    /Entities      (Scene, GameObject)
+    /Components    (Component, Transform, Camera, MeshFilter, MeshRenderer)
+    /Systems       (SystemBase, RenderingSystem, CameraSystem, InputSystem)
+    /Services      (EngineContext)
+  /Rendering       (Material, RenderStates, LayerMask, IEffectBinder /* + binders */, MeshFilter, MeshRenderer)
+  /Timing          (Time, Ease, AnimationCurve, AnimationCurve2D, AnimationCurve3D)
+  /Collections     (IndexedCollection, CircularBuffer)
+  /Input
+    /Devices       (GDKeyboardInput, GDGamepadInput, MouseInput)
+    (IInputDevice, IInputReceiver, InputAction/Bindings)
 ```
 
 ## Design Prompts 
@@ -75,52 +80,85 @@ The diagram below lists the principle components of our 3D game engine implement
 classDiagram
   direction LR
 
+  %% Services / Context
   class EngineContext {
     +GraphicsDevice GraphicsDevice
     +ContentManager Content
-    +GameTime GameTime
     +SpriteBatch SpriteBatch
+    +static Initialize(...)
   }
 
+  %% Scene & Lifecycles
   class Scene {
+    +string Name
     +EngineContext Context
-    +Camera ActiveCamera
-    +CreateGameObject(name): GameObject
-    +AddSystem(sys): void
-    +GetComponents<T>(): IEnumerable<T>
-    +Update(): void
-    +Draw(): void
+    +IReadOnlyList~GameObject~ GameObjects
+    +IReadOnlyList~SystemBase~ Systems
+    +List~MeshRenderer~ Renderers
+    +Add(SystemBase): void
+    +Add(GameObject): GameObject
+    +GetSystem~T~(): T
+    +Update(dt): void
+    +Draw(dt): void
   }
 
+  class FrameLifecycle {
+    <<enum>>
+    EarlyUpdate
+    Update
+    LateUpdate
+    Render
+    PostRender
+  }
+
+  %% Systems
   class SystemBase {
     +Scene Scene
-    +Update(): void
-    +Draw(): void
+    +FrameLifecycle Lifecycle
+    +int Order
+    +bool Enabled
+    +Update(dt)
+    +Draw(dt)
+  }
+
+  class InputSystem
+  class CameraSystem {
+    +IReadOnlyList~Camera~ Cameras
+    +Camera ActiveCamera
+    +Add(Camera)
+    +ApplyClears(Camera)
+    +GetSortedStack(list)
+    +BuildVisibleSet(Camera, IEnumerable~MeshRenderer~, List~MeshRenderer~)
+    +ScreenToWorld(...)
+    +WorldToScreen(...)
   }
   class RenderingSystem
-  class InputSystem {
-    +SetDevice(dev): void
-    +SetReceiver(rcv): void
-  }
-  SystemBase <|-- RenderingSystem
+
   SystemBase <|-- InputSystem
+  SystemBase <|-- CameraSystem
+  SystemBase <|-- RenderingSystem
   Scene o-- SystemBase : owns
-  
+
+  %% Entities / Components
   class GameObject {
     +string Name
     +bool Enabled
     +Transform Transform
-    +AddComponent<T>(): T
-    +GetComponent<T>(): T
+    +LayerMask Layer
+    +bool IsStatic
+    +AddComponent~T~(): T
+    +GetComponent~T~(): T
+    +GetComponents~T~(): List~T~
+    +RemoveComponent~T~(): bool
   }
   Scene *-- GameObject : contains
 
   class Component {
-    +GameObject GameObject
     +bool Enabled
-    +Awake()
-    +Start()
-    +LateUpdate()
+    +GameObject GameObject
+    +Transform Transform
+    +Awake()  +Start()
+    +Update(dt)  +LateUpdate(dt)
     +OnDestroy()
   }
   GameObject *-- Component : has
@@ -130,55 +168,76 @@ classDiagram
     +Quaternion LocalRotation
     +Vector3 LocalScale
     +Matrix WorldMatrix
-    +SetParent(parent)
+    +SetParent(...)
+    +TranslateBy(...)
+    +RotateBy(...)
   }
+
   class Camera {
-    +float FieldOfView
-    +float AspectRatio
-    +float Near
-    +float Far
+    +ProjectionType ProjectionMode
+    +LayerMask CullingMask
+    +ClearFlagsType ClearFlags
+    +Color ClearColor
+    +StackType StackRole
+    +int Depth
+    +Viewport? Viewport
     +Matrix View
     +Matrix Projection
+    +Matrix ViewProjection
+    +GetViewport(GraphicsDevice): Viewport
   }
+
   class MeshFilter {
     +VertexBuffer VertexBuffer
     +IndexBuffer IndexBuffer
     +PrimitiveType PrimitiveType
     +int PrimitiveCount
+    +SetGeometry(...)
+    +BindBuffers(GraphicsDevice)
   }
+
+  class Material {
+    +Effect Effect
+    +RenderStateBlock StateBlock
+    +SamplerState SamplerState
+    +SetTechnique(name)
+    +Apply(device, world, view, proj, block, drawCall)
+  }
+
+  class RenderStates {
+    <<static>>
+    +Opaque3D(): RenderStateBlock
+    +AlphaBlend3D(): RenderStateBlock
+    +Cutout3D(): RenderStateBlock
+    +Additive3D(): RenderStateBlock
+    +Wireframe3D(): RenderStateBlock
+  }
+
   class MeshRenderer {
-    +BasicEffect Effect
-    +int RenderLayer
-  }
-  class PlayerController {
-    +float MoveSpeed
+    +Material Material
+    +EffectPropertyBlock Overrides
+    +Render(GraphicsDevice, Camera)
   }
 
   Component <|-- Transform
   Component <|-- Camera
   Component <|-- MeshFilter
   Component <|-- MeshRenderer
-  Component <|-- PlayerController
 
-  Scene --> Camera : ActiveCamera
+  %% Wiring for render flow
+  RenderingSystem --> CameraSystem : queries cameras
+  RenderingSystem --> MeshRenderer : draws visible
+  MeshRenderer --> MeshFilter : uses geometry
+  MeshRenderer --> Material : applies state/effect
+  CameraSystem --> Camera : manages
+  GameObject --> Camera : may have
+  GameObject --> MeshRenderer : may have
+  GameObject --> MeshFilter : may have
 
-  class IInputDevice {
-    <<interface>>
-    +Read(): InputState
-  }
-  class KeyboardInput
-  class GamepadInput
-  IInputDevice <|.. KeyboardInput
-  IInputDevice <|.. GamepadInput
-
-  class IInputReceiver {
-    <<interface>>
-    +ReceiveInput(state, dt)
-  }
-  IInputReceiver <|.. PlayerController
-
-  InputSystem --> IInputDevice : uses
-  InputSystem --> IInputReceiver : targets
+  %% Culling relationship
+  class LayerMask { <<value object>> +uint Bits }
+  GameObject --> LayerMask : Layer
+  Camera --> LayerMask : CullingMask
 ```
 
 ## Design Objectives
