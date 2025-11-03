@@ -76,12 +76,13 @@ namespace GDGame
             InitializeCamera(new Vector3(0, 5, 25));
 
             InitializePIPCamera(new Vector3(-35, 5, 5), 
-                new Viewport(
+                new Viewport(0, 
                 0, 
-                0, 
-                _graphics.PreferredBackBufferWidth, 
-                _graphics.PreferredBackBufferHeight/2), 
-                -1);
+                400, 
+                200), 
+                -1, 0);
+
+            //BUG - LayerMask and Camera depth
 
             int scale = 500;
             InitializeSkyParent();
@@ -96,11 +97,17 @@ namespace GDGame
         }
 
         private void InitializePIPCamera(Vector3 position, 
-            Viewport viewport, int depth)
+            Viewport viewport, int depth, int index = 0)
         {
             var pipCameraGO = new GameObject("PIP camera");
             pipCameraGO.Transform.TranslateTo(position);
             pipCameraGO.Transform.RotateEulerBy(new Vector3(0, MathHelper.ToRadians(-90), 0));
+
+            //if (index == 0)
+            //{
+            //    pipCameraGO.AddComponent<KeyboardWASDController>();
+            //    pipCameraGO.AddComponent<MouseYawPitchController>();
+            //}
 
             var camera = pipCameraGO.AddComponent<Camera>();
             camera.StackRole = Camera.StackType.Overlay;
@@ -497,9 +504,25 @@ namespace GDGame
         /// <summary>
         /// Adds a single-part FBX model into the scene.
         /// </summary>
-        private void InitializeModel()
+        private void InitializeModel(Vector3 position,
+            Vector3 eulerRotationDegrees, Vector3 scale,
+            string textureName, string modelName, string objectName)
         {
-            //TODO - Wk7 
+
+            var go = new GameObject(objectName);
+            go.Transform.TranslateTo(position);
+            go.Transform.RotateEulerBy(eulerRotationDegrees * MathHelper.Pi / 180f);
+            go.Transform.ScaleTo(scale);
+
+            var model = _modelDictionary.Get(modelName);
+            var texture = _textureDictionary.Get(textureName);
+            var meshFilter = MeshFilterFactory.CreateFromModel(model, _graphics.GraphicsDevice, 0, 0);
+
+            var meshRenderer = go.AddComponent<MeshRenderer>();
+            meshRenderer.Material = _matBasicLit;
+            meshRenderer.Overrides.MainTexture = texture;
+
+            _scene.Add(go);
         }
 
 
