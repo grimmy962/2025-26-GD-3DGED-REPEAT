@@ -13,8 +13,7 @@ using GDEngine.Samples;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using System.Drawing;
-using System.Security.Cryptography.Xml;
+using System;
 using System.Windows.Forms;
 
 namespace GDGame
@@ -56,7 +55,7 @@ namespace GDGame
 
         protected override void Initialize()
         {
-            InitializeGraphics(1920, 1080);
+            InitializeGraphics(1280, 720);
 
             InitializeMouse();
 
@@ -76,6 +75,14 @@ namespace GDGame
 
             InitializeCamera(new Vector3(0, 5, 25));
 
+            InitializePIPCamera(new Vector3(-35, 5, 5), 
+                new Viewport(
+                0, 
+                0, 
+                _graphics.PreferredBackBufferWidth, 
+                _graphics.PreferredBackBufferHeight/2), 
+                -1);
+
             int scale = 500;
             InitializeSkyParent();
             InitializeSkyBox(scale);
@@ -88,7 +95,24 @@ namespace GDGame
             base.Initialize();
         }
 
+        private void InitializePIPCamera(Vector3 position, 
+            Viewport viewport, int depth)
+        {
+            var pipCameraGO = new GameObject("PIP camera");
+            pipCameraGO.Transform.TranslateTo(position);
+            pipCameraGO.Transform.RotateEulerBy(new Vector3(0, MathHelper.ToRadians(-90), 0));
 
+            var camera = pipCameraGO.AddComponent<Camera>();
+            camera.StackRole = Camera.StackType.Overlay;
+            camera.ClearFlags = Camera.ClearFlagsType.DepthOnly;
+            camera.Depth = depth; //-100
+
+            camera.Viewport = viewport; // new Viewport(0, 0, 400, 300);
+
+            _scene.GetSystem<CameraSystem>().Add(camera);
+
+            _scene.Add(pipCameraGO);
+        }
 
         private void InitializeCameraCurves()
         {
@@ -247,6 +271,7 @@ namespace GDGame
 
         private void InitializeRenderingSystem()
         {
+           // _scene.Add(new EnemyCullingSystem());
             _scene.Add(new RenderingSystem());
         }
 
@@ -291,6 +316,8 @@ namespace GDGame
 
             //dont forget to add the camera to the camera system in the scene
             _scene.GetSystem<CameraSystem>().Add(_camera);
+
+           // _cameraGO.Layer = LayerMask.UI;// | LayerMask.UI | LayerMask.Gizmo;
 
             //finally add it to the scene
             _scene.Add(_cameraGO);
@@ -435,6 +462,8 @@ namespace GDGame
 
             //demo the new input system support for keyboard, mouse and gamepad
             testCrateGO.AddComponent(new DemoInputReceiverComponent());
+
+          //  testCrateGO.Layer = LayerMask.World;
         }
 
         private void InitializeFoliage(Vector3 position, float width, float height)

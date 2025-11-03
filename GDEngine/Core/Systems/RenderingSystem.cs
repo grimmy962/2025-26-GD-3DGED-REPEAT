@@ -22,7 +22,7 @@ namespace GDEngine.Core.Systems
         private GraphicsDevice _device = null!;
         private CameraSystem _cameraSystem = null!;
         private readonly List<Camera> _cameraStack = new List<Camera>(8);
-        private readonly List<MeshRenderer> _visible = new List<MeshRenderer>(128);
+        private readonly List<MeshRenderer> _visible = new List<MeshRenderer>(512);
         #endregion
 
         #region Constructors
