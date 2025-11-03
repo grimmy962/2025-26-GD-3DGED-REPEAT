@@ -33,7 +33,7 @@ It is designed for **incremental classroom live-coding** and emphasizes clear se
     /Components    (Component, Transform, Camera, MeshFilter, MeshRenderer)
     /Systems       (SystemBase, RenderingSystem, CameraSystem, InputSystem)
     /Services      (EngineContext)
-  /Rendering       (Material, RenderStates, LayerMask, IEffectBinder /* + binders */, MeshFilter, MeshRenderer)
+  /Rendering       (Material, RenderStates, LayerMask, IEffectBinder, MeshFilter, MeshRenderer)
   /Timing          (Time, Ease, AnimationCurve, AnimationCurve2D, AnimationCurve3D)
   /Collections     (IndexedCollection, CircularBuffer)
   /Input
