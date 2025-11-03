@@ -51,7 +51,7 @@
 /processorParam:TextureFormat=Compressed
 /build:Assets/Models/monkey1.fbx
 
-#begin Assets/Models/skdome.fbx
+#begin Assets/Models/skydome.fbx
 /importer:FbxImporter
 /processor:ModelProcessor
 /processorParam:ColorKeyColor=0,0,0,0
@@ -68,7 +68,7 @@
 /processorParam:Scale=1
 /processorParam:SwapWindingOrder=False
 /processorParam:TextureFormat=Compressed
-/build:Assets/Models/skdome.fbx
+/build:Assets/Models/skydome.fbx
 
 #begin Assets/Models/sphere.FBX
 /importer:FbxImporter

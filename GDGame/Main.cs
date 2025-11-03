@@ -13,6 +13,8 @@ using GDEngine.Samples;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System.Drawing;
+using System.Security.Cryptography.Xml;
 using System.Windows.Forms;
 
 namespace GDGame
@@ -42,6 +44,7 @@ namespace GDGame
         private Material _matBasicLit;
         private Material _matAlphaCutout;
         private GameObject _pipCameraGO;
+        private GameObject _skyParent;
         #endregion
 
         public Main()
@@ -74,19 +77,18 @@ namespace GDGame
             InitializeCamera(new Vector3(0, 5, 25));
 
             int scale = 500;
-
+            InitializeSkyParent();
             InitializeSkyBox(scale);
-
             InitializeGround(scale);
-
             InitializeTestObject();
-
             InitializeFoliage(new Vector3(0, 10 /*note Y=heightscale/2*/, 0), 12, 20);
+            //TODO - Wk7
+            InitializeModel();
 
             base.Initialize();
         }
 
-      
+
 
         private void InitializeCameraCurves()
         {
@@ -144,6 +146,12 @@ namespace GDGame
 
         private void LoadAssets()
         {
+            LoadTextures();
+            LoadModels();
+        }
+
+        private void LoadTextures()
+        {
             //ground
             _textureDictionary.Add("ground_grass", "assets/textures/foliage/ground/grass1");
 
@@ -160,6 +168,13 @@ namespace GDGame
             //tree
             _textureDictionary.Add("tree4", "assets/textures/foliage/trees/tree4");
 
+            //test texture for models
+            _textureDictionary.Add("checkerboard", "assets/textures/demo/checkerboard");
+        }
+
+        private void LoadModels()
+        {
+            //TODO - class exercise
         }
 
         private void InitializeEffects()
@@ -276,108 +291,108 @@ namespace GDGame
 
             //dont forget to add the camera to the camera system in the scene
             _scene.GetSystem<CameraSystem>().Add(_camera);
-           
+
             //finally add it to the scene
             _scene.Add(_cameraGO);
         }
 
-      
-        private void InitializeSkyBox(int scale = 500)
+        /// <summary>
+        /// Add parent root at origin to rotate the sky
+        /// </summary>
+        private void InitializeSkyParent()
         {
-            #region Add parent root at origin to rotate the sky
-            //add a parent at origin so we can rotate the sky around Y-axis
-            var skyboxRoot = new GameObject("SkyboxRoot");
-            var rot = skyboxRoot.AddComponent<GDEngine.Core.Components.Controllers.General.Transform.RotationController>();
+            _skyParent = new GameObject("SkyParent");
+            var rot = _skyParent.AddComponent<GDEngine.Core.Components.Controllers.General.Transform.RotationController>();
 
             // Turntable spin around local +Y
             rot._rotationAxisNormalized = Vector3.Up;
 
             // Dramatised fast drift at 2 deg/sec. 
             rot._rotationSpeedInRadiansPerSecond = MathHelper.ToRadians(2f);
+            _scene.Add(_skyParent);
+        }
 
-            _scene.Add(skyboxRoot); 
-            #endregion
-
-            GameObject skyBoxQuad = null;
+        private void InitializeSkyBox(int scale = 500)
+        {
+            GameObject gameObject = null;
             MeshFilter meshFilter = null;
 
             // back
-            skyBoxQuad = new GameObject("back");
-            skyBoxQuad.Transform.ScaleTo(new Vector3(scale, scale, 1));
-            skyBoxQuad.Transform.TranslateTo(new Vector3(0, 0, -scale / 2));
+            gameObject = new GameObject("back");
+            gameObject.Transform.ScaleTo(new Vector3(scale, scale, 1));
+            gameObject.Transform.TranslateTo(new Vector3(0, 0, -scale / 2));
             meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
-            skyBoxQuad.AddComponent(meshFilter);
-            _skyBoxBackRenderer = skyBoxQuad.AddComponent<MeshRenderer>();
+            gameObject.AddComponent(meshFilter);
+            _skyBoxBackRenderer = gameObject.AddComponent<MeshRenderer>();
             _skyBoxBackRenderer.Material = _matBasicUnlit;
             _skyBoxBackRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_back");
-            _scene.Add(skyBoxQuad);
+            _scene.Add(gameObject);
 
             //set parent to allow rotation
-            skyBoxQuad.Transform.SetParent(skyboxRoot.Transform);
+            gameObject.Transform.SetParent(_skyParent.Transform);
 
             // left
-            skyBoxQuad = new GameObject("left");
-            skyBoxQuad.Transform.ScaleTo(new Vector3(scale, scale, 1));
-            skyBoxQuad.Transform.RotateEulerBy(new Vector3(0, MathHelper.ToRadians(90), 0), true);
-            skyBoxQuad.Transform.TranslateTo(new Vector3(-scale / 2, 0, 0));
+            gameObject = new GameObject("left");
+            gameObject.Transform.ScaleTo(new Vector3(scale, scale, 1));
+            gameObject.Transform.RotateEulerBy(new Vector3(0, MathHelper.ToRadians(90), 0), true);
+            gameObject.Transform.TranslateTo(new Vector3(-scale / 2, 0, 0));
             meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
-            skyBoxQuad.AddComponent(meshFilter);
-            _skyBoxLeftRenderer = skyBoxQuad.AddComponent<MeshRenderer>();
+            gameObject.AddComponent(meshFilter);
+            _skyBoxLeftRenderer = gameObject.AddComponent<MeshRenderer>();
             _skyBoxLeftRenderer.Material = _matBasicUnlit;
             _skyBoxLeftRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_left");
-            _scene.Add(skyBoxQuad);
+            _scene.Add(gameObject);
 
             //set parent to allow rotation
-            skyBoxQuad.Transform.SetParent(skyboxRoot.Transform);
+            gameObject.Transform.SetParent(_skyParent.Transform);
 
 
             // right
-            skyBoxQuad = new GameObject("right");
-            skyBoxQuad.Transform.ScaleTo(new Vector3(scale, scale, 1));
-            skyBoxQuad.Transform.RotateEulerBy(new Vector3(0, MathHelper.ToRadians(-90), 0), true);
-            skyBoxQuad.Transform.TranslateTo(new Vector3(scale / 2, 0, 0));
+            gameObject = new GameObject("right");
+            gameObject.Transform.ScaleTo(new Vector3(scale, scale, 1));
+            gameObject.Transform.RotateEulerBy(new Vector3(0, MathHelper.ToRadians(-90), 0), true);
+            gameObject.Transform.TranslateTo(new Vector3(scale / 2, 0, 0));
             meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
-            skyBoxQuad.AddComponent(meshFilter);
-            _skyBoxRightRenderer = skyBoxQuad.AddComponent<MeshRenderer>();
+            gameObject.AddComponent(meshFilter);
+            _skyBoxRightRenderer = gameObject.AddComponent<MeshRenderer>();
             _skyBoxRightRenderer.Material = _matBasicUnlit;
             _skyBoxRightRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_right");
-            _scene.Add(skyBoxQuad);
+            _scene.Add(gameObject);
 
             //set parent to allow rotation
-            skyBoxQuad.Transform.SetParent(skyboxRoot.Transform);
+            gameObject.Transform.SetParent(_skyParent.Transform);
 
             // front
-            skyBoxQuad = new GameObject("front");
-            skyBoxQuad.Transform.ScaleTo(new Vector3(scale, scale, 1));
-            skyBoxQuad.Transform.RotateEulerBy(new Vector3(0, MathHelper.ToRadians(180), 0), true);
-            skyBoxQuad.Transform.TranslateTo(new Vector3(0, 0, scale / 2));
+            gameObject = new GameObject("front");
+            gameObject.Transform.ScaleTo(new Vector3(scale, scale, 1));
+            gameObject.Transform.RotateEulerBy(new Vector3(0, MathHelper.ToRadians(180), 0), true);
+            gameObject.Transform.TranslateTo(new Vector3(0, 0, scale / 2));
             meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
-            skyBoxQuad.AddComponent(meshFilter);
-            _skyBoxFrontRenderer = skyBoxQuad.AddComponent<MeshRenderer>();
+            gameObject.AddComponent(meshFilter);
+            _skyBoxFrontRenderer = gameObject.AddComponent<MeshRenderer>();
             _skyBoxFrontRenderer.Material = _matBasicUnlit;
             _skyBoxFrontRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_front");
-            _scene.Add(skyBoxQuad);
+            _scene.Add(gameObject);
 
             //set parent to allow rotation
-            skyBoxQuad.Transform.SetParent(skyboxRoot.Transform);
+            gameObject.Transform.SetParent(_skyParent.Transform);
 
             // sky (top)
-            skyBoxQuad = new GameObject("sky");
-            skyBoxQuad.Transform.ScaleTo(new Vector3(scale, scale, 1));
-            skyBoxQuad.Transform.RotateEulerBy(new Vector3(MathHelper.ToRadians(90), 0, MathHelper.ToRadians(90)), true);
-            skyBoxQuad.Transform.TranslateTo(new Vector3(0, scale / 2, 0));
+            gameObject = new GameObject("sky");
+            gameObject.Transform.ScaleTo(new Vector3(scale, scale, 1));
+            gameObject.Transform.RotateEulerBy(new Vector3(MathHelper.ToRadians(90), 0, MathHelper.ToRadians(90)), true);
+            gameObject.Transform.TranslateTo(new Vector3(0, scale / 2, 0));
             meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
-            skyBoxQuad.AddComponent(meshFilter);
-            _skyBoxSkyRenderer = skyBoxQuad.AddComponent<MeshRenderer>();
+            gameObject.AddComponent(meshFilter);
+            _skyBoxSkyRenderer = gameObject.AddComponent<MeshRenderer>();
             _skyBoxSkyRenderer.Material = _matBasicUnlit;
             _skyBoxSkyRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_sky");
-            _scene.Add(skyBoxQuad);
+            _scene.Add(gameObject);
 
             //set parent to allow rotation
-            skyBoxQuad.Transform.SetParent(skyboxRoot.Transform);
+            gameObject.Transform.SetParent(_skyParent.Transform);
 
         }
-
 
         private void InitializeGround(int scale = 500)
         {
@@ -449,6 +464,16 @@ namespace GDGame
             _scene.Add(go);
         }
 
+
+        /// <summary>
+        /// Adds a single-part FBX model into the scene.
+        /// </summary>
+        private void InitializeModel()
+        {
+            //TODO - Wk7 
+        }
+
+
         protected override void Update(GameTime gameTime)
         {
             //call time update
@@ -459,24 +484,12 @@ namespace GDGame
 
             base.Update(gameTime);
         }
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "<Pending>")]
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.CornflowerBlue);
+            GraphicsDevice.Clear(Microsoft.Xna.Framework.Color.CornflowerBlue);
 
             //just as called update, we now have to call draw to call the draw in the renderingsystem
             _scene.Draw(Time.DeltaTimeSecs);
-
-            //notice that we have to manually call render on each primitive - we really need a RenderSystem!
-            //_grassQuadRenderer.Render(_graphics.GraphicsDevice, _camera);
-
-            //_skyBoxBackRenderer.Render(_graphics.GraphicsDevice, _camera);
-            //_skyBoxLeftRenderer.Render(_graphics.GraphicsDevice, _camera);
-            //_skyBoxRightRenderer.Render(_graphics.GraphicsDevice, _camera);
-            //_skyBoxFrontRenderer.Render(_graphics.GraphicsDevice, _camera);
-            //_skyBoxSkyRenderer.Render(_graphics.GraphicsDevice, _camera);
-
-            //_testObjRenderer.Render(_graphics.GraphicsDevice, _camera);
 
             base.Draw(gameTime);
         }

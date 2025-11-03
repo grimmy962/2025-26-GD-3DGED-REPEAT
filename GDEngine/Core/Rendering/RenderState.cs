@@ -57,7 +57,7 @@ namespace GDEngine.Core.Rendering
             );
         }
 
-        // ✅ Fixed: use our custom rasterizer with FillMode.WireFrame
+        // Use custom rasterizer with FillMode.WireFrame
         public static RenderStateBlock Wireframe3D()
         {
             return new RenderStateBlock(

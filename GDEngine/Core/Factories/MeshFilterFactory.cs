@@ -11,7 +11,7 @@ namespace GDEngine.Core.Factories
     /// </summary>
     /// <see cref="MeshFilter"/>
     /// <see cref="Entities.GameObject"/>
-    public class MeshFilterFactory
+    public static class MeshFilterFactory
     {
 
         //stores a single instance of meshfilter if class on a method
@@ -615,6 +615,107 @@ namespace GDEngine.Core.Factories
             mf.SetGeometry(vb, ib, PrimitiveType.TriangleList, indexCount);
             return mf;
         }
+
+        /// <summary>
+        /// Extracts a single <see cref="ModelMeshPart"/> from an already-loaded
+        /// MonoGame <see cref="Model"/> and returns a new <see cref="MeshFilter"/>
+        /// with standalone GPU buffers (no dependency on the original Model).
+        /// </summary>
+        /// <param name="model">An already-loaded Model (e.g., from your dictionary).</param>
+        /// <param name="device">Graphics device for buffer creation.</param>
+        /// <param name="meshIndex">Which ModelMesh to use (default 0).</param>
+        /// <param name="partIndex">Which ModelMeshPart within that mesh (default 0).</param>
+        public static MeshFilter CreateFromModel(Model model,
+                                                 GraphicsDevice device,
+                                                 int meshIndex = 0,
+                                                 int partIndex = 0)
+        {
+            if (model == null)
+                throw new ArgumentNullException(nameof(model));
+            if (device == null)
+                throw new ArgumentNullException(nameof(device));
+
+            if (meshIndex < 0 || meshIndex >= model.Meshes.Count)
+                throw new ArgumentOutOfRangeException(nameof(meshIndex), "meshIndex outside range of Model.Meshes.");
+
+            var mesh = model.Meshes[meshIndex];
+            if (partIndex < 0 || partIndex >= mesh.MeshParts.Count)
+                throw new ArgumentOutOfRangeException(nameof(partIndex), "partIndex outside range of ModelMesh.MeshParts.");
+
+            var part = mesh.MeshParts[partIndex];
+            return CreateFromMeshPart(device, part);
+        }
+
+        /// <summary>
+        /// Core worker: copies one <see cref="ModelMeshPart"/> into fresh VB/IB,
+        /// rebasing indices to start at 0 (since we won't use baseVertex when drawing).
+        /// </summary>
+        public static MeshFilter CreateFromMeshPart(GraphicsDevice device, ModelMeshPart part)
+        {
+            if (device == null)
+                throw new ArgumentNullException(nameof(device));
+            if (part == null)
+                throw new ArgumentNullException(nameof(part));
+
+            // --- Vertex slice (copy raw bytes) ---
+            var vertexDecl = part.VertexBuffer.VertexDeclaration;
+            int vertexStride = vertexDecl.VertexStride;
+            int vertexCount = part.NumVertices;
+            int vertexOffsetBytes = part.VertexOffset * vertexStride;
+
+            int totalVertexBytes = vertexStride * vertexCount;
+            var vertexBytes = new byte[totalVertexBytes];
+
+            // IMPORTANT: use the overload WITHOUT 'vertexStride' when copying to byte[]
+            // elementCount == number of T elements (bytes, here), not vertices
+            part.VertexBuffer.GetData(
+                offsetInBytes: vertexOffsetBytes,
+                data: vertexBytes,
+                startIndex: 0,
+                elementCount: totalVertexBytes
+            );
+
+            var vb = new VertexBuffer(device, vertexDecl, vertexCount, BufferUsage.WriteOnly);
+            vb.SetData(vertexBytes);
+
+            // --- Index slice (copy + rebase to 0) ---
+            int indexCount = part.PrimitiveCount * 3;
+            bool sixteenBit = part.IndexBuffer.IndexElementSize == IndexElementSize.SixteenBits;
+            int indexStartByte = part.StartIndex * (sixteenBit ? 2 : 4);
+
+            IndexBuffer ib;
+            if (sixteenBit)
+            {
+                var src = new ushort[indexCount];
+                part.IndexBuffer.GetData(indexStartByte, src, 0, indexCount);
+
+                // Rebase relative to VertexOffset because we won't draw with a baseVertex
+                var dst = new short[indexCount];
+                for (int i = 0; i < indexCount; i++)
+                    dst[i] = (short)(src[i] - part.VertexOffset);
+
+                ib = new IndexBuffer(device, IndexElementSize.SixteenBits, indexCount, BufferUsage.WriteOnly);
+                ib.SetData(dst);
+            }
+            else
+            {
+                var src = new int[indexCount];
+                part.IndexBuffer.GetData(indexStartByte, src, 0, indexCount);
+
+                for (int i = 0; i < indexCount; i++)
+                    src[i] = src[i] - part.VertexOffset;
+
+                ib = new IndexBuffer(device, IndexElementSize.ThirtyTwoBits, indexCount, BufferUsage.WriteOnly);
+                ib.SetData(src);
+            }
+
+            // --- Package into MeshFilter ---
+            var mf = new MeshFilter();
+            mf.SetGeometry(vb, ib, PrimitiveType.TriangleList, indexCount);
+            return mf;
+        }
+
+
         #endregion
 
         #endregion
@@ -631,7 +732,7 @@ namespace GDEngine.Core.Factories
                 kvp.Value?.Dispose();
             }
             registry.Clear();
-        } 
+        }
         #endregion
     }
 }
