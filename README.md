@@ -10,7 +10,7 @@ It is designed for **incremental classroom live-coding** and emphasizes clear se
 - [Understanding PrimitiveType](Notes/Notes%20-%20Understanding%20Primitives.md)
   - [Exercises - Understanding PrimitiveType](Exercises/Exercises%20-%20Understanding%20Primitives.md)
 -  [Understanding Effect](Notes/Notes%20-%20Understanding%20Effects.md)
-
+- [Notes - Understanding JSON Serialization](Notes/Notes%20-%20Understanding%20JSON%20Serialization.md)
 
 ## Required Reading 
  
