@@ -66,13 +66,12 @@ This document contains a step-by-step development plan of MonoGame content cover
 - [ ] Add other camera controller types
 - [ ] Add drivable model with 3rd person camera
 - [ ] Add `Main::InitializeModel()`
-- [ ] Experiment with other effect types
 - [ ] Add **serialization**: simple JSON for spawning `GameObject`.
 - [ ] Add **event bus**: lightweight pub/sub for decoupled messages between systems.
-- [ ] Add physics engine (physics and CDCR)
-- [ ] Add **frustum culling** with `BoundingFrustum` against `MeshFilter.Bounds`.
-- [ ] Add **audio hooks**: `AudioSystem` to support 2D and 3D sound; service access via event bus.
 
 ## Week 8
+- [ ] Add physics engine (physics and CDCR)
 - [ ] Add UI support for HUD and menu
+- [ ] Add **audio hooks**: `AudioSystem` to support 2D and 3D sound; service access via event bus.
+- [ ] Add **frustum culling** with `BoundingFrustum` against `MeshFilter.Bounds`.
 
