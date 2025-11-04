@@ -133,7 +133,7 @@ using System.IO; // ensure this using exists at the top
 /// <summary>
 /// Reads a ModelSpawnData from a JSON file on disk.
 /// </summary>
-private ModelSpawnData LoadModelSpawnData(string relativePath)
+private ModelSpawnData LoadSingleModelSpawnData(string relativePath)
 {
     // Compose a path relative to your Content root (Content/).
     // Ensure the JSON file is copied to the output folder.

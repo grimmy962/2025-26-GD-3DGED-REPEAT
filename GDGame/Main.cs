@@ -17,8 +17,9 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Windows.Forms;
 
 namespace GDGame
@@ -93,19 +94,86 @@ namespace GDGame
             InitializeGround(scale);
             InitializeTestObject();
             InitializeFoliage(new Vector3(0, 10 /*note Y=heightscale/2*/, 0), 12, 20);
-           
-            //TODO - LAB EXERCISE
-            InitializeModel(new Vector3(-10, 10, 0),
-                new Vector3(-90, 0, 0),
-                5 * Vector3.One,
-                "checkerboard",
-                "monkey1",
-                "my first monkey game object");
 
-            //uncomment to find a gameobject using a predicate
-            //var result = _scene.Find((GameObject o) => o.Name.Equals("my first monkey game object"));
+            //InitializeModel(new Vector3(-10, 10, 0),
+            //    new Vector3(-90, 0, 0),
+            //    5 * Vector3.One,
+            //    "checkerboard",
+            //    "monkey1",
+            //    "my first monkey game object");
+
+            LoadFromJSONDemo();
 
             base.Initialize();
+        }
+
+        private void LoadFromJSONDemo()
+        {
+            //load a single model
+            ModelSpawnData d = LoadSingleModelSpawnData("single_model_spawn.json");
+            InitializeModel(
+                d.Position,
+                d.RotationDegrees,
+                d.Scale,
+                d.TextureName,
+                d.ModelName,
+                d.ObjectName);
+
+            //load multiple models
+            List<ModelSpawnData> modelData = LoadMultiModelSpawnData("multi_model_spawn.json");
+            foreach (ModelSpawnData data in modelData)
+            {
+                InitializeModel(
+                data.Position,
+                data.RotationDegrees,
+                data.Scale,
+                data.TextureName,
+                data.ModelName,
+                data.ObjectName);
+            }
+        }
+
+
+        /// <summary>
+        /// Reads a ModelSpawnData from a JSON file on disk.
+        /// </summary>
+        private ModelSpawnData LoadSingleModelSpawnData(string relativePath)
+        {
+            // Compose a path relative to your Content root (Content/).
+            // Ensure the JSON file is copied to the output folder.
+            string path = Path.Combine(Content.RootDirectory, relativePath);
+
+            string json = File.ReadAllText(path);
+
+            var opts = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                ReadCommentHandling = JsonCommentHandling.Skip,
+                AllowTrailingCommas = true
+            };
+            opts.Converters.Add(new Vector3JsonConverter());
+
+            ModelSpawnData data = JsonSerializer.Deserialize<ModelSpawnData>(json, opts);
+            return data;
+        }
+
+        /// <summary>
+        /// Reads a list of ModelSpawnData objects from a JSON file on disk.
+        /// </summary>
+        private List<ModelSpawnData> LoadMultiModelSpawnData(string relativePath)
+        {
+            string path = Path.Combine(Content.RootDirectory, relativePath);
+            string json = File.ReadAllText(path);
+
+            var opts = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                ReadCommentHandling = JsonCommentHandling.Skip,
+                AllowTrailingCommas = true
+            };
+            opts.Converters.Add(new Vector3JsonConverter());
+
+            return JsonSerializer.Deserialize<List<ModelSpawnData>>(json, opts);
         }
 
         private void InitializePIPCamera(Vector3 position,
@@ -163,7 +231,7 @@ namespace GDGame
             Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
             ScreenResolution.SetResolution(_graphics, resolution);
 
-         //   System.Diagnostics.Debug.WriteLine(ScreenResolution.R1024x768.Aspect());
+            //   System.Diagnostics.Debug.WriteLine(ScreenResolution.R1024x768.Aspect());
         }
 
         private void InitializeMouse()
@@ -200,7 +268,7 @@ namespace GDGame
         private void LoadFonts()
         {
             //TODO - LAB EXERCISE
-            _fontDictionary.Add("perfStats", "assets/fonts/perfStats"); 
+            _fontDictionary.Add("perfStats", "assets/fonts/perfStats");
         }
 
         private void LoadTextures()
@@ -223,11 +291,16 @@ namespace GDGame
 
             //test texture for models
             _textureDictionary.Add("checkerboard", "assets/textures/demo/checkerboard");
+            _textureDictionary.Add("mona lisa", "assets/textures/demo/mona lisa");
+
         }
 
         private void LoadModels()
         {
             _modelDictionary.Add("monkey1", "assets/models/monkey1");
+            _modelDictionary.Add("cube", "assets/models/cube");
+            _modelDictionary.Add("teapot", "assets/models/teapot");
+            _modelDictionary.Add("teapot_lowpoly", "assets/models/teapot_lowpoly");
         }
 
         private void InitializeEffects()
@@ -664,65 +737,6 @@ namespace GDGame
 
             // Always call base.Dispose
             base.Dispose(disposing);
-        }
-    }
-
-    /// <summary>
-    /// Plain data container for a single model spawn, loaded from JSON.
-    /// </summary>
-    public class ModelSpawnData
-    {
-        public Vector3 Position { get; set; }
-        public Vector3 RotationDegrees { get; set; }
-        public Vector3 Scale { get; set; }
-        public string TextureName { get; set; }
-        public string ModelName { get; set; }
-        public string ObjectName { get; set; }
-    }
-
-    /// <summary>
-    /// JSON converter for Microsoft.Xna.Framework.Vector3.
-    /// Accepts either array form [x,y,z] or object form {"x":X,"y":Y,"z":Z}.
-    /// Writes as [x,y,z].
-    /// </summary>
-    public class Vector3JsonConverter : JsonConverter<Vector3>
-    {
-        public override Vector3 Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-        {
-            if (reader.TokenType == JsonTokenType.StartArray)
-            {
-                reader.Read(); float x = (float)reader.GetDouble();
-                reader.Read(); float y = (float)reader.GetDouble();
-                reader.Read(); float z = (float)reader.GetDouble();
-                reader.Read(); // EndArray
-                return new Vector3(x, y, z);
-            }
-
-            if (reader.TokenType == JsonTokenType.StartObject)
-            {
-                float x = 0, y = 0, z = 0;
-                while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
-                {
-                    string name = reader.GetString();
-                    reader.Read();
-                    float val = (float)reader.GetDouble();
-                    if (string.Equals(name, "x", StringComparison.OrdinalIgnoreCase)) x = val;
-                    else if (string.Equals(name, "y", StringComparison.OrdinalIgnoreCase)) y = val;
-                    else if (string.Equals(name, "z", StringComparison.OrdinalIgnoreCase)) z = val;
-                }
-                return new Vector3(x, y, z);
-            }
-
-            throw new JsonException("Vector3 must be [x,y,z] or {x,y,z}.");
-        }
-
-        public override void Write(Utf8JsonWriter writer, Vector3 value, JsonSerializerOptions options)
-        {
-            writer.WriteStartArray();
-            writer.WriteNumberValue(value.X);
-            writer.WriteNumberValue(value.Y);
-            writer.WriteNumberValue(value.Z);
-            writer.WriteEndArray();
         }
     }
 }

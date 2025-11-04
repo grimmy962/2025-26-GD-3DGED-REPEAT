@@ -19,7 +19,10 @@
     <ProjectReference Include="..\GDEngine\GDEngine.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Update="Content\model_spawn.json">
+    <None Update="Content\multi_model_spawn.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Content\single_model_spawn.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
