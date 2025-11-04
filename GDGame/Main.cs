@@ -51,7 +51,8 @@ namespace GDGame
 
         protected override void Initialize()
         {
-            InitializeGraphics(ScreenResolution.R1024x768);
+
+            InitializeGraphics(ScreenResolution.R1280x800);
 
             InitializeMouse();
 
@@ -94,6 +95,9 @@ namespace GDGame
                 "checkerboard",
                 "monkey1",
                 "my first monkey game object");
+
+            //uncomment to find a gameobject using a predicate
+            //var result = _scene.Find((GameObject o) => o.Name.Equals("my first monkey game object"));
 
             base.Initialize();
         }
@@ -152,6 +156,8 @@ namespace GDGame
         {
             Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
             ScreenResolution.SetResolution(_graphics, resolution);
+
+         //   System.Diagnostics.Debug.WriteLine(ScreenResolution.R1024x768.Aspect());
         }
 
         private void InitializeMouse()

@@ -50,7 +50,7 @@ namespace GDEngine.Core.Entities
         public IReadOnlyList<GameObject> GameObjects => _gameObjects;
         public IReadOnlyList<SystemBase> Systems => _systemsAll;
 
-         #endregion
+        #endregion
 
         #region Constructors
         /// <summary>
@@ -106,7 +106,7 @@ namespace GDEngine.Core.Entities
 
             if (_gameObjects.Contains(gameObject))
                 return gameObject;
-       
+
             _gameObjects.Add(gameObject);
 
             //get all renderers for this game objects
@@ -129,6 +129,40 @@ namespace GDEngine.Core.Entities
 
             return gameObject;
         }
+
+        /// <summary>
+        /// Finds the first GameObject matching the predicate
+        /// </summary>
+        /// <param name="filter"></param>
+        /// <returns></returns>
+        public GameObject? Find(Predicate<GameObject> filter)
+        {
+            for (int i = 0; i < _gameObjects.Count; i++)
+            {
+                var go = _gameObjects[i];
+                if (filter(go))
+                    return go;
+            }
+
+            return null;
+        }
+
+        public List<GameObject>? FindAll(Predicate<GameObject> filter)
+        {
+            List<GameObject> found = new List<GameObject>(8);
+
+            for (int i = 0; i < _gameObjects.Count; i++)
+            {
+                var go = _gameObjects[i];
+                if (filter(go))
+                    found.Add(go);
+            }
+
+            return found.Count == 0 ? null : found;
+        }
+
+
+
 
         /// <summary>
         /// Returns a specific system if one is already added; otherwise returns null.

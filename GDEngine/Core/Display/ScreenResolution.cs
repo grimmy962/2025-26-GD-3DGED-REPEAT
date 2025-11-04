@@ -1,6 +1,5 @@
 ﻿#nullable enable
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 
 namespace GDEngine.Core
 {
@@ -107,7 +106,8 @@ namespace GDEngine.Core
         /// <summary>
         /// Sets the preferred backbuffer size from width/height integers and calls ApplyChanges().
         /// </summary>
-        public static void SetResolution(GraphicsDeviceManager graphicsDeviceManager, int width, int height)
+        public static void SetResolution(GraphicsDeviceManager graphicsDeviceManager, 
+            int width, int height)
         {
             graphicsDeviceManager.PreferredBackBufferWidth = Math.Max(1, width);
             graphicsDeviceManager.PreferredBackBufferHeight = Math.Max(1, height);
