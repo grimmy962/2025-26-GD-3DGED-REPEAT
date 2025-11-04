@@ -40,6 +40,8 @@ namespace GDGame
         private GameObject _skyParent;
         private AnimationCurve _animationCurve;
         private int count;
+        private int someCount;
+        private GameObject _cameraGO;
         #endregion
 
         public Main()
@@ -291,7 +293,17 @@ namespace GDGame
         {
             //TODO - LAB EXERCISE
             var debugFont = _fontDictionary.Get("perfStats");
-            _scene.Add(new PerfStatsSystem(debugFont));
+            _scene.Add(new PerfStatsSystem(debugFont, () =>
+            {
+                return new[]
+                {
+                    $"Game Object Count: {_scene.GameObjects.Count}",
+                    $"Camera[Position]: {_cameraGO.Transform.Position: 0.0}",
+                     $"Camera[Forward]: {_cameraGO.Transform.Forward: 0.0}"
+                };
+            }));
+
+ 
         }
 
         private void InitializeCameraSystem()
@@ -330,7 +342,7 @@ namespace GDGame
         private void InitializeCamera(Vector3 position)
         {
             //camera GO
-            var _cameraGO = new GameObject("First person camera");
+            _cameraGO = new GameObject("First person camera");
             //set position 
             _cameraGO.Transform.TranslateTo(position);
             //turn around as Forward is by default (0,0,1)
@@ -563,7 +575,7 @@ namespace GDGame
 
         protected override void Update(GameTime gameTime)
         {
-            count++;
+            someCount++;
 
             //call time update
             Time.Update(gameTime);

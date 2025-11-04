@@ -13,12 +13,16 @@ namespace GDEngine.Core
         private readonly SpriteFont _font;
         private SpriteBatch _spriteBatch;
 
+        private Func<IEnumerable<string>>? _linesProvider;
+
         // Optional: tiny smoothing window (we'll describe the class in the aside)
         private readonly CircularBuffer<float> _recentDt = new CircularBuffer<float>(60);
 
-        public PerfStatsSystem(SpriteFont font) : base(FrameLifecycle.PostRender, 10)
+        public PerfStatsSystem(SpriteFont font, Func<IEnumerable<string>>? linesProvider = null)
+            : base(FrameLifecycle.PostRender, order: 10)
         {
             _font = font ?? throw new ArgumentNullException(nameof(font));
+            _linesProvider = linesProvider;
         }
 
         protected override void OnAdded()
@@ -47,7 +51,20 @@ namespace GDEngine.Core
             
             _spriteBatch.DrawString(_font, text, _pos + new Vector2(2,2), Color.Black);
             _spriteBatch.DrawString(_font, text, _pos, Color.Yellow);
+
+            float y = _pos.Y + _font.LineSpacing + 5f;
+            if (_linesProvider != null)
+            {
+                foreach (var line in _linesProvider())
+                {
+                    _spriteBatch.DrawString(_font, line, new Vector2(_pos.X, y) + new Vector2(2,2), Color.Black);
+                    _spriteBatch.DrawString(_font, line, new Vector2(_pos.X, y), Color.Yellow);
+                    y += _font.LineSpacing;
+                }
+            }
             _spriteBatch.End();
+
+            
         }
     }
 }
