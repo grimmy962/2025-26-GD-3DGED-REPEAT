@@ -15,7 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Core\Extension\" />
     <Folder Include="Core\Gizmos\" />
     <Folder Include="Core\Serialization\" />
     <Folder Include="Core\Optimisation\" />

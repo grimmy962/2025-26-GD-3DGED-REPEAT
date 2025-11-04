@@ -9,22 +9,35 @@ namespace GDEngine.Core
     public class PerfStatsSystem : SystemBase
     {
         // Fields
-        private readonly Vector2 _pos = new Vector2(8, 6);
-        private readonly SpriteFont _font;
-        private SpriteBatch _spriteBatch;
-
+        #region Fields
+        private Vector2 _anchorPosition = new Vector2(10, 10);
+        private Color _colorDropShadow = Color.Black;
+        private Color _colorText = Color.Yellow;
         private Func<IEnumerable<string>>? _linesProvider;
+        private readonly SpriteFont _font;
 
         // Optional: tiny smoothing window (we'll describe the class in the aside)
         private readonly CircularBuffer<float> _recentDt = new CircularBuffer<float>(60);
+        private SpriteBatch _spriteBatch;
 
+        #region Properties
+        public Vector2 AnchorPosition { get => _anchorPosition; set => _anchorPosition = value; }
+        public Color ColorDropShadow { get => _colorDropShadow; set => _colorDropShadow = value; }
+        public Color ColorText { get => _colorText; set => _colorText = value; } 
+        #endregion
+        #endregion
+
+
+        #region Constructors
         public PerfStatsSystem(SpriteFont font, Func<IEnumerable<string>>? linesProvider = null)
-            : base(FrameLifecycle.PostRender, order: 10)
+           : base(FrameLifecycle.PostRender, order: 10)
         {
             _font = font ?? throw new ArgumentNullException(nameof(font));
             _linesProvider = linesProvider;
         }
+        #endregion
 
+        #region Lifecycle methods
         protected override void OnAdded()
         {
             var ctx = Context ?? throw new InvalidOperationException("EngineContext not set.");
@@ -48,23 +61,24 @@ namespace GDEngine.Core
             string text = $"FPS: {fps:0.0}  |  {ms:0.00} ms  |  Frames: {Timing.Time.FrameCount}";
 
             _spriteBatch.Begin();
-            
-            _spriteBatch.DrawString(_font, text, _pos + new Vector2(2,2), Color.Black);
-            _spriteBatch.DrawString(_font, text, _pos, Color.Yellow);
 
-            float y = _pos.Y + _font.LineSpacing + 5f;
+            _spriteBatch.DrawString(_font, text, _anchorPosition + new Vector2(2, 2), _colorDropShadow);
+            _spriteBatch.DrawString(_font, text, _anchorPosition, _colorText);
+
+            float y = _anchorPosition.Y + _font.LineSpacing + 5f;
             if (_linesProvider != null)
             {
                 foreach (var line in _linesProvider())
                 {
-                    _spriteBatch.DrawString(_font, line, new Vector2(_pos.X, y) + new Vector2(2,2), Color.Black);
-                    _spriteBatch.DrawString(_font, line, new Vector2(_pos.X, y), Color.Yellow);
+                    _spriteBatch.DrawString(_font, line, new Vector2(_anchorPosition.X, y) + new Vector2(2, 2), _colorDropShadow);
+                    _spriteBatch.DrawString(_font, line, new Vector2(_anchorPosition.X, y), _colorText);
                     y += _font.LineSpacing;
                 }
             }
             _spriteBatch.End();
 
-            
-        }
+
+        } 
+        #endregion
     }
 }

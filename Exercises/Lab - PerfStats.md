@@ -26,12 +26,22 @@ Your engine dispatches systems by **FrameLifecycle** buckets. The **PostRender**
 
 > You’ll start from the **barebones class** your repo provides and add **only** the minimal code to print FPS/ms/frame count. No extras yet.
 
-### 1) Add private fields
+### 1) Inherit from SystemBase
+This class is a system and will need to be added to the `Scene` as a system so it needs to inherit from `SystemBase`. 
+
+```csharp
+public class PerfStatsSystem : SystemBase
+{
+    //...
+}
+```
+
+### 2) Add private fields
 Add these fields inside the class (follow your underscore naming style):
 
 ```csharp
 // Fields
-private readonly Vector2 _pos = new Vector2(8, 6);
+private readonly Vector2 _anchorPosition = new Vector2(10, 10);
 private readonly SpriteFont _font;
 private SpriteBatch _spriteBatch;
 
@@ -40,18 +50,18 @@ private readonly GDEngine.Core.Collections.CircularBuffer<float> _recentDt =
     new GDEngine.Core.Collections.CircularBuffer<float>(60);
 ```
 
-### 2) Ensure the constructor accepts a SpriteFont
+### 3) Ensure the constructor accepts a SpriteFont
 Keep the constructor simple and inject the font (from your `ContentDictionary`):
 
 ```csharp
 public PerfStatsSystem(SpriteFont font)
-    : base(FrameLifecycle.PostRender, order: 10)
+    : base(FrameLifecycle.PostRender, 10 /*some user-defined sort order*/)
 {
     _font = font ?? throw new ArgumentNullException(nameof(font));
 }
 ```
 
-### 3) Fetch `SpriteBatch` in `OnAdded()`
+### 4) Fetch `SpriteBatch` in `OnAdded()`
 Use the shared `SpriteBatch` from your `EngineContext` when the system is added:
 
 ```csharp
@@ -62,7 +72,7 @@ protected override void OnAdded()
 }
 ```
 
-### 4) Implement `Draw(...)` to compute + render stats
+### 5) Implement `Draw(...)` to compute + render stats
 Add a minimal `Draw` that computes smoothed FPS and renders one line:
 
 ```csharp
@@ -83,16 +93,16 @@ public override void Draw(float deltaTime)
     string text = $"FPS: {fps:0.0}  |  {ms:0.00} ms  |  Frames: {GDEngine.Core.Timing.Time.FrameCount}";
 
     _spriteBatch.Begin();
-    _spriteBatch.DrawString(_font, text, _pos, Microsoft.Xna.Framework.Color.Yellow);
+    _spriteBatch.DrawString(_font, text, _anchorPosition, Microsoft.Xna.Framework.Color.Yellow);
     _spriteBatch.End();
 }
 ```
 
-### 5) Wire it in `Main.InitializeSystems()`
+### 6) Wire it in `Main.InitializeSystems()`
 After your main systems are set up, add:
 
 ```csharp
-var debugFont = _fontDictionary.Get("perf_stat_font");
+var debugFont = _fontDictionary.Get("perfStats");
 _scene.Add(new PerfStatsSystem(debugFont));
 ```
 
@@ -157,12 +167,12 @@ public PerfStatsSystem(SpriteFont font, Func<IEnumerable<string>>? linesProvider
 
 **Step 3 — Append the extra lines in `Draw(...)`** after drawing the header line:
 ```csharp
-float y = _pos.Y + _font.LineSpacing + 2f;
+float y = _anchorPosition.Y + _font.LineSpacing + 2f;
 if (_linesProvider != null)
 {
     foreach (var line in _linesProvider())
     {
-        _spriteBatch.DrawString(_font, line, new Vector2(_pos.X, y), Microsoft.Xna.Framework.Color.Yellow);
+        _spriteBatch.DrawString(_font, line, new Vector2(_anchorPosition.X, y), Microsoft.Xna.Framework.Color.Yellow);
         y += _font.LineSpacing;
     }
 }
@@ -170,7 +180,7 @@ if (_linesProvider != null)
 
 **Step 4 — Usage example (fixed strings):**
 ```csharp
-var debugFont = _fontDictionary.Get("perf_stat_font");
+var debugFont = _fontDictionary.Get("perfStats");
 string[] _debugLines = new[]
 {
     "Renderer: Forward",
@@ -182,14 +192,15 @@ _scene.Add(new PerfStatsSystem(debugFont, () => _debugLines));
 
 **Step 5 — Usage example (dynamic strings per frame):**
 ```csharp
-var debugFont = _fontDictionary.Get("perf_stat_font");
+var debugFont = _fontDictionary.Get("perfStats");
 _scene.Add(new PerfStatsSystem(debugFont, () =>
 {
     return new[]
     {
-        $"Drawn Meshes: {RenderingSystem.DrawnCount}",
-        $"Cam Pos: {CameraSystem.Main.Position}",
-        $"Time: {GDEngine.Core.Timing.Time.RealtimeSinceStartupSecs:0.0}s"
+        $"Camera Info:",
+        $" - Game Object Count: {_scene.GameObjects.Count}",
+        $" - Camera[Position]: {_cameraGO.Transform.Position}",
+        $" - Camera[Forward]: {_cameraGO.Transform.Forward}"
     };
 }));
 ```

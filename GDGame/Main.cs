@@ -3,6 +3,7 @@ using GDEngine.Core.Collections;
 using GDEngine.Core.Components;
 using GDEngine.Core.Components.Controllers.Movement;
 using GDEngine.Core.Entities;
+using GDEngine.Core.Extensions;
 using GDEngine.Core.Factories;
 using GDEngine.Core.Input.Data;
 using GDEngine.Core.Input.Devices;
@@ -54,7 +55,7 @@ namespace GDGame
         protected override void Initialize()
         {
 
-            InitializeGraphics(ScreenResolution.R1280x800);
+            InitializeGraphics(ScreenResolution.R1024x768);
 
             InitializeMouse();
 
@@ -297,9 +298,11 @@ namespace GDGame
             {
                 return new[]
                 {
-                    $"Game Object Count: {_scene.GameObjects.Count}",
-                    $"Camera[Position]: {_cameraGO.Transform.Position: 0.0}",
-                     $"Camera[Forward]: {_cameraGO.Transform.Forward: 0.0}"
+                    "",
+                    $"Camera Info:",
+                    $" - Game Object Count: {_scene.GameObjects.Count}",
+                    $" - Camera[Position]: {_cameraGO.Transform.Position.ToFixed()}",
+                    $" - Camera[Forward]: {_cameraGO.Transform.Forward.ToFixed()}"
                 };
             }));
 
