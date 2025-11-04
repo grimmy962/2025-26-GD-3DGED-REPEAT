@@ -25,7 +25,6 @@ It is designed for **incremental classroom live-coding** and emphasizes clear se
 - [OpenGL Tutorial - Drawing Primitives](https://www.khronos.org/opengl/wiki/Primitive)
 
 ## Lab Exercises
-- [Primitives: Understanding PrimitiveType](Exercises/Exercises%20-%20Understanding%20Primitives.md)
 - [Systems: Adding PerfStatsSystem](Labs/Lab%20-%20PerfStats.md)
 - [Serialization: Loading models with JSON](Labs/Lab%20-%20JSON%20Serialization.md)
 
