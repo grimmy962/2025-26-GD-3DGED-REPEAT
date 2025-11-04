@@ -70,11 +70,12 @@ This document contains a step-by-step development plan of MonoGame content cover
 - [x] Add Integer structs (e.g. `Integer2`)
 - [x] Add `ScreenResolution` for easy resolution changes
 - [x] Performance improvements (replace pow with direct multiplication) in `Ease`
+- [x] Add `PerfStats` to show FPS, etc
+- [x] Add `Scene::Find` and `Scene::FindAll` for finding GameObjects by `Predicate`
+- [x] Add `Main::InitializeModel()` to load FBX models
 - [ ] Add event on resolution change
-- [ ] Add `PerfStats` to show FPS, etc
-- [ ] Add other camera controller types
 - [ ] Add drivable model with 3rd person camera
-- [ ] Add `Main::InitializeModel()`
+- [ ] Add other camera controller types
 - [ ] Add **serialization**: simple JSON for spawning `GameObject`.
 - [ ] Add **event bus**: lightweight pub/sub for decoupled messages between systems.
 
