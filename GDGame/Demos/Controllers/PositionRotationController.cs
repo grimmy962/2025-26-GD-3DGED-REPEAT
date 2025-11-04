@@ -1,7 +1,9 @@
-﻿using GDEngine.Core.Timing;
+﻿using GDEngine.Core.Components;
+using GDEngine.Core.Timing;
 using Microsoft.Xna.Framework;
+using System;
 
-namespace GDEngine.Core.Components
+namespace GDGame.Demos.Controllers
 {
     public class PositionRotationController : Component
     {
@@ -24,13 +26,13 @@ namespace GDEngine.Core.Components
             if (Transform == null || _positionCurve == null || _rotationCurve == null)
                 return;
 
-            totalElapsedTimeSecs += Time.DeltaTimeSecs;
+            totalElapsedTimeSecs += deltaTime;
 
             //absolute movement of the object to position(s) defined on curve
-            Transform.TranslateTo(_positionCurve.Evaluate(totalElapsedTimeSecs, 2)); //20.34f
+            Transform.TranslateTo(_positionCurve.Evaluate(totalElapsedTimeSecs)); 
 
             //FIXED - gimbal lock on XY rotation - get delta between two calls to evaluate and use delta as update
-            var nextYawPitchRoll = _rotationCurve.Evaluate(totalElapsedTimeSecs, 1);
+            var nextYawPitchRoll = _rotationCurve.Evaluate(totalElapsedTimeSecs);
 
             var deltaYawPitchRoll = nextYawPitchRoll - _oldYawPitchRoll;
             if(deltaYawPitchRoll.LengthSquared() > 0)

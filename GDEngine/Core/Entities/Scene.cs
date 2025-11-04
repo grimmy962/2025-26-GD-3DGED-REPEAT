@@ -235,7 +235,7 @@ namespace GDEngine.Core.Entities
         #endregion
 
         #region Lifecycle Methods
-        // Scene does not have its own lifecycle hooks at Stage-1.
+        // None
         #endregion
 
         #region Housekeeping Methods

@@ -62,6 +62,7 @@ namespace GDEngine.Core.Rendering
         #endregion
 
         #region Lifecycle Methods
+        // None
         #endregion
 
         #region Housekeeping Methods

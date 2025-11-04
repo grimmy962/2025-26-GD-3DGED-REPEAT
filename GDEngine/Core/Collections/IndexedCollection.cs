@@ -75,7 +75,7 @@ namespace GDEngine.Core.Collections
                 return;
 
             if (_count == _items.Length)
-                Resize(Math.Max(_items.Length * 2, _minCapacity));
+                Resize((int)MathF.Max(_items.Length * 2, _minCapacity));
 
             _items[_count] = item;
             _indices[item] = _count;
@@ -206,7 +206,7 @@ namespace GDEngine.Core.Collections
         #endregion
 
         #region Lifecycle Methods
-        // none
+        // None
         #endregion
 
         #region Housekeeping Methods

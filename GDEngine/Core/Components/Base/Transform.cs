@@ -346,7 +346,7 @@ namespace GDEngine.Core.Components
         #endregion
 
         #region Lifecycle Methods
-        // No special lifecycle required for Transform at this stage.
+        // None
         #endregion
 
         #region Housekeeping Methods

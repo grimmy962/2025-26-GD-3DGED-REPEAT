@@ -7,6 +7,10 @@
     /// <see cref="https://easings.net/"/>
     public static class Ease
     {
+        #region Static Fields
+        private static readonly float TAU = 2f * MathF.PI; // 2π, reused in sine helpers
+        #endregion
+
         #region Methods
         /// <summary>Linear: y = x.</summary>
         public static float Linear(float x)
@@ -19,19 +23,19 @@
         /// <summary>EaseInSine: slow start, fast end.</summary>
         public static float EaseInSine(float x)
         {
-            return 1f - (float)Math.Cos((x * Math.PI) / 2f);
+            return 1f - MathF.Cos((x * MathF.PI) / 2f);
         }
 
         /// <summary>EaseOutSine: fast start, slow end.</summary>
         public static float EaseOutSine(float x)
         {
-            return (float)Math.Sin((x * Math.PI) / 2f);
+            return MathF.Sin((x * MathF.PI) / 2f);
         }
 
         /// <summary>EaseInOutSine: slow at start and end.</summary>
         public static float EaseInOutSine(float x)
         {
-            return -0.5f * ((float)Math.Cos(Math.PI * x) - 1f);
+            return -0.5f * (MathF.Cos(MathF.PI * x) - 1f);
         }
 
         // --- Quadratic ---
@@ -45,7 +49,8 @@
         /// <summary>EaseOutQuad.</summary>
         public static float EaseOutQuad(float x)
         {
-            return 1f - (1f - x) * (1f - x);
+            float t = 1f - x;
+            return 1f - t * t;
         }
 
         /// <summary>EaseInOutQuad.</summary>
@@ -54,7 +59,8 @@
             if (x < 0.5f)
                 return 2f * x * x;
 
-            return 1f - (float)Math.Pow(-2f * x + 2f, 2f) / 2f;
+            float t = -2f * x + 2f;
+            return 1f - (t * t) * 0.5f;
         }
 
         // --- Cubic ---
@@ -68,7 +74,9 @@
         /// <summary>EaseOutCubic.</summary>
         public static float EaseOutCubic(float x)
         {
-            return 1f - (float)Math.Pow(1f - x, 3f);
+            float t = 1f - x;
+            float t2 = t * t;
+            return 1f - t * t2;
         }
 
         /// <summary>EaseInOutCubic.</summary>
@@ -77,7 +85,9 @@
             if (x < 0.5f)
                 return 4f * x * x * x;
 
-            return 1f - (float)Math.Pow(-2f * x + 2f, 3f) / 2f;
+            float t = -2f * x + 2f;
+            float t2 = t * t;
+            return 1f - (t * t2) * 0.5f;
         }
 
         // --- Quartic ---
@@ -85,22 +95,30 @@
         /// <summary>EaseInQuart.</summary>
         public static float EaseInQuart(float x)
         {
-            return x * x * x * x;
+            float x2 = x * x;
+            return x2 * x2;
         }
 
         /// <summary>EaseOutQuart.</summary>
         public static float EaseOutQuart(float x)
         {
-            return 1f - (float)Math.Pow(1f - x, 4f);
+            float t = 1f - x;
+            float t2 = t * t;
+            return 1f - t2 * t2;
         }
 
         /// <summary>EaseInOutQuart.</summary>
         public static float EaseInOutQuart(float x)
         {
             if (x < 0.5f)
-                return 8f * x * x * x * x;
+            {
+                float t = x * x;
+                return 8f * t * t;
+            }
 
-            return 1f - (float)Math.Pow(-2f * x + 2f, 4f) / 2f;
+            float u = -2f * x + 2f;       // (2-2x)
+            float u2 = u * u;
+            return 1f - (u2 * u2) * 0.5f;
         }
 
         // --- Quintic ---
@@ -108,22 +126,30 @@
         /// <summary>EaseInQuint.</summary>
         public static float EaseInQuint(float x)
         {
-            return x * x * x * x * x;
+            float x2 = x * x;
+            return x2 * x2 * x;
         }
 
         /// <summary>EaseOutQuint.</summary>
         public static float EaseOutQuint(float x)
         {
-            return 1f - (float)Math.Pow(1f - x, 5f);
+            float t = 1f - x;
+            float t2 = t * t;
+            return 1f - t2 * t2 * t;
         }
 
         /// <summary>EaseInOutQuint.</summary>
         public static float EaseInOutQuint(float x)
         {
             if (x < 0.5f)
-                return 16f * x * x * x * x * x;
+            {
+                float t = x * x;
+                return 16f * t * t * x;
+            }
 
-            return 1f - (float)Math.Pow(-2f * x + 2f, 5f) / 2f;
+            float u = -2f * x + 2f;
+            float u2 = u * u;
+            return 1f - (u2 * u2 * u) * 0.5f;
         }
 
         // --- Exponential ---
@@ -134,7 +160,7 @@
             if (x <= 0f)
                 return 0f;
 
-            return (float)Math.Pow(2f, 10f * x - 10f);
+            return MathF.Pow(2f, 10f * x - 10f);
         }
 
         /// <summary>EaseOutExpo. Returns 1 at x=1.</summary>
@@ -143,7 +169,7 @@
             if (x >= 1f)
                 return 1f;
 
-            return 1f - (float)Math.Pow(2f, -10f * x);
+            return 1f - MathF.Pow(2f, -10f * x);
         }
 
         /// <summary>EaseInOutExpo. Returns 0 at x=0 and 1 at x=1.</summary>
@@ -156,9 +182,9 @@
                 return 1f;
 
             if (x < 0.5f)
-                return (float)Math.Pow(2f, 20f * x - 10f) / 2f;
+                return MathF.Pow(2f, 20f * x - 10f) * 0.5f;
 
-            return (2f - (float)Math.Pow(2f, -20f * x + 10f)) / 2f;
+            return (2f - MathF.Pow(2f, -20f * x + 10f)) * 0.5f;
         }
 
         // --- Circular ---
@@ -166,22 +192,27 @@
         /// <summary>EaseInCirc.</summary>
         public static float EaseInCirc(float x)
         {
-            return 1f - (float)Math.Sqrt(1f - x * x);
+            return 1f - MathF.Sqrt(1f - x * x);
         }
 
         /// <summary>EaseOutCirc.</summary>
         public static float EaseOutCirc(float x)
         {
-            return (float)Math.Sqrt(1f - Math.Pow(x - 1f, 2f));
+            float t = x - 1f;
+            return MathF.Sqrt(1f - t * t);
         }
 
         /// <summary>EaseInOutCirc.</summary>
         public static float EaseInOutCirc(float x)
         {
             if (x < 0.5f)
-                return (1f - (float)Math.Sqrt(1f - Math.Pow(2f * x, 2f))) / 2f;
+            {
+                float t = 2f * x;
+                return (1f - MathF.Sqrt(1f - t * t)) * 0.5f;
+            }
 
-            return ((float)Math.Sqrt(1f - Math.Pow(-2f * x + 2f, 2f)) + 1f) / 2f;
+            float u = -2f * x + 2f;
+            return (MathF.Sqrt(1f - u * u) + 1f) * 0.5f;
         }
 
         // --- Back ---
@@ -212,13 +243,11 @@
             if (x < 0.5f)
             {
                 float t = 2f * x;
-                return (t * t * ((c2 + 1f) * t - c2)) / 2f;
+                return (t * t * ((c2 + 1f) * t - c2)) * 0.5f;
             }
 
-            {
-                float t = 2f * x - 2f;
-                return (t * t * ((c2 + 1f) * t + c2) + 2f) / 2f;
-            }
+            float u = 2f * x - 2f;
+            return (u * u * ((c2 + 1f) * u + c2) + 2f) * 0.5f;
         }
 
         // --- Elastic ---
@@ -232,8 +261,8 @@
             if (x >= 1f)
                 return 1f;
 
-            const float c4 = (2f * (float)Math.PI) / 3f;
-            return -(float)Math.Pow(2f, 10f * x - 10f) * (float)Math.Sin((x * 10f - 10.75f) * c4);
+            const float c4 = (2f * MathF.PI) / 3f;
+            return -MathF.Pow(2f, 10f * x - 10f) * MathF.Sin((x * 10f - 10.75f) * c4);
         }
 
         /// <summary>EaseOutElastic.</summary>
@@ -245,8 +274,8 @@
             if (x >= 1f)
                 return 1f;
 
-            const float c4 = (2f * (float)Math.PI) / 3f;
-            return (float)Math.Pow(2f, -10f * x) * (float)Math.Sin((x * 10f - 0.75f) * c4) + 1f;
+            const float c4 = (2f * MathF.PI) / 3f;
+            return MathF.Pow(2f, -10f * x) * MathF.Sin((x * 10f - 0.75f) * c4) + 1f;
         }
 
         /// <summary>EaseInOutElastic.</summary>
@@ -258,12 +287,12 @@
             if (x >= 1f)
                 return 1f;
 
-            const float c5 = (2f * (float)Math.PI) / 4.5f;
+            const float c5 = (2f * MathF.PI) / 4.5f;
 
             if (x < 0.5f)
-                return -0.5f * (float)Math.Pow(2f, 20f * x - 10f) * (float)Math.Sin((20f * x - 11.125f) * c5);
+                return -0.5f * MathF.Pow(2f, 20f * x - 10f) * MathF.Sin((20f * x - 11.125f) * c5);
 
-            return 0.5f * (float)Math.Pow(2f, -20f * x + 10f) * (float)Math.Sin((20f * x - 11.125f) * c5) + 1f;
+            return 0.5f * MathF.Pow(2f, -20f * x + 10f) * MathF.Sin((20f * x - 11.125f) * c5) + 1f;
         }
 
         // --- Bounce ---
@@ -303,12 +332,12 @@
         public static float EaseInOutBounce(float x)
         {
             if (x < 0.5f)
-                return (1f - EaseOutBounce(1f - 2f * x)) / 2f;
+                return (1f - EaseOutBounce(1f - 2f * x)) * 0.5f;
 
-            return (1f + EaseOutBounce(2f * x - 1f)) / 2f;
+            return (1f + EaseOutBounce(2f * x - 1f)) * 0.5f;
         }
 
-        // --- Sine ---
+        // --- Sine utilities ---
 
         /// <summary>
         /// Default sine wave mapped to [0,1]: y = 0.5 * (sin(2π * x) + 1).
@@ -316,7 +345,7 @@
         /// </summary>
         public static float Sine01(float x)
         {
-            return 0.5f * (MathF.Sin(2 * MathF.PI * x) + 1f);
+            return 0.5f * (MathF.Sin(TAU * x) + 1f);
         }
 
         /// <summary>
@@ -325,7 +354,7 @@
         /// </summary>
         public static float SineSigned(float x)
         {
-            return MathF.Sin(2 * MathF.PI * x);
+            return MathF.Sin(TAU * x);
         }
 
         /// <summary>
@@ -335,7 +364,8 @@
         /// </summary>
         public static Func<float, float> MakeSine01(float cycles = 1f, float phaseRadians = 0f)
         {
-            return (x) => 0.5f * (MathF.Sin(2 * MathF.PI * cycles * x + phaseRadians) + 1f);
+            float k = TAU * cycles;
+            return (x) => 0.5f * (MathF.Sin(k * x + phaseRadians) + 1f);
         }
 
         /// <summary>
@@ -344,7 +374,8 @@
         /// </summary>
         public static Func<float, float> MakeSineSigned(float cycles = 1f, float phaseRadians = 0f)
         {
-            return (x) => MathF.Sin(2 * MathF.PI * cycles * x + phaseRadians);
+            float k = TAU * cycles;
+            return (x) => MathF.Sin(k * x + phaseRadians);
         }
 
         #endregion

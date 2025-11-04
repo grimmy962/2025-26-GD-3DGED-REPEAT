@@ -1,6 +1,7 @@
-﻿using GDEngine.Core.Collections;
+﻿using GDEngine.Core;
+using GDEngine.Core.Collections;
 using GDEngine.Core.Components;
-using GDEngine.Core.Components.Controllers.General.Movement;
+using GDEngine.Core.Components.Controllers.Movement;
 using GDEngine.Core.Entities;
 using GDEngine.Core.Factories;
 using GDEngine.Core.Input.Data;
@@ -10,10 +11,10 @@ using GDEngine.Core.Services;
 using GDEngine.Core.Systems;
 using GDEngine.Core.Timing;
 using GDEngine.Samples;
+using GDGame.Demos.Controllers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using System;
 using System.Windows.Forms;
 
 namespace GDGame
@@ -31,19 +32,14 @@ namespace GDGame
         #endregion
 
         #region Demo Fields (remove in your game)
-        private GameObject _cameraGO;
-        private GameObject _grassQuadGO;
-        private MeshRenderer _grassQuadRenderer;
-        private MeshRenderer _skyBoxBackRenderer, _skyBoxLeftRenderer, _skyBoxRightRenderer, _skyBoxFrontRenderer, _skyBoxSkyRenderer;
-        private AnimationCurve _animationCurve;
-        private MeshRenderer _testObjRenderer;
         private AnimationCurve3D _animationPositionCurve;
         private AnimationCurve3D _animationRotationCurve;
         private Material _matBasicUnlit;
         private Material _matBasicLit;
         private Material _matAlphaCutout;
-        private GameObject _pipCameraGO;
         private GameObject _skyParent;
+        private AnimationCurve _animationCurve;
+        private int count;
         #endregion
 
         public Main()
@@ -55,7 +51,7 @@ namespace GDGame
 
         protected override void Initialize()
         {
-            InitializeGraphics(1280, 720);
+            InitializeGraphics(ScreenResolution.R1024x768);
 
             InitializeMouse();
 
@@ -75,11 +71,11 @@ namespace GDGame
 
             InitializeCamera(new Vector3(0, 5, 25));
 
-            InitializePIPCamera(new Vector3(-35, 5, 5), 
-                new Viewport(0, 
-                0, 
-                400, 
-                200), 
+            InitializePIPCamera(new Vector3(-35, 5, 5),
+                new Viewport(0,
+                0,
+                400,
+                200),
                 -1, 0);
 
             //BUG - LayerMask and Camera depth
@@ -90,8 +86,8 @@ namespace GDGame
             InitializeGround(scale);
             InitializeTestObject();
             InitializeFoliage(new Vector3(0, 10 /*note Y=heightscale/2*/, 0), 12, 20);
-            //TODO - Wk7
-
+           
+            //TODO - LAB EXERCISE
             InitializeModel(new Vector3(-10, 10, 0),
                 new Vector3(-90, 0, 0),
                 5 * Vector3.One,
@@ -102,7 +98,7 @@ namespace GDGame
             base.Initialize();
         }
 
-        private void InitializePIPCamera(Vector3 position, 
+        private void InitializePIPCamera(Vector3 position,
             Viewport viewport, int depth, int index = 0)
         {
             var pipCameraGO = new GameObject("PIP camera");
@@ -152,20 +148,15 @@ namespace GDGame
             _animationRotationCurve.AddKey(new Vector3(0, 0, 0), 3);
         }
 
-        private void InitializeGraphics(int width, int height)
+        private void InitializeGraphics(Integer2 resolution)
         {
             Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
-
-            _graphics.PreferredBackBufferWidth = width;
-            _graphics.PreferredBackBufferHeight = height;
-            _graphics.ApplyChanges();
+            ScreenResolution.SetResolution(_graphics, resolution);
         }
 
         private void InitializeMouse()
         {
-            //TODO
-            Mouse.SetPosition(_graphics.PreferredBackBufferWidth / 2,
-                _graphics.PreferredBackBufferHeight / 2);
+            Mouse.SetPosition(_graphics.PreferredBackBufferWidth / 2, _graphics.PreferredBackBufferHeight / 2);
         }
 
         private void InitializeContext()
@@ -183,8 +174,20 @@ namespace GDGame
 
         private void LoadAssets()
         {
+            LoadSounds();
+            LoadFonts();
             LoadTextures();
             LoadModels();
+        }
+
+        private void LoadSounds()
+        {
+            //TODO - LAB EXERCISE
+        }
+
+        private void LoadFonts()
+        {
+            //TODO - LAB EXERCISE
         }
 
         private void LoadTextures()
@@ -271,9 +274,15 @@ namespace GDGame
 
         private void InitializeSystems()
         {
+            InitializePerfStatsSystem();
             InitializeCameraSystem();
             InitializeRenderingSystem();
             InitializeInputSystem();
+        }
+
+        private void InitializePerfStatsSystem()
+        {
+            //TODO - LAB EXERCISE
         }
 
         private void InitializeCameraSystem()
@@ -284,7 +293,7 @@ namespace GDGame
 
         private void InitializeRenderingSystem()
         {
-           // _scene.Add(new EnemyCullingSystem());
+            // _scene.Add(new EnemyCullingSystem());
             _scene.Add(new RenderingSystem());
         }
 
@@ -312,7 +321,7 @@ namespace GDGame
         private void InitializeCamera(Vector3 position)
         {
             //camera GO
-            _cameraGO = new GameObject("First person camera");
+            var _cameraGO = new GameObject("First person camera");
             //set position 
             _cameraGO.Transform.TranslateTo(position);
             //turn around as Forward is by default (0,0,1)
@@ -330,7 +339,7 @@ namespace GDGame
             //dont forget to add the camera to the camera system in the scene
             _scene.GetSystem<CameraSystem>().Add(_camera);
 
-           // _cameraGO.Layer = LayerMask.UI;// | LayerMask.UI | LayerMask.Gizmo;
+            // _cameraGO.Layer = LayerMask.UI;// | LayerMask.UI | LayerMask.Gizmo;
 
             //finally add it to the scene
             _scene.Add(_cameraGO);
@@ -342,7 +351,7 @@ namespace GDGame
         private void InitializeSkyParent()
         {
             _skyParent = new GameObject("SkyParent");
-            var rot = _skyParent.AddComponent<GDEngine.Core.Components.Controllers.General.Transform.RotationController>();
+            var rot = _skyParent.AddComponent<RotationController>();
 
             // Turntable spin around local +Y
             rot._rotationAxisNormalized = Vector3.Up;
@@ -356,6 +365,7 @@ namespace GDGame
         {
             GameObject gameObject = null;
             MeshFilter meshFilter = null;
+            MeshRenderer meshRenderer = null;
 
             // back
             gameObject = new GameObject("back");
@@ -363,9 +373,9 @@ namespace GDGame
             gameObject.Transform.TranslateTo(new Vector3(0, 0, -scale / 2));
             meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
             gameObject.AddComponent(meshFilter);
-            _skyBoxBackRenderer = gameObject.AddComponent<MeshRenderer>();
-            _skyBoxBackRenderer.Material = _matBasicUnlit;
-            _skyBoxBackRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_back");
+            meshRenderer = gameObject.AddComponent<MeshRenderer>();
+            meshRenderer.Material = _matBasicUnlit;
+            meshRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_back");
             _scene.Add(gameObject);
 
             //set parent to allow rotation
@@ -378,9 +388,9 @@ namespace GDGame
             gameObject.Transform.TranslateTo(new Vector3(-scale / 2, 0, 0));
             meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
             gameObject.AddComponent(meshFilter);
-            _skyBoxLeftRenderer = gameObject.AddComponent<MeshRenderer>();
-            _skyBoxLeftRenderer.Material = _matBasicUnlit;
-            _skyBoxLeftRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_left");
+            meshRenderer = gameObject.AddComponent<MeshRenderer>();
+            meshRenderer.Material = _matBasicUnlit;
+            meshRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_left");
             _scene.Add(gameObject);
 
             //set parent to allow rotation
@@ -394,9 +404,9 @@ namespace GDGame
             gameObject.Transform.TranslateTo(new Vector3(scale / 2, 0, 0));
             meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
             gameObject.AddComponent(meshFilter);
-            _skyBoxRightRenderer = gameObject.AddComponent<MeshRenderer>();
-            _skyBoxRightRenderer.Material = _matBasicUnlit;
-            _skyBoxRightRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_right");
+            meshRenderer = gameObject.AddComponent<MeshRenderer>();
+            meshRenderer.Material = _matBasicUnlit;
+            meshRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_right");
             _scene.Add(gameObject);
 
             //set parent to allow rotation
@@ -409,9 +419,9 @@ namespace GDGame
             gameObject.Transform.TranslateTo(new Vector3(0, 0, scale / 2));
             meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
             gameObject.AddComponent(meshFilter);
-            _skyBoxFrontRenderer = gameObject.AddComponent<MeshRenderer>();
-            _skyBoxFrontRenderer.Material = _matBasicUnlit;
-            _skyBoxFrontRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_front");
+            meshRenderer = gameObject.AddComponent<MeshRenderer>();
+            meshRenderer.Material = _matBasicUnlit;
+            meshRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_front");
             _scene.Add(gameObject);
 
             //set parent to allow rotation
@@ -424,9 +434,9 @@ namespace GDGame
             gameObject.Transform.TranslateTo(new Vector3(0, scale / 2, 0));
             meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
             gameObject.AddComponent(meshFilter);
-            _skyBoxSkyRenderer = gameObject.AddComponent<MeshRenderer>();
-            _skyBoxSkyRenderer.Material = _matBasicUnlit;
-            _skyBoxSkyRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_sky");
+            meshRenderer = gameObject.AddComponent<MeshRenderer>();
+            meshRenderer.Material = _matBasicUnlit;
+            meshRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_sky");
             _scene.Add(gameObject);
 
             //set parent to allow rotation
@@ -436,47 +446,55 @@ namespace GDGame
 
         private void InitializeGround(int scale = 500)
         {
-            _grassQuadGO = new GameObject("ground");
-            var meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
-            _grassQuadGO.Transform.ScaleBy(new Vector3(scale, scale, 1));
-            _grassQuadGO.Transform.RotateEulerBy(new Vector3(MathHelper.ToRadians(-90), 0, 0), true);
+            GameObject gameObject = null;
+            MeshFilter meshFilter = null;
+            MeshRenderer meshRenderer = null;
 
-            _grassQuadGO.AddComponent(meshFilter);
-            _grassQuadRenderer = _grassQuadGO.AddComponent<MeshRenderer>();
-            _grassQuadRenderer.Material = _matBasicUnlit;
-            _grassQuadRenderer.Overrides.MainTexture = _textureDictionary.Get("ground_grass");
+            gameObject = new GameObject("ground");
+            meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
+            gameObject.Transform.ScaleBy(new Vector3(scale, scale, 1));
+            gameObject.Transform.RotateEulerBy(new Vector3(MathHelper.ToRadians(-90), 0, 0), true);
 
-            _scene.Add(_grassQuadGO);
+            gameObject.AddComponent(meshFilter);
+            meshRenderer = gameObject.AddComponent<MeshRenderer>();
+            meshRenderer.Material = _matBasicUnlit;
+            meshRenderer.Overrides.MainTexture = _textureDictionary.Get("ground_grass");
+
+            _scene.Add(gameObject);
         }
 
 
         private void InitializeTestObject()
         {
-            var testCrateGO = new GameObject("test crate textured cube");
+            GameObject gameObject = null;
+            MeshFilter meshFilter = null;
+            MeshRenderer meshRenderer = null;
 
-            testCrateGO.Transform.TranslateTo(new Vector3(0, 5, 0));
-            testCrateGO.Transform.ScaleTo(Vector3.One * 8);
+            gameObject = new GameObject("test crate textured cube");
 
-            var meshFilter = MeshFilterFactory.CreateCubeTexturedLit(_graphics.GraphicsDevice);
-            testCrateGO.AddComponent(meshFilter);
+            gameObject.Transform.TranslateTo(new Vector3(0, 5, 0));
+            gameObject.Transform.ScaleTo(Vector3.One * 8);
 
-            _testObjRenderer = testCrateGO.AddComponent<MeshRenderer>();
-            _testObjRenderer.Material = _matBasicLit; //enable lighting for the crate
-            _testObjRenderer.Overrides.MainTexture = _textureDictionary.Get("crate1");
+            meshFilter = MeshFilterFactory.CreateCubeTexturedLit(_graphics.GraphicsDevice);
+            gameObject.AddComponent(meshFilter);
 
-            _scene.Add(testCrateGO);
+            meshRenderer = gameObject.AddComponent<MeshRenderer>();
+            meshRenderer.Material = _matBasicLit; //enable lighting for the crate
+            meshRenderer.Overrides.MainTexture = _textureDictionary.Get("crate1");
+
+            _scene.Add(gameObject);
 
             var posRotController = new PositionRotationController
             {
                 RotationCurve = _animationRotationCurve,
                 PositionCurve = _animationPositionCurve
             };
-            testCrateGO.AddComponent(posRotController);
+            gameObject.AddComponent(posRotController);
 
             //demo the new input system support for keyboard, mouse and gamepad
-            testCrateGO.AddComponent(new DemoInputReceiverComponent());
+            gameObject.AddComponent(new InputReceiverComponent());
 
-          //  testCrateGO.Layer = LayerMask.World;
+            //  testCrateGO.Layer = LayerMask.World;
         }
 
         private void InitializeFoliage(Vector3 position, float width, float height)
@@ -536,6 +554,8 @@ namespace GDGame
 
         protected override void Update(GameTime gameTime)
         {
+            count++;
+
             //call time update
             Time.Update(gameTime);
 
@@ -608,16 +628,6 @@ namespace GDGame
 
                 // 6. Clear references to help GC
                 System.Diagnostics.Debug.WriteLine("Clearing References");
-                _cameraGO = null;
-                _camera = null;
-                _grassQuadGO = null;
-                _grassQuadRenderer = null;
-                _skyBoxBackRenderer = null;
-                _skyBoxLeftRenderer = null;
-                _skyBoxRightRenderer = null;
-                _skyBoxFrontRenderer = null;
-                _skyBoxSkyRenderer = null;
-                _testObjRenderer = null;
                 _animationCurve = null;
                 _animationPositionCurve = null;
                 _animationRotationCurve = null;

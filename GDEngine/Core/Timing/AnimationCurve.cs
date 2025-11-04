@@ -2,94 +2,126 @@
 
 namespace GDEngine.Core.Timing
 {
-    /// <remarks>
-    /// Scalar animation curve (SECONDS).
-    /// Evaluate() honors the chosen CurveLoopType.    /// Lazy tangent recomputation on mutation. Sampling helpers and simple presets.
-    /// </remarks>
-    /// <example>
-    /// <code>
-    /// // Build a 2-second up-and-down curve (0 -> 1 -> 0) that oscillates (ping-pongs).
-    /// var curve = new AnimationCurve(); // default = Cycle; use Oscillate if you want ping-pong
-    /// curve.AddKey(0f, 0.0);  // (value, timeSeconds)
-    /// curve.AddKey(1f, 1.0);
-    /// curve.AddKey(0f, 2.0);
-    ///
-    /// double elapsedSeconds = 0.0;
-    /// elapsedSeconds += Time.DeltaTimeSecs;
-    /// float y = curve.Evaluate(elapsedSeconds); // honors CurveLoopType
-    ///
-    /// // Sampling (e.g., for graphing UI)
-    /// float[] samples = curve.Sample(32);
-    /// </code>
-    /// </example>
+    /// <summary>
+    /// Scalar animation curve (SECONDS). Wraps MonoGame <see cref="Curve"/> with handy helpers.
+    /// </summary>
     /// <see cref="AnimationCurve2D"/>
     /// <see cref="AnimationCurve3D"/>
     public class AnimationCurve
     {
-        // Fields
+        #region Fields
         private readonly Curve _curve;
         private readonly CurveLoopType _loop;
+
+        // Tangent maintenance
         private bool _dirtyTangents;
+        private int _lastEditedIndex = -1;
 
-        // Properties
-        public CurveLoopType LoopType => _loop;                    // loop/clamp/oscillate behavior honored by Evaluate()
-        public int KeyCount => _curve.Keys.Count;                  // number of keys
-        public bool IsEmpty => _curve.Keys.Count == 0;             // true if there are no keys
-        public double StartSeconds => IsEmpty ? 0.0 : _curve.Keys[0].Position;
-        public double EndSeconds => IsEmpty ? 0.0 : _curve.Keys[_curve.Keys.Count - 1].Position;
-        public double DurationSeconds => IsEmpty ? 0.0 : EndSeconds - StartSeconds;
-        public CurveKeyCollection Keys => _curve.Keys;             // direct access to MonoGame keys
+        // Cached ranges (time/value) to avoid rescans
+        private bool _dirtyRanges = true;
+        private double _start;
+        private double _end;
+        private float _minVal;
+        private float _maxVal;
+        #endregion
 
-        // Constructor (defaults to Cycle)
+        #region Properties
+        public CurveLoopType LoopType => _loop;
+        public int KeyCount => _curve.Keys.Count;
+        public bool IsEmpty => _curve.Keys.Count == 0;
+
+        // REFACTOR - DONE - Cache start for O(1) property access
+        public double StartSeconds { get { RefreshRangesIfNeeded(); return _start; } }
+
+        // REFACTOR - DONE - Cache end for O(1) property access
+        public double EndSeconds { get { RefreshRangesIfNeeded(); return _end; } }
+
+        // REFACTOR - DONE - Cache duration for O(1) property access
+        public double DurationSeconds { get { RefreshRangesIfNeeded(); return _end - _start; } }
+
+        public CurveKeyCollection Keys => _curve.Keys;
+        #endregion
+
+        #region Constructors
+        /// <summary>
+        /// Create a curve. Defaults to <see cref="CurveLoopType.Cycle"/> for both pre/post.
+        /// </summary>
+        /// <param name="loopType">Loop behavior for pre/post.</param>
         public AnimationCurve(CurveLoopType loopType = CurveLoopType.Cycle)
         {
             _curve = new Curve();
             _curve.PreLoop = _curve.PostLoop = loopType;
             _loop = loopType;
             _dirtyTangents = true;
+            _dirtyRanges = true;
         }
+        #endregion
 
-        // Add a key at timeSeconds. If a key exists at the same time, overwrite its value.
+        #region Methods
+        /// <summary>
+        /// Add a key at <paramref name="timeSeconds"/>. Overwrites value if a key already exists at that time.
+        /// </summary>
         public void AddKey(float value, double timeSeconds)
         {
             float t = (float)timeSeconds;
+            var keys = Keys;
 
-            for (int i = 0; i < Keys.Count; i++)
+            // Try overwrite existing key at same time
+            for (int i = 0, n = keys.Count; i < n; i++)
             {
-                if (Keys[i].Position == t)
+                if (keys[i].Position == t)
                 {
-                    var k = Keys[i];
+                    var k = keys[i];
                     k.Value = value;
-                    Keys[i] = k;
+                    keys[i] = k;
+
+                    _lastEditedIndex = i;
                     _dirtyTangents = true;
+                    InvalidateRanges();
                     return;
                 }
             }
 
-            Keys.Add(new CurveKey(t, value)); // MonoGame keeps Keys sorted by Position
+            // Add a new key (Keys are kept sorted by MonoGame)
+            keys.Add(new CurveKey(t, value));
+
+            _lastEditedIndex = FindKeyIndexByTime(t);
             _dirtyTangents = true;
+            InvalidateRanges();
         }
 
-        // Set the value on an existing key by index.
+        /// <summary>
+        /// Set the value on an existing key by index.
+        /// </summary>
         public bool SetValue(int index, float newValue)
         {
-            if (index < 0 || index >= Keys.Count) return false;
-            var k = Keys[index];
+            var keys = Keys;
+            if (index < 0 || index >= keys.Count) return false;
+
+            var k = keys[index];
             k.Value = newValue;
-            Keys[index] = k;
+            keys[index] = k;
+
+            _lastEditedIndex = index;
             _dirtyTangents = true;
+            InvalidateRanges();
             return true;
         }
 
-        // Remove all keys.
+        /// <summary>
+        /// Remove all keys.
+        /// </summary>
         public void Clear()
         {
             Keys.Clear();
             _dirtyTangents = true;
+            _lastEditedIndex = -1;
+            InvalidateRanges();
         }
 
-        // Evaluate at timeSeconds. If decimalPrecision < 0, returns raw value; otherwise rounds for UI display.
-        // Respects the loop/clamp/oscillate behavior set at construction.
+        /// <summary>
+        /// Evaluate at time (double seconds). If <paramref name="decimalPrecision"/> &lt; 0, returns raw value.
+        /// </summary>
         public float Evaluate(double timeSeconds, int decimalPrecision = -1)
         {
             if (IsEmpty) return 0f;
@@ -98,51 +130,91 @@ namespace GDEngine.Core.Timing
             float v = _curve.Evaluate((float)timeSeconds);
             if (decimalPrecision < 0) return v;
 
-            float dp = (float)Math.Pow(10, decimalPrecision);
-            return (float)(Math.Round(v * dp) / dp);
+            float dp = MathF.Pow(10f, decimalPrecision);
+            return MathF.Round(v * dp) / dp;
         }
 
-        // Uniformly sample the curve across [StartSeconds, EndSeconds].
+        /// <summary>
+        /// Evaluate at time (float seconds). Skips double-&gt;float cast in hot paths.
+        /// </summary>
+        public float Evaluate(float timeSeconds, int decimalPrecision = -1)
+        {
+            if (IsEmpty) return 0f;
+            EnsureTangents();
+
+            float v = _curve.Evaluate(timeSeconds);
+            if (decimalPrecision < 0) return v;
+
+            float dp = MathF.Pow(10f, decimalPrecision);
+            return MathF.Round(v * dp) / dp;
+        }
+
+        /// <summary>
+        /// Uniformly sample the curve across [StartSeconds, EndSeconds] into a new array.
+        /// </summary>
         public float[] Sample(int count, int decimalPrecision = -1)
         {
-            if (count <= 0 || IsEmpty) return Array.Empty<float>();
-            if (DurationSeconds <= 0.0)
-            {
-                var v = Evaluate(StartSeconds, decimalPrecision);
-                var arr = new float[count];
-                for (int i = 0; i < count; i++) arr[i] = v;
-                return arr;
-            }
-
-            var data = new float[count];
-            for (int i = 0; i < count; i++)
-            {
-                float t01 = count == 1 ? 0f : (float)i / (count - 1);
-                double s = StartSeconds + t01 * DurationSeconds;
-                data[i] = Evaluate(s, decimalPrecision);
-            }
-            return data;
+            if (count <= 0) return Array.Empty<float>();
+            var arr = new float[count];
+            Sample(arr.AsSpan(), decimalPrecision);
+            return arr;
         }
 
-        // Get min/max across key values (fast heuristic for UI scaling).
+        /// <summary>
+        /// Uniformly sample the curve across [StartSeconds, EndSeconds] into a caller-provided span (allocation-free).
+        /// </summary>
+        // REFACTOR - DONE - Allocation-free sampling overload using Span<T>
+        public void Sample(Span<float> dst, int decimalPrecision = -1)
+        {
+            if (dst.Length == 0) return;
+            if (IsEmpty)
+            {
+                dst.Fill(0f);
+                return;
+            }
+
+            EnsureTangents();
+            RefreshRangesIfNeeded();
+
+            double dur = DurationSeconds;
+            if (dur <= 0.0)
+            {
+                float v = Evaluate((float)_start, decimalPrecision);
+                for (int i = 0, n = dst.Length; i < n; i++) dst[i] = v;
+                return;
+            }
+
+            int count = dst.Length;
+            double inv = count == 1 ? 0.0 : 1.0 / (count - 1);
+            for (int i = 0; i < count; i++)
+            {
+                double t01 = i * inv;
+                double s = _start + t01 * dur;
+                dst[i] = Evaluate((float)s, decimalPrecision);
+            }
+        }
+
+        /// <summary>
+        /// Fast heuristic for UI scaling: min/max across key values.
+        /// </summary>
         public bool TryGetValueRange(out float min, out float max)
         {
-            min = 0f; max = 0f;
-            if (IsEmpty) return false;
-
-            min = float.PositiveInfinity;
-            max = float.NegativeInfinity;
-
-            for (int i = 0; i < Keys.Count; i++)
+            if (IsEmpty)
             {
-                float v = Keys[i].Value;
-                if (v < min) min = v;
-                if (v > max) max = v;
+                min = max = 0f;
+                return false;
             }
+
+            // REFACTOR - DONE - Cached value range (no per-call scans)
+            RefreshRangesIfNeeded();
+            min = _minVal;
+            max = _maxVal;
             return true;
         }
 
-        // Create a simple linear ramp from startValue to endValue over durationSeconds.
+        /// <summary>
+        /// Create a simple linear ramp from startValue to endValue over durationSeconds.
+        /// </summary>
         public static AnimationCurve MakeRamp(float startValue, double durationSeconds, float endValue, CurveLoopType loop = CurveLoopType.Cycle)
         {
             var c = new AnimationCurve(loop);
@@ -151,7 +223,9 @@ namespace GDEngine.Core.Timing
             return c;
         }
 
-        // Create a pulse (low->high->low) with up/hold/down segments (seconds).
+        /// <summary>
+        /// Create a pulse (low-&gt;high-&gt;low) with up/hold/down segments (seconds).
+        /// </summary>
         public static AnimationCurve MakePulse(float low, float high, double upSeconds, double holdSeconds, double downSeconds, CurveLoopType loop = CurveLoopType.Cycle)
         {
             var c = new AnimationCurve(loop);
@@ -167,27 +241,39 @@ namespace GDEngine.Core.Timing
             return c;
         }
 
-        // Tangent maintenance
+        // REFACTOR - DONE - Partial tangent recomputation only around last edited key
         private void EnsureTangents()
         {
             if (!_dirtyTangents) return;
             if (IsEmpty) return;
 
-            for (int i = 0; i < Keys.Count; i++)
-                ComputeTangentsForKey(i);
+            var keys = Keys;
+            int n = keys.Count;
 
+            if (_lastEditedIndex >= 0)
+            {
+                int a = Math.Max(0, _lastEditedIndex - 1);
+                int b = Math.Min(n - 1, _lastEditedIndex + 1);
+                for (int i = a; i <= b; i++) ComputeTangentsForKey(i);
+            }
+            else
+            {
+                for (int i = 0; i < n; i++) ComputeTangentsForKey(i);
+            }
+
+            _lastEditedIndex = -1;
             _dirtyTangents = false;
         }
 
-        // Compute Catmull-Rom–style finite-difference tangents for key i.
         private void ComputeTangentsForKey(int i)
         {
+            var keys = Keys;
             int prev = i - 1; if (prev < 0) prev = i;
-            int next = i + 1; if (next >= Keys.Count) next = i;
+            int next = i + 1; if (next >= keys.Count) next = i;
 
-            var kPrev = Keys[prev];
-            var k = Keys[i];
-            var kNext = Keys[next];
+            var kPrev = keys[prev];
+            var k = keys[i];
+            var kNext = keys[next];
 
             float dtPrev = k.Position - kPrev.Position;
             float dtNext = kNext.Position - k.Position;
@@ -218,42 +304,76 @@ namespace GDEngine.Core.Timing
             k.TangentIn = slopeIn;
             k.TangentOut = slopeOut;
 
-            Keys[i] = k;
+            keys[i] = k;
+        }
+
+        // REFACTOR - DONE - Centralized dirty handling for cached ranges
+        private void InvalidateRanges()
+        {
+            _dirtyRanges = true;
+        }
+
+        // REFACTOR - DONE - Cached computation for start/end and min/max value
+        private void RefreshRangesIfNeeded()
+        {
+            if (!_dirtyRanges) return;
+
+            var keys = Keys;
+            if (keys.Count == 0)
+            {
+                _start = _end = 0.0;
+                _minVal = _maxVal = 0f;
+                _dirtyRanges = false;
+                return;
+            }
+
+            // Keys are sorted by time in MonoGame
+            var k0 = keys[0];
+            var kN = keys[keys.Count - 1];
+            _start = k0.Position;
+            _end = kN.Position;
+
+            float minV = float.PositiveInfinity, maxV = float.NegativeInfinity;
+            for (int i = 0, n = keys.Count; i < n; i++)
+            {
+                float v = keys[i].Value;
+                if (v < minV) minV = v;
+                if (v > maxV) maxV = v;
+            }
+            _minVal = minV;
+            _maxVal = maxV;
+
+            _dirtyRanges = false;
+        }
+
+        private int FindKeyIndexByTime(float t)
+        {
+            var keys = Keys;
+            for (int i = 0, n = keys.Count; i < n; i++)
+                if (keys[i].Position == t) return i;
+            return -1;
         }
 
         public override string ToString()
         {
             return $"AnimationCurve(Keys={KeyCount}, Start={StartSeconds:F3}s, End={EndSeconds:F3}s, Loop={_loop})";
         }
+        #endregion
     }
 
-    /// <remarks>
+    /// <summary>
     /// 2D (x,y) animation curve composed of two scalar curves sharing the same time domain (SECONDS).
-    /// Evaluate() honors the chosen CurveLoopType.
-    /// </remarks>
-    /// <example>
-    /// <code>
-    /// var curve2 = new AnimationCurve2D(); // default = Cycle
-    /// curve2.AddKey(new Vector2(0, 0),  0.0);
-    /// curve2.AddKey(new Vector2(4, 2),  1.5);
-    /// curve2.AddKey(new Vector2(0,-2),  3.0);
-    ///
-    /// double elapsedSeconds = 0.0;
-    /// elapsedSeconds += Time.DeltaTimeSecs;
-    /// Vector2 p = curve2.Evaluate(elapsedSeconds);
-    ///
-    /// Vector2[] pts = curve2.Sample(50);
-    /// </code>
-    /// </example>
+    /// </summary>
     /// <see cref="AnimationCurve"/>
     /// <see cref="AnimationCurve3D"/>
     public class AnimationCurve2D
     {
-        // Fields
+        #region Fields
         private readonly AnimationCurve _x;
         private readonly AnimationCurve _y;
+        #endregion
 
-        // Properties
+        #region Properties
         public CurveLoopType LoopType => _x.LoopType;
         public int KeyCount => Math.Max(_x.KeyCount, _y.KeyCount);
         public bool IsEmpty => _x.IsEmpty && _y.IsEmpty;
@@ -271,22 +391,23 @@ namespace GDEngine.Core.Timing
 
         public double EndSeconds => Math.Max(_x.EndSeconds, _y.EndSeconds);
         public double DurationSeconds => IsEmpty ? 0.0 : EndSeconds - StartSeconds;
+        #endregion
 
-        // Constructor (defaults to Cycle)
+        #region Constructors
         public AnimationCurve2D(CurveLoopType loopType = CurveLoopType.Cycle)
         {
             _x = new AnimationCurve(loopType);
             _y = new AnimationCurve(loopType);
         }
+        #endregion
 
-        // Add a 2D key at timeSeconds.
+        #region Methods
         public void AddKey(Vector2 value, double timeSeconds)
         {
             _x.AddKey(value.X, timeSeconds);
             _y.AddKey(value.Y, timeSeconds);
         }
 
-        // Set both components on an existing key index.
         public bool SetValue(int index, Vector2 newValue)
         {
             bool a = _x.SetValue(index, newValue.X);
@@ -294,14 +415,12 @@ namespace GDEngine.Core.Timing
             return a || b;
         }
 
-        // Remove all keys.
         public void Clear()
         {
             _x.Clear();
             _y.Clear();
         }
 
-        // Evaluate at timeSeconds.
         public Vector2 Evaluate(double timeSeconds, int decimalPrecision = -1)
         {
             return new Vector2(
@@ -310,81 +429,59 @@ namespace GDEngine.Core.Timing
             );
         }
 
-        // Uniformly sample across [StartSeconds, EndSeconds].
+        // REFACTOR - DONE - Allocation-free sampling overload using Span<T>
+        public void Sample(Span<Vector2> dst, int decimalPrecision = -1)
+        {
+            if (dst.Length == 0) return;
+            if (IsEmpty)
+            {
+                for (int i = 0; i < dst.Length; i++) dst[i] = Vector2.Zero;
+                return;
+            }
+
+            double dur = DurationSeconds;
+            if (dur <= 0.0)
+            {
+                var v = Evaluate(StartSeconds, decimalPrecision);
+                for (int i = 0; i < dst.Length; i++) dst[i] = v;
+                return;
+            }
+
+            int count = dst.Length;
+            double inv = count == 1 ? 0.0 : 1.0 / (count - 1);
+            double start = StartSeconds;
+            for (int i = 0; i < count; i++)
+            {
+                double t01 = i * inv;
+                double s = start + t01 * dur;
+                dst[i] = Evaluate(s, decimalPrecision);
+            }
+        }
+
         public Vector2[] Sample(int count, int decimalPrecision = -1)
         {
             if (count <= 0 || IsEmpty) return Array.Empty<Vector2>();
             var arr = new Vector2[count];
-            if (DurationSeconds <= 0.0)
-            {
-                var v = Evaluate(StartSeconds, decimalPrecision);
-                for (int i = 0; i < count; i++) arr[i] = v;
-                return arr;
-            }
-
-            for (int i = 0; i < count; i++)
-            {
-                float t01 = count == 1 ? 0f : (float)i / (count - 1);
-                double s = StartSeconds + t01 * DurationSeconds;
-                arr[i] = Evaluate(s, decimalPrecision);
-            }
+            Sample(arr.AsSpan(), decimalPrecision);
             return arr;
         }
-
-        // Factory: linear ramp over durationSeconds.
-        public static AnimationCurve2D MakeRamp(Vector2 start, double durationSeconds, Vector2 end, CurveLoopType loop = CurveLoopType.Cycle)
-        {
-            var c = new AnimationCurve2D(loop);
-            c.AddKey(start, 0.0);
-            c.AddKey(end, Math.Max(0.0, durationSeconds));
-            return c;
-        }
-
-        // Factory: pulse (low->high->low) segments in seconds.
-        public static AnimationCurve2D MakePulse(Vector2 low, Vector2 high, double upSeconds, double holdSeconds, double downSeconds, CurveLoopType loop = CurveLoopType.Cycle)
-        {
-            var c = new AnimationCurve2D(loop);
-            double t0 = 0.0;
-            double t1 = t0 + Math.Max(0.0, upSeconds);
-            double t2 = t1 + Math.Max(0.0, holdSeconds);
-            double t3 = t2 + Math.Max(0.0, downSeconds);
-
-            c.AddKey(low, t0);
-            c.AddKey(high, t1);
-            c.AddKey(high, t2);
-            c.AddKey(low, t3);
-            return c;
-        }
+        #endregion
     }
 
-    /// <remarks>
+    /// <summary>
     /// 3D (x,y,z) animation curve composed of three scalar curves sharing the same time domain (SECONDS).
-    /// Evaluate() honors the chosen CurveLoopType.
-    /// </remarks>
-    /// <example>
-    /// <code>
-    /// var path = new AnimationCurve3D(); // default = Cycle
-    /// path.AddKey(new Vector3(0, 1,  0), 0.0);
-    /// path.AddKey(new Vector3(4, 2, -5), 1.5);
-    /// path.AddKey(new Vector3(0, 1,-10), 3.0);
-    ///
-    /// double elapsedSeconds = 0.0;
-    /// elapsedSeconds += Time.DeltaTimeSecs;
-    /// Vector3 camPos = path.Evaluate(elapsedSeconds);
-    ///
-    /// Vector3[] pts = path.Sample(64);
-    /// </code>
-    /// </example>
+    /// </summary>
     /// <see cref="AnimationCurve"/>
     /// <see cref="AnimationCurve2D"/>
     public class AnimationCurve3D
     {
-        // Fields
+        #region Fields
         private readonly AnimationCurve _x;
         private readonly AnimationCurve _y;
         private readonly AnimationCurve _z;
+        #endregion
 
-        // Properties
+        #region Properties
         public CurveLoopType LoopType => _x.LoopType;
         public int KeyCount => Math.Max(_x.KeyCount, Math.Max(_y.KeyCount, _z.KeyCount));
         public bool IsEmpty => _x.IsEmpty && _y.IsEmpty && _z.IsEmpty;
@@ -403,16 +500,18 @@ namespace GDEngine.Core.Timing
 
         public double EndSeconds => Math.Max(_x.EndSeconds, Math.Max(_y.EndSeconds, _z.EndSeconds));
         public double DurationSeconds => IsEmpty ? 0.0 : EndSeconds - StartSeconds;
+        #endregion
 
-        // Constructor (defaults to Cycle)
+        #region Constructors
         public AnimationCurve3D(CurveLoopType loopType = CurveLoopType.Cycle)
         {
             _x = new AnimationCurve(loopType);
             _y = new AnimationCurve(loopType);
             _z = new AnimationCurve(loopType);
         }
+        #endregion
 
-        // Add a 3D key at timeSeconds.
+        #region Methods
         public void AddKey(Vector3 value, double timeSeconds)
         {
             _x.AddKey(value.X, timeSeconds);
@@ -420,7 +519,6 @@ namespace GDEngine.Core.Timing
             _z.AddKey(value.Z, timeSeconds);
         }
 
-        // Set all three components on an existing key index.
         public bool SetValue(int index, Vector3 newValue)
         {
             bool a = _x.SetValue(index, newValue.X);
@@ -429,7 +527,6 @@ namespace GDEngine.Core.Timing
             return a || b || c;
         }
 
-        // Remove all keys.
         public void Clear()
         {
             _x.Clear();
@@ -437,7 +534,6 @@ namespace GDEngine.Core.Timing
             _z.Clear();
         }
 
-        // Evaluate at timeSeconds.
         public Vector3 Evaluate(double timeSeconds, int decimalPrecision = -1)
         {
             return new Vector3(
@@ -447,50 +543,42 @@ namespace GDEngine.Core.Timing
             );
         }
 
-        // Uniformly sample across [StartSeconds, EndSeconds].
+        // REFACTOR - DONE - Allocation-free sampling overload using Span<T>
+        public void Sample(Span<Vector3> dst, int decimalPrecision = -1)
+        {
+            if (dst.Length == 0) return;
+            if (IsEmpty)
+            {
+                for (int i = 0; i < dst.Length; i++) dst[i] = Vector3.Zero;
+                return;
+            }
+
+            double dur = DurationSeconds;
+            if (dur <= 0.0)
+            {
+                var v = Evaluate(StartSeconds, decimalPrecision);
+                for (int i = 0; i < dst.Length; i++) dst[i] = v;
+                return;
+            }
+
+            int count = dst.Length;
+            double inv = count == 1 ? 0.0 : 1.0 / (count - 1);
+            double start = StartSeconds;
+            for (int i = 0; i < count; i++)
+            {
+                double t01 = i * inv;
+                double s = start + t01 * dur;
+                dst[i] = Evaluate(s, decimalPrecision);
+            }
+        }
+
         public Vector3[] Sample(int count, int decimalPrecision = -1)
         {
             if (count <= 0 || IsEmpty) return Array.Empty<Vector3>();
             var arr = new Vector3[count];
-            if (DurationSeconds <= 0.0)
-            {
-                var v = Evaluate(StartSeconds, decimalPrecision);
-                for (int i = 0; i < count; i++) arr[i] = v;
-                return arr;
-            }
-
-            for (int i = 0; i < count; i++)
-            {
-                float t01 = count == 1 ? 0f : (float)i / (count - 1);
-                double s = StartSeconds + t01 * DurationSeconds;
-                arr[i] = Evaluate(s, decimalPrecision);
-            }
+            Sample(arr.AsSpan(), decimalPrecision);
             return arr;
         }
-
-        // Factory: linear ramp over durationSeconds.
-        public static AnimationCurve3D MakeRamp(Vector3 start, double durationSeconds, Vector3 end, CurveLoopType loop = CurveLoopType.Cycle)
-        {
-            var c = new AnimationCurve3D(loop);
-            c.AddKey(start, 0.0);
-            c.AddKey(end, Math.Max(0.0, durationSeconds));
-            return c;
-        }
-
-        // Factory: pulse (low->high->low) segments in seconds.
-        public static AnimationCurve3D MakePulse(Vector3 low, Vector3 high, double upSeconds, double holdSeconds, double downSeconds, CurveLoopType loop = CurveLoopType.Cycle)
-        {
-            var c = new AnimationCurve3D(loop);
-            double t0 = 0.0;
-            double t1 = t0 + Math.Max(0.0, upSeconds);
-            double t2 = t1 + Math.Max(0.0, holdSeconds);
-            double t3 = t2 + Math.Max(0.0, downSeconds);
-
-            c.AddKey(low, t0);
-            c.AddKey(high, t1);
-            c.AddKey(high, t2);
-            c.AddKey(low, t3);
-            return c;
-        }
+        #endregion
     }
 }

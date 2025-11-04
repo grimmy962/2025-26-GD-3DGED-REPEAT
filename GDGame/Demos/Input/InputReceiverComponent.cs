@@ -14,7 +14,7 @@ namespace GDEngine.Samples
     /// </summary>
     /// <see cref="InputSystem"/>
     /// <see cref="IInputReceiver"/>
-    public class DemoInputReceiverComponent : Component, IInputReceiver
+    public class InputReceiverComponent : Component, IInputReceiver
     {
         #region Static Fields
         //7 - ignore noise from analogue sticks/mouse by adding a tiny deadzone
@@ -108,7 +108,7 @@ namespace GDEngine.Samples
         #endregion
 
         #region Lifecycle Methods
-        // (Start/OnDestroy implemented above)
+        // None
         #endregion
 
         #region Housekeeping Methods

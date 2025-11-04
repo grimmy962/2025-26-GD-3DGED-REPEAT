@@ -19,6 +19,10 @@ This document contains a step-by-step development plan of MonoGame content cover
 
 ---
 
+## Performance & Optimization
+
+---
+
 ## Week 4
 - [x] Create clean MonoGame Game + Engine project.
 - [x] Add `EngineContext` with `GraphicsDevice`, `Content`, `GameTime`, `SpriteBatch`.
@@ -63,6 +67,11 @@ This document contains a step-by-step development plan of MonoGame content cover
 - [x] Add support for MonoGame effect types in `Material` and `MeshRenderer`.
 
 ## Week 7
+- [x] Add Integer structs (e.g. `Integer2`)
+- [x] Add `ScreenResolution` for easy resolution changes
+- [x] Performance improvements (replace pow with direct multiplication) in `Ease`
+- [ ] Add event on resolution change
+- [ ] Add `PerfStats` to show FPS, etc
 - [ ] Add other camera controller types
 - [ ] Add drivable model with 3rd person camera
 - [ ] Add `Main::InitializeModel()`

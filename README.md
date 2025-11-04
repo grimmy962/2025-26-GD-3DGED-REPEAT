@@ -25,6 +25,10 @@ It is designed for **incremental classroom live-coding** and emphasizes clear se
 - [DirectX Documentation - Primitive Topologies](https://docs.microsoft.com/en-us/windows/win32/direct3d11/d3d10-graphics-programming-guide-primitive-topologies)
 - [OpenGL Tutorial - Drawing Primitives](https://www.khronos.org/opengl/wiki/Primitive)
 
+## Lab Exercises
+- [Systems: Adding PerfStatsSystem](Exercises/Lab%20-%20PerfStats.md)
+- [Serialization: Loading models with JSON](Exercises/Lab%20-%20JSON%20Serialization.md)
+
 ## Project Folder Structure
 ```
 /Engine

@@ -2,7 +2,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 
-namespace GDEngine.Core.Components.Controllers.General.Movement
+namespace GDEngine.Core.Components.Controllers.Movement
 {
     public class MouseYawPitchController : Component
     {

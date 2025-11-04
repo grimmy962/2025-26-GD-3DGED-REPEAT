@@ -3,12 +3,12 @@ using GDEngine.Core.Timing;
 using Microsoft.Xna.Framework;
 using System;
 
-namespace GDGame.Demos.Animation
+namespace GDGame.Demos.Controllers
 {
     /// <summary>
     /// Demos a crude controller to move a gameobject based on a 1D animation curve
     /// </summary>
-    public class DemoAnimationCurveController : Component
+    public class AnimationCurveController : Component
     {
         #region Fields
         private Vector3 _direction = Vector3.UnitY;
@@ -18,7 +18,7 @@ namespace GDGame.Demos.Animation
         private float _totalElapsedTimeSecs;
         private Vector3 _originalLocalPosition;
 
-        public DemoAnimationCurveController(AnimationCurve curve)
+        public AnimationCurveController(AnimationCurve curve)
         {
             _curve = curve;
         }

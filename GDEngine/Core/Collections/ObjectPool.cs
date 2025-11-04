@@ -90,7 +90,7 @@
             _onReturn = onReturn;
             _maxSize = maxSize;
 
-            var capacity = Math.Min(initialSize > 0 ? initialSize : _defaultCapacity, maxSize);
+            int capacity = (int)MathF.Min(initialSize > 0 ? initialSize : _defaultCapacity, maxSize);
             _available = new Queue<T>(capacity);
             _active = new HashSet<T>();
 
@@ -194,7 +194,7 @@
                 if (_disposed)
                     throw new ObjectDisposedException(nameof(ObjectPool<T>));
 
-                var toCreate = Math.Min(count - _available.Count, _maxSize - TotalCount);
+                var toCreate = MathF.Min(count - _available.Count, _maxSize - TotalCount);
 
                 for (int i = 0; i < toCreate; i++)
                 {
