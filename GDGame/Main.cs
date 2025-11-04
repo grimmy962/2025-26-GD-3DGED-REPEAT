@@ -8,6 +8,7 @@ using GDEngine.Core.Factories;
 using GDEngine.Core.Input.Data;
 using GDEngine.Core.Input.Devices;
 using GDEngine.Core.Rendering;
+using GDEngine.Core.Serialization;
 using GDEngine.Core.Services;
 using GDEngine.Core.Systems;
 using GDEngine.Core.Timing;
@@ -16,7 +17,6 @@ using GDGame.Demos.Controllers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
@@ -26,7 +26,7 @@ namespace GDGame
 {
     public class Main : Game
     {
-        #region Core Fields
+        #region Core Fields (Common to all games)     
         private GraphicsDeviceManager _graphics;
         private ContentDictionary<Texture2D> _textureDictionary;
         private ContentDictionary<Model> _modelDictionary;
@@ -49,6 +49,7 @@ namespace GDGame
         private GameObject _cameraGO;
         #endregion
 
+        #region Core Methods (Common to all games)     
         public Main()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -58,7 +59,7 @@ namespace GDGame
 
         protected override void Initialize()
         {
-
+            #region Core
             InitializeGraphics(ScreenResolution.R1024x768);
 
             InitializeMouse();
@@ -75,105 +76,36 @@ namespace GDGame
 
             InitializeSystems();
 
-            InitializeCameraCurves();
-
             InitializeCamera(new Vector3(0, 5, 25));
 
+            int scale = 500;
+
+            InitializeSkyParent();
+
+            InitializeSkyBox(scale);
+
+            InitializeGround(scale);
+
+            #endregion
+
+            #region Demos
+
+            // Camera-demos
+            InitializeCameraCurves();
             InitializePIPCamera(new Vector3(-35, 5, 5),
                 new Viewport(0,
                 0,
                 400,
                 200),
                 -1, 0);
+            #endregion
 
-            //BUG - LayerMask and Camera depth
-
-            int scale = 500;
-            InitializeSkyParent();
-            InitializeSkyBox(scale);
-            InitializeGround(scale);
-            InitializeTestObject();
-            InitializeFoliage(new Vector3(0, 10 /*note Y=heightscale/2*/, 0), 12, 20);
-
-            //InitializeModel(new Vector3(-10, 10, 0),
-            //    new Vector3(-90, 0, 0),
-            //    5 * Vector3.One,
-            //    "checkerboard",
-            //    "monkey1",
-            //    "my first monkey game object");
-
-            LoadFromJSONDemo();
+            // Level-demos
+            DemoTestObject();
+            DemoAlphaCutoutFoliage(new Vector3(0, 10 /*note Y=heightscale/2*/, 0), 12, 20);
+            DemoLoadFromJSON();
 
             base.Initialize();
-        }
-
-        private void LoadFromJSONDemo()
-        {
-            //load a single model
-            ModelSpawnData d = LoadSingleModelSpawnData("single_model_spawn.json");
-            InitializeModel(
-                d.Position,
-                d.RotationDegrees,
-                d.Scale,
-                d.TextureName,
-                d.ModelName,
-                d.ObjectName);
-
-            //load multiple models
-            List<ModelSpawnData> modelData = LoadMultiModelSpawnData("multi_model_spawn.json");
-            foreach (ModelSpawnData data in modelData)
-            {
-                InitializeModel(
-                data.Position,
-                data.RotationDegrees,
-                data.Scale,
-                data.TextureName,
-                data.ModelName,
-                data.ObjectName);
-            }
-        }
-
-
-        /// <summary>
-        /// Reads a ModelSpawnData from a JSON file on disk.
-        /// </summary>
-        private ModelSpawnData LoadSingleModelSpawnData(string relativePath)
-        {
-            // Compose a path relative to your Content root (Content/).
-            // Ensure the JSON file is copied to the output folder.
-            string path = Path.Combine(Content.RootDirectory, relativePath);
-
-            string json = File.ReadAllText(path);
-
-            var opts = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                ReadCommentHandling = JsonCommentHandling.Skip,
-                AllowTrailingCommas = true
-            };
-            opts.Converters.Add(new Vector3JsonConverter());
-
-            ModelSpawnData data = JsonSerializer.Deserialize<ModelSpawnData>(json, opts);
-            return data;
-        }
-
-        /// <summary>
-        /// Reads a list of ModelSpawnData objects from a JSON file on disk.
-        /// </summary>
-        private List<ModelSpawnData> LoadMultiModelSpawnData(string relativePath)
-        {
-            string path = Path.Combine(Content.RootDirectory, relativePath);
-            string json = File.ReadAllText(path);
-
-            var opts = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                ReadCommentHandling = JsonCommentHandling.Skip,
-                AllowTrailingCommas = true
-            };
-            opts.Converters.Add(new Vector3JsonConverter());
-
-            return JsonSerializer.Deserialize<List<ModelSpawnData>>(json, opts);
         }
 
         private void InitializePIPCamera(Vector3 position,
@@ -351,7 +283,6 @@ namespace GDGame
 
         }
 
-
         private void InitializeScene()
         {
             //make a scene
@@ -375,8 +306,11 @@ namespace GDGame
                 return new[]
                 {
                     "",
-                    $"Camera Info:",
-                    $" - Game Object Count: {_scene.GameObjects.Count}",
+                    $"Draw Stats:",
+                    $" - Renderer Count: {_scene.Renderers.Count}",
+                    "",
+                    $"Camera Stats:",
+                    $" - Camera[name]: {_scene.ActiveCamera.GameObject.Name}",
                     $" - Camera[Position]: {_cameraGO.Transform.Position.ToFixed()}",
                     $" - Camera[Forward]: {_cameraGO.Transform.Forward.ToFixed()}"
                 };
@@ -561,68 +495,6 @@ namespace GDGame
             _scene.Add(gameObject);
         }
 
-
-        private void InitializeTestObject()
-        {
-            GameObject gameObject = null;
-            MeshFilter meshFilter = null;
-            MeshRenderer meshRenderer = null;
-
-            gameObject = new GameObject("test crate textured cube");
-
-            gameObject.Transform.TranslateTo(new Vector3(0, 5, 0));
-            gameObject.Transform.ScaleTo(Vector3.One * 8);
-
-            meshFilter = MeshFilterFactory.CreateCubeTexturedLit(_graphics.GraphicsDevice);
-            gameObject.AddComponent(meshFilter);
-
-            meshRenderer = gameObject.AddComponent<MeshRenderer>();
-            meshRenderer.Material = _matBasicLit; //enable lighting for the crate
-            meshRenderer.Overrides.MainTexture = _textureDictionary.Get("crate1");
-
-            _scene.Add(gameObject);
-
-            var posRotController = new PositionRotationController
-            {
-                RotationCurve = _animationRotationCurve,
-                PositionCurve = _animationPositionCurve
-            };
-            gameObject.AddComponent(posRotController);
-
-            //demo the new input system support for keyboard, mouse and gamepad
-            gameObject.AddComponent(new InputReceiverComponent());
-
-            //  testCrateGO.Layer = LayerMask.World;
-        }
-
-        private void InitializeFoliage(Vector3 position, float width, float height)
-        {
-            var go = new GameObject("tree");
-
-            // A unit quad facing +Z (your factory already supplies lit quad with UVs)
-            var mf = MeshFilterFactory.CreateQuadTexturedLit(GraphicsDevice);
-            go.AddComponent(mf);
-
-            var treeRenderer = go.AddComponent<MeshRenderer>();
-            treeRenderer.Material = _matAlphaCutout;
-
-            // Per-object properties via the overrides block
-            treeRenderer.Overrides.MainTexture = _textureDictionary.Get("tree4");
-
-            // AlphaTest: pixels with alpha below ReferenceAlpha are discarded (0–255).
-            // 128–160 is a good starting range for foliage; tweak to taste.
-            treeRenderer.Overrides.SetInt("ReferenceAlpha", 128);
-            treeRenderer.Overrides.Alpha = 1f; // overall alpha multiplier (kept at 1 for cutout)
-
-            // Scale the quad so it looks like a tree (aspect from your PNG)
-            go.Transform.ScaleTo(new Vector3(width, height, 1f));
-
-            go.Transform.TranslateTo(position);
-
-            _scene.Add(go);
-        }
-
-
         /// <summary>
         /// Adds a single-part FBX model into the scene.
         /// </summary>
@@ -648,8 +520,6 @@ namespace GDGame
 
             _scene.Add(go);
         }
-
-
         protected override void Update(GameTime gameTime)
         {
             someCount++;
@@ -738,5 +608,81 @@ namespace GDGame
             // Always call base.Dispose
             base.Dispose(disposing);
         }
+
+        #endregion    }
+
+        #region Demo Methods (remove in your game)
+        private void DemoLoadFromJSON()
+        {
+            //load a single model
+            foreach (var d in JSONSerializationUtility.LoadData<ModelSpawnData>(Content, "single_model_spawn.json"))
+                InitializeModel(d.Position, d.RotationDegrees, d.Scale, d.TextureName, d.ModelName, d.ObjectName);
+           
+            //load multiple models
+            foreach (var d in JSONSerializationUtility.LoadData<ModelSpawnData>(Content, "multi_model_spawn.json"))
+                InitializeModel(d.Position, d.RotationDegrees, d.Scale, d.TextureName, d.ModelName, d.ObjectName);
+         }
+
+        private void DemoTestObject()
+        {
+            GameObject gameObject = null;
+            MeshFilter meshFilter = null;
+            MeshRenderer meshRenderer = null;
+
+            gameObject = new GameObject("test crate textured cube");
+
+            gameObject.Transform.TranslateTo(new Vector3(0, 5, 0));
+            gameObject.Transform.ScaleTo(Vector3.One * 8);
+
+            meshFilter = MeshFilterFactory.CreateCubeTexturedLit(_graphics.GraphicsDevice);
+            gameObject.AddComponent(meshFilter);
+
+            meshRenderer = gameObject.AddComponent<MeshRenderer>();
+            meshRenderer.Material = _matBasicLit; //enable lighting for the crate
+            meshRenderer.Overrides.MainTexture = _textureDictionary.Get("crate1");
+
+            _scene.Add(gameObject);
+
+            var posRotController = new PositionRotationController
+            {
+                RotationCurve = _animationRotationCurve,
+                PositionCurve = _animationPositionCurve
+            };
+            gameObject.AddComponent(posRotController);
+
+            //demo the new input system support for keyboard, mouse and gamepad
+            gameObject.AddComponent(new InputReceiverComponent());
+
+            //  testCrateGO.Layer = LayerMask.World;
+        }
+
+        private void DemoAlphaCutoutFoliage(Vector3 position, float width, float height)
+        {
+            var go = new GameObject("tree");
+
+            // A unit quad facing +Z (your factory already supplies lit quad with UVs)
+            var mf = MeshFilterFactory.CreateQuadTexturedLit(GraphicsDevice);
+            go.AddComponent(mf);
+
+            var treeRenderer = go.AddComponent<MeshRenderer>();
+            treeRenderer.Material = _matAlphaCutout;
+
+            // Per-object properties via the overrides block
+            treeRenderer.Overrides.MainTexture = _textureDictionary.Get("tree4");
+
+            // AlphaTest: pixels with alpha below ReferenceAlpha are discarded (0–255).
+            // 128–160 is a good starting range for foliage; tweak to taste.
+            treeRenderer.Overrides.SetInt("ReferenceAlpha", 128);
+            treeRenderer.Overrides.Alpha = 1f; // overall alpha multiplier (kept at 1 for cutout)
+
+            // Scale the quad so it looks like a tree (aspect from your PNG)
+            go.Transform.ScaleTo(new Vector3(width, height, 1f));
+
+            go.Transform.TranslateTo(position);
+
+            _scene.Add(go);
+        }
+        #endregion
+
     }
 }

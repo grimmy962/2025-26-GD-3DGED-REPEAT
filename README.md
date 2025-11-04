@@ -8,9 +8,8 @@ It is designed for **incremental classroom live-coding** and emphasizes clear se
 ## Module Notes 
 
 - [Understanding PrimitiveType](Notes/Notes%20-%20Understanding%20Primitives.md)
-  - [Exercises - Understanding PrimitiveType](Exercises/Exercises%20-%20Understanding%20Primitives.md)
--  [Understanding Effect](Notes/Notes%20-%20Understanding%20Effects.md)
-- [Notes - Understanding JSON Serialization](Notes/Notes%20-%20Understanding%20JSON%20Serialization.md)
+- [Understanding Effect](Notes/Notes%20-%20Understanding%20Effects.md)
+- [Understanding JSON Serialization](Notes/Notes%20-%20Understanding%20JSON%20Serialization.md)
 
 ## Required Reading 
  
@@ -26,8 +25,9 @@ It is designed for **incremental classroom live-coding** and emphasizes clear se
 - [OpenGL Tutorial - Drawing Primitives](https://www.khronos.org/opengl/wiki/Primitive)
 
 ## Lab Exercises
-- [Systems: Adding PerfStatsSystem](Exercises/Lab%20-%20PerfStats.md)
-- [Serialization: Loading models with JSON](Exercises/Lab%20-%20JSON%20Serialization.md)
+- [Primitives: Understanding PrimitiveType](Exercises/Exercises%20-%20Understanding%20Primitives.md)
+- [Systems: Adding PerfStatsSystem](Labs/Lab%20-%20PerfStats.md)
+- [Serialization: Loading models with JSON](Labs/Lab%20-%20JSON%20Serialization.md)
 
 ## Project Folder Structure
 ```

@@ -1,9 +1,8 @@
 ﻿using Microsoft.Xna.Framework;
-using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace GDGame
+namespace GDEngine.Core.Serialization
 {
     /// <summary>
     /// JSON converter for Microsoft.Xna.Framework.Vector3.
