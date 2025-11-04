@@ -281,13 +281,10 @@ That’s it—no other `Main` changes required for this lab.
 
 # Troubleshooting
 
-**File not found** — Ensure *Copy to Output Directory: Copy if newer* for your JSON files and that the relative path matches the deployed filename.
-
-**Vectors wrong / exceptions** — Verify the converter registration in the utility and that your JSON vector shapes are valid.
-
-**Nothing draws** — Confirm model/texture keys exist in your content dictionaries and match the JSON strings.
-
-**Rotation feels off** — `RotationDegrees` expects **degrees**. If your internals use radians, convert once in `InitializeModel(...)`.
+- **File not found** — Ensure *Copy to Output Directory: Copy if newer* for your JSON files and that the relative path matches the deployed filename.
+- **Vectors wrong / exceptions** — Verify the converter registration in the utility and that your JSON vector shapes are valid.
+- **Nothing draws** — Confirm model/texture keys exist in your content dictionaries and match the JSON strings.
+- **Rotation feels off** — `RotationDegrees` expects **degrees**. If your internals use radians, convert once in `InitializeModel(...)`.
 
 ---
 
