@@ -194,6 +194,7 @@ namespace GDGame
         private void LoadFonts()
         {
             //TODO - LAB EXERCISE
+            _fontDictionary.Add("perfStats", "assets/fonts/perfStats"); 
         }
 
         private void LoadTextures()
@@ -289,6 +290,8 @@ namespace GDGame
         private void InitializePerfStatsSystem()
         {
             //TODO - LAB EXERCISE
+            var debugFont = _fontDictionary.Get("perfStats");
+            _scene.Add(new PerfStatsSystem(debugFont));
         }
 
         private void InitializeCameraSystem()
