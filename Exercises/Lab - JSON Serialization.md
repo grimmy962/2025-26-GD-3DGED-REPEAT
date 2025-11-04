@@ -14,7 +14,7 @@ We’ll load JSON during your **`Main.Initialize()`** setup phase—**after** as
 
 ## Prerequisites
 - The content dictionaries already map at least one model (e.g., `"monkey1"`) and texture (e.g., `"checkerboard"`). These keys must match your JSON.
-- Ensure your JSON file is set to **Copy to Output Directory** (`Copy if newer`), so `File.ReadAllText` can find it at runtime.
+- Ensure your JSON file is set to **Copy to Output Directory** (`Copy if newer`), so `File.ReadAllText` can find it at runtime. You can set this by right clicking on the JSON file in VS Community and opening `Properties`. Setting this means that the file will be copied to the `bin` folder.
 
 > Reference: `Main.InitializeModel(...)` exists and creates a GameObject with transform + components using your dictionaries.
 
@@ -51,7 +51,7 @@ This class mirrors the JSON shape and matches `InitializeModel(...)` parameters.
 /// <summary>
 /// Plain data container for a single model spawn, loaded from JSON.
 /// </summary>
-private sealed class ModelSpawnData
+public class ModelSpawnData
 {
     public Vector3 Position { get; set; }
     public Vector3 RotationDegrees { get; set; }
@@ -80,7 +80,7 @@ using System.Text.Json.Serialization;
 /// Accepts either array form [x,y,z] or object form {"x":X,"y":Y,"z":Z}.
 /// Writes as [x,y,z].
 /// </summary>
-private sealed class Vector3JsonConverter : JsonConverter<Vector3>
+public class Vector3JsonConverter : JsonConverter<Vector3>
 {
     public override Vector3 Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {

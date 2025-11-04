@@ -6,11 +6,11 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace GDEngine.Core
 {
-    public class PerfStatsSystem : SystemBase
+    public sealed class PerfStatsSystem : SystemBase
     {
         // Fields
         #region Fields
-        private Vector2 _anchorPosition = new Vector2(10, 10);
+        private Vector2 _anchorPosition = new Vector2(5, 5);
         private Color _colorDropShadow = Color.Black;
         private Color _colorText = Color.Yellow;
         private Func<IEnumerable<string>>? _linesProvider;
