@@ -1,4 +1,6 @@
-﻿using GDEngine.Core.Rendering;
+﻿using GDEngine.Core.Entities;
+using GDEngine.Core.Rendering;
+using GDEngine.Core.Systems;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -76,6 +78,7 @@ namespace GDEngine.Core.Components
 
         private bool _viewDirty = true;
         private bool _projectionDirty = true;
+        private CameraSystem? _cameraSystem;
         #endregion
 
         #region Properties
@@ -388,17 +391,31 @@ namespace GDEngine.Core.Components
         #region Lifecycle Methods
         protected override void Awake()
         {
+            var scene = GameObject?.Scene;
+            if (scene == null)
+                throw new NullReferenceException("Camera requires a GameObject in a Scene.");
+
+            _cameraSystem = scene.GetSystem<CameraSystem>();
+            if (_cameraSystem == null)
+                throw new InvalidOperationException("OverlayRenderSystem not found. Add it to the Scene before using OverlayRenderer.");
+
+            _cameraSystem.Add(this);
+
             _viewDirty = true;
             _projectionDirty = true;
 
             if (Transform != null)
-            {
                 Transform.Changed += OnTransformChanged;
-            }
+
         }
         #endregion
 
         #region Housekeeping Methods
+        protected override void OnDestroy()
+        {
+            _cameraSystem?.Remove(this);
+            _cameraSystem = null;
+        }
         #endregion
     }
 }

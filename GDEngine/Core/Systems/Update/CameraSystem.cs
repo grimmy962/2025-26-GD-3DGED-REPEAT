@@ -220,7 +220,7 @@ namespace GDEngine.Core.Systems
             // If the camera is PiP (PixelViewport set), its projection derives aspect from that.
             // Otherwise, keep the camera's default aspect equal to backbuffer aspect.
             if (camera.Viewport.HasValue == false)
-                camera.AspectRatio = (float)_backbufferWidth / MathF.Max(1, _backbufferHeight);
+                camera.AspectRatio = _backbufferWidth / MathF.Max(1, _backbufferHeight);
         }
 
         private void EnsureFrustum(Camera? camera)

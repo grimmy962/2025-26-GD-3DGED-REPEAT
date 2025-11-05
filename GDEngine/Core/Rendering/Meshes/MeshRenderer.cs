@@ -9,7 +9,7 @@ namespace GDEngine.Core.Rendering
     /// <see cref="MeshFilter"/>
     /// <see cref="Material"/>
     /// <see cref="Camera"/>
-    public sealed class MeshRenderer : Component
+    public sealed class MeshRenderer : Component, IRender
     {
         #region Static Fields
         #endregion

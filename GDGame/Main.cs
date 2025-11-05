@@ -1,7 +1,7 @@
 ﻿using GDEngine.Core;
 using GDEngine.Core.Collections;
 using GDEngine.Core.Components;
-using GDEngine.Core.Components.Controllers.Movement;
+using GDEngine.Core.Debug;
 using GDEngine.Core.Entities;
 using GDEngine.Core.Extensions;
 using GDEngine.Core.Factories;
@@ -12,14 +12,11 @@ using GDEngine.Core.Serialization;
 using GDEngine.Core.Services;
 using GDEngine.Core.Systems;
 using GDEngine.Core.Timing;
-using GDEngine.Samples;
 using GDGame.Demos.Controllers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using System.Collections.Generic;
-using System.IO;
-using System.Text.Json;
+using System;
 using System.Windows.Forms;
 
 namespace GDGame
@@ -37,16 +34,14 @@ namespace GDGame
         #endregion
 
         #region Demo Fields (remove in your game)
-        private AnimationCurve3D _animationPositionCurve;
-        private AnimationCurve3D _animationRotationCurve;
-        private Material _matBasicUnlit;
-        private Material _matBasicLit;
-        private Material _matAlphaCutout;
+        private AnimationCurve3D _animationPositionCurve, _animationRotationCurve;
+        private Material _matBasicUnlit, _matBasicLit, _matAlphaCutout;
         private GameObject _skyParent;
         private AnimationCurve _animationCurve;
-        private int count;
         private int someCount;
         private GameObject _cameraGO;
+        private UIStatsRenderer _uiStatsRenderer;
+        private KeyboardState _prevKeyboard;
         #endregion
 
         #region Core Methods (Common to all games)     
@@ -88,8 +83,9 @@ namespace GDGame
 
             #endregion
 
-            #region Demos
+            InitializeUIRenderers();
 
+            #region Demos
             // Camera-demos
             InitializeCameraCurves();
             InitializePIPCamera(new Vector3(-35, 5, 5),
@@ -98,12 +94,12 @@ namespace GDGame
                 400,
                 200),
                 -1, 0);
-            #endregion
 
             // Level-demos
             DemoTestObject();
             DemoAlphaCutoutFoliage(new Vector3(0, 10 /*note Y=heightscale/2*/, 0), 12, 20);
             DemoLoadFromJSON();
+            #endregion
 
             base.Initialize();
         }
@@ -127,8 +123,6 @@ namespace GDGame
             camera.Depth = depth; //-100
 
             camera.Viewport = viewport; // new Viewport(0, 0, 400, 300);
-
-            _scene.GetSystem<CameraSystem>().Add(camera);
 
             _scene.Add(pipCameraGO);
         }
@@ -291,30 +285,15 @@ namespace GDGame
 
         private void InitializeSystems()
         {
-            InitializePerfStatsSystem();
+            InitializeInputSystem();
             InitializeCameraSystem();
             InitializeRenderingSystem();
-            InitializeInputSystem();
+            InitializeUIRenderingSystem();
         }
 
-        private void InitializePerfStatsSystem()
+        private void InitializeUIRenderingSystem()
         {
-            //TODO - LAB EXERCISE
-            var debugFont = _fontDictionary.Get("perfStats");
-            _scene.Add(new PerfStatsSystem(debugFont, () =>
-            {
-                return new[]
-                {
-                    "",
-                    $"Draw Stats:",
-                    $" - Renderer Count: {_scene.Renderers.Count}",
-                    "",
-                    $"Camera Stats:",
-                    $" - Camera[name]: {_scene.ActiveCamera.GameObject.Name}",
-                    $" - Camera[Position]: {_cameraGO.Transform.Position.ToFixed()}",
-                    $" - Camera[Forward]: {_cameraGO.Transform.Forward.ToFixed()}"
-                };
-            }));
+            _scene.Add(new UIRenderSystem(100)); // draws in PostRender after RenderingSystem (order = -100)
         }
 
         private void InitializeCameraSystem()
@@ -325,8 +304,7 @@ namespace GDGame
 
         private void InitializeRenderingSystem()
         {
-            // _scene.Add(new EnemyCullingSystem());
-            _scene.Add(new RenderingSystem());
+            _scene.Add(new RenderingSystem(-100));
         }
 
         private void InitializeInputSystem()
@@ -368,11 +346,6 @@ namespace GDGame
             _cameraGO.AddComponent<KeyboardWASDController>();
             _cameraGO.AddComponent<MouseYawPitchController>();
 
-            //dont forget to add the camera to the camera system in the scene
-            _scene.GetSystem<CameraSystem>().Add(_camera);
-
-            // _cameraGO.Layer = LayerMask.UI;// | LayerMask.UI | LayerMask.Gizmo;
-
             //finally add it to the scene
             _scene.Add(_cameraGO);
         }
@@ -382,7 +355,7 @@ namespace GDGame
         /// </summary>
         private void InitializeSkyParent()
         {
-            _skyParent = new GameObject("SkyParent");
+            var _skyParent = new GameObject("SkyParent");
             var rot = _skyParent.AddComponent<RotationController>();
 
             // Turntable spin around local +Y
@@ -398,6 +371,7 @@ namespace GDGame
             GameObject gameObject = null;
             MeshFilter meshFilter = null;
             MeshRenderer meshRenderer = null;
+            GameObject skyParent = _scene.Find((GameObject go) => go.Name.Equals("SkyParent"));
 
             // back
             gameObject = new GameObject("back");
@@ -411,7 +385,7 @@ namespace GDGame
             _scene.Add(gameObject);
 
             //set parent to allow rotation
-            gameObject.Transform.SetParent(_skyParent.Transform);
+            gameObject.Transform.SetParent(skyParent.Transform);
 
             // left
             gameObject = new GameObject("left");
@@ -426,7 +400,7 @@ namespace GDGame
             _scene.Add(gameObject);
 
             //set parent to allow rotation
-            gameObject.Transform.SetParent(_skyParent.Transform);
+            gameObject.Transform.SetParent(skyParent.Transform);
 
 
             // right
@@ -442,7 +416,7 @@ namespace GDGame
             _scene.Add(gameObject);
 
             //set parent to allow rotation
-            gameObject.Transform.SetParent(_skyParent.Transform);
+            gameObject.Transform.SetParent(skyParent.Transform);
 
             // front
             gameObject = new GameObject("front");
@@ -457,7 +431,7 @@ namespace GDGame
             _scene.Add(gameObject);
 
             //set parent to allow rotation
-            gameObject.Transform.SetParent(_skyParent.Transform);
+            gameObject.Transform.SetParent(skyParent.Transform);
 
             // sky (top)
             gameObject = new GameObject("sky");
@@ -472,7 +446,7 @@ namespace GDGame
             _scene.Add(gameObject);
 
             //set parent to allow rotation
-            gameObject.Transform.SetParent(_skyParent.Transform);
+            gameObject.Transform.SetParent(skyParent.Transform);
 
         }
 
@@ -493,6 +467,38 @@ namespace GDGame
             meshRenderer.Overrides.MainTexture = _textureDictionary.Get("ground_grass");
 
             _scene.Add(gameObject);
+        }
+
+        private void InitializeUIRenderers()
+        {
+            // Create a GO to host the UI
+            var uiGO = new GameObject("Perf Overlay");
+
+            // Attach stats overlay (auto-registers with UIRenderSystem in Awake)
+            _uiStatsRenderer = uiGO.AddComponent<UIStatsRenderer>();
+
+            // Set font 
+            _uiStatsRenderer.Font = _fontDictionary.Get("perfStats");
+
+            // Optional: add your own debug lines (same pattern you used before)
+            _uiStatsRenderer.LinesProvider = () =>
+            {
+                return new[]
+                {
+                    "",
+                    $"Draw Stats:",
+                    $" - Renderer Count: {_scene.Renderers.Count}",
+                    "",
+                    $"Camera Stats:",
+                    $" - Camera [name]: {_scene.ActiveCamera.GameObject.Name}",
+                    $" - Camera [Position]: {_cameraGO.Transform.Position.ToFixed()}",
+                    $" - Camera [Forward]: {_cameraGO.Transform.Forward.ToFixed()}"
+                };
+            };
+
+            // Add to scene so Awake runs and it registers itself
+            _scene.Add(uiGO);
+
         }
 
         /// <summary>
@@ -530,8 +536,22 @@ namespace GDGame
             //update Scene
             _scene.Update(Time.DeltaTimeSecs);
 
+            ToggleStatsWindow();
+
             base.Update(gameTime);
         }
+
+        private void ToggleStatsWindow()
+        {
+            var kb = Keyboard.GetState();
+            if (_uiStatsRenderer != null)
+            {
+                if (kb.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.F1) && !_prevKeyboard.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.F1))
+                    _uiStatsRenderer.Enabled = !_uiStatsRenderer.Enabled;
+            }
+            _prevKeyboard = kb;
+        }
+
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Microsoft.Xna.Framework.Color.CornflowerBlue);
@@ -617,11 +637,11 @@ namespace GDGame
             //load a single model
             foreach (var d in JSONSerializationUtility.LoadData<ModelSpawnData>(Content, "single_model_spawn.json"))
                 InitializeModel(d.Position, d.RotationDegrees, d.Scale, d.TextureName, d.ModelName, d.ObjectName);
-           
+
             //load multiple models
             foreach (var d in JSONSerializationUtility.LoadData<ModelSpawnData>(Content, "multi_model_spawn.json"))
                 InitializeModel(d.Position, d.RotationDegrees, d.Scale, d.TextureName, d.ModelName, d.ObjectName);
-         }
+        }
 
         private void DemoTestObject()
         {
@@ -643,15 +663,19 @@ namespace GDGame
 
             _scene.Add(gameObject);
 
-            var posRotController = new PositionRotationController
-            {
-                RotationCurve = _animationRotationCurve,
-                PositionCurve = _animationPositionCurve
-            };
-            gameObject.AddComponent(posRotController);
+            #region Demo - Curve and Input
+            //var posRotController = new PositionRotationController
+            //{
+            //    RotationCurve = _animationRotationCurve,
+            //    PositionCurve = _animationPositionCurve
+            //};
+            //gameObject.AddComponent(posRotController);
 
-            //demo the new input system support for keyboard, mouse and gamepad
-            gameObject.AddComponent(new InputReceiverComponent());
+            ////demo the new input system support for keyboard, mouse and gamepad
+            //gameObject.AddComponent(new InputReceiverComponent()); 
+
+            gameObject.AddComponent(new AlignAxisController());
+            #endregion
 
             //  testCrateGO.Layer = LayerMask.World;
         }

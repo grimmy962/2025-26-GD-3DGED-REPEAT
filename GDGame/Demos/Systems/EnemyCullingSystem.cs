@@ -1,12 +1,13 @@
 ﻿using GDEngine.Core.Components;
 using GDEngine.Core.Enums;
+using GDEngine.Core.Systems;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace GDEngine.Core.Systems
+namespace GDGame.Demos.Systems
 {
     public class EnemyCullingSystem : SystemBase
     {

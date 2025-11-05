@@ -26,7 +26,7 @@ namespace GDEngine.Core.Systems
         #endregion
 
         #region Constructors
-        public RenderingSystem()
+        public RenderingSystem(int order = -100)
             : base(FrameLifecycle.Render, order: 0)
         {
         }
@@ -39,10 +39,10 @@ namespace GDEngine.Core.Systems
                 throw new NullReferenceException(nameof(Scene));
 
             _scene = Scene;
-            _context = Scene.Context;
+            _context = _scene.Context;
             _device = _context.GraphicsDevice;
-
             _cameraSystem = _scene.GetSystem<CameraSystem>();
+
         }
 
         public override void Draw(float deltaTime)
@@ -52,8 +52,8 @@ namespace GDEngine.Core.Systems
             if (sceneRenderers == null || sceneRenderers.Count == 0)
                 return;
 
-            // Build camera stack (Base then Overlay; within each, ascending Depth)
             _cameraSystem.GetSortedStack(_cameraStack);
+
             if (_cameraStack.Count == 0)
                 return;
 

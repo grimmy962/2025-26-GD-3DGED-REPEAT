@@ -107,6 +107,8 @@ namespace GDEngine.Core.Entities
             if (_gameObjects.Contains(gameObject))
                 return gameObject;
 
+            gameObject.Scene = this;
+
             _gameObjects.Add(gameObject);
 
             //get all renderers for this game objects
@@ -125,7 +127,7 @@ namespace GDEngine.Core.Entities
             if (ActiveCamera == null && cam != null && cam.Enabled)
                 ActiveCamera = cam;
 
-            gameObject.Scene = this;
+
 
             return gameObject;
         }
