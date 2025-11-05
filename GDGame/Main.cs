@@ -12,6 +12,7 @@ using GDEngine.Core.Serialization;
 using GDEngine.Core.Services;
 using GDEngine.Core.Systems;
 using GDEngine.Core.Timing;
+using GDEngine.Samples;
 using GDGame.Demos.Controllers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -36,9 +37,7 @@ namespace GDGame
         #region Demo Fields (remove in your game)
         private AnimationCurve3D _animationPositionCurve, _animationRotationCurve;
         private Material _matBasicUnlit, _matBasicLit, _matAlphaCutout;
-        private GameObject _skyParent;
         private AnimationCurve _animationCurve;
-        private int someCount;
         private GameObject _cameraGO;
         private UIStatsRenderer _uiStatsRenderer;
         private KeyboardState _prevKeyboard;
@@ -371,6 +370,8 @@ namespace GDGame
             GameObject gameObject = null;
             MeshFilter meshFilter = null;
             MeshRenderer meshRenderer = null;
+
+            // Find the sky parent object to attach sky to so sky rotates
             GameObject skyParent = _scene.Find((GameObject go) => go.Name.Equals("SkyParent"));
 
             // back
@@ -528,8 +529,6 @@ namespace GDGame
         }
         protected override void Update(GameTime gameTime)
         {
-            someCount++;
-
             //call time update
             Time.Update(gameTime);
 
@@ -664,17 +663,16 @@ namespace GDGame
             _scene.Add(gameObject);
 
             #region Demo - Curve and Input
-            //var posRotController = new PositionRotationController
-            //{
-            //    RotationCurve = _animationRotationCurve,
-            //    PositionCurve = _animationPositionCurve
-            //};
-            //gameObject.AddComponent(posRotController);
+            var posRotController = new PositionRotationController
+            {
+                RotationCurve = _animationRotationCurve,
+                PositionCurve = _animationPositionCurve
+            };
+            gameObject.AddComponent(posRotController);
 
-            ////demo the new input system support for keyboard, mouse and gamepad
-            //gameObject.AddComponent(new InputReceiverComponent()); 
-
-            gameObject.AddComponent(new AlignAxisController());
+            //demo the new input system support for keyboard, mouse and gamepad
+            gameObject.AddComponent(new InputReceiverComponent());
+            
             #endregion
 
             //  testCrateGO.Layer = LayerMask.World;
