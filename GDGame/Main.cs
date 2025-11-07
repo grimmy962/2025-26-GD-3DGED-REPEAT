@@ -8,16 +8,17 @@ using GDEngine.Core.Factories;
 using GDEngine.Core.Input.Data;
 using GDEngine.Core.Input.Devices;
 using GDEngine.Core.Rendering;
+using GDEngine.Core.Rendering.UI;
 using GDEngine.Core.Serialization;
 using GDEngine.Core.Services;
 using GDEngine.Core.Systems;
 using GDEngine.Core.Timing;
-using GDEngine.Samples;
+using GDGame.Demos;
 using GDGame.Demos.Controllers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using System;
+using System.Collections.Generic;
 using System.Windows.Forms;
 
 namespace GDGame
@@ -194,6 +195,8 @@ namespace GDGame
         {
             //TODO - LAB EXERCISE
             _fontDictionary.Add("perfStats", "assets/fonts/perfStats");
+
+            _fontDictionary.Add("mouse_reticule_font", "assets/fonts/testfont");
         }
 
         private void LoadTextures()
@@ -217,6 +220,8 @@ namespace GDGame
             //test texture for models
             _textureDictionary.Add("checkerboard", "assets/textures/demo/checkerboard");
             _textureDictionary.Add("mona lisa", "assets/textures/demo/mona lisa");
+
+            _textureDictionary.Add("mouse_reticule", "assets/textures/ui/controls/reticuleClosed");
 
         }
 
@@ -472,6 +477,7 @@ namespace GDGame
 
         private void InitializeUIRenderers()
         {
+            #region Perf Stats
             // Create a GO to host the UI
             var uiGO = new GameObject("Perf Overlay");
 
@@ -499,6 +505,19 @@ namespace GDGame
 
             // Add to scene so Awake runs and it registers itself
             _scene.Add(uiGO);
+            #endregion
+
+            // Mouse reticule (distance to objective)
+            var mouseUIRet = new GameObject("mouse reticule");
+
+            var uiReticuleRenderer = mouseUIRet.AddComponent<UIReticuleRenderer>();
+            uiReticuleRenderer.Texture = _textureDictionary.Get("mouse_reticule");
+            uiReticuleRenderer.Font = _fontDictionary.Get("mouse_reticule_font");
+            uiReticuleRenderer.Offset = new Vector2(0, 30);
+
+            IsMouseVisible = false;
+
+            _scene.Add(mouseUIRet);
 
         }
 
@@ -548,6 +567,22 @@ namespace GDGame
                 if (kb.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.F1) && !_prevKeyboard.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.F1))
                     _uiStatsRenderer.Enabled = !_uiStatsRenderer.Enabled;
             }
+
+            //if(_scene != null)
+            //{
+            //    if (kb.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.F2) && !_prevKeyboard.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.F2))
+            //    {
+            //        _scene.Clear();
+            //    }
+
+            //    if (kb.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.F3) && !_prevKeyboard.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.F3))
+            //    {
+            //        //re-load your JSON again
+            //        foreach (var d in JSONSerializationUtility.LoadData<ModelSpawnData>(Content, "multi_model_spawn.json"))
+            //                InitializeModel(d.Position, d.RotationDegrees, d.Scale, d.TextureName, d.ModelName, d.ObjectName);
+            //    }
+            //}
+
             _prevKeyboard = kb;
         }
 
@@ -633,8 +668,10 @@ namespace GDGame
         #region Demo Methods (remove in your game)
         private void DemoLoadFromJSON()
         {
+            List<ModelSpawnData> mList = JSONSerializationUtility.LoadData<ModelSpawnData>(Content, "single_model_spawn.json");
+           
             //load a single model
-            foreach (var d in JSONSerializationUtility.LoadData<ModelSpawnData>(Content, "single_model_spawn.json"))
+            foreach (var d in mList)
                 InitializeModel(d.Position, d.RotationDegrees, d.Scale, d.TextureName, d.ModelName, d.ObjectName);
 
             //load multiple models

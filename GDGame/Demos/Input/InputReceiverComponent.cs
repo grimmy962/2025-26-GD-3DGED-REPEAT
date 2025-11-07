@@ -5,7 +5,7 @@ using GDEngine.Core.Systems;
 using System.Diagnostics;
 using System.Linq;
 
-namespace GDEngine.Samples
+namespace GDGame.Demos
 {
     /// <summary>
     /// Demo receiver that prints axis movements and button presses/releases

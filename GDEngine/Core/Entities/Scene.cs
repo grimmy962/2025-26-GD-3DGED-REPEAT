@@ -345,6 +345,16 @@ namespace GDEngine.Core.Entities
             ActiveCamera = null;
         }
 
+        public void ClearGameObject()
+        {
+            for (int i = 0; i < _gameObjects.Count; i++)
+                _gameObjects[i].Destroy();
+
+            _gameObjects.Clear();
+            _renderers.Clear();
+            _started.Clear();
+        }
+
         /// <summary>
         /// String for diagnostics.
         /// </summary>
