@@ -39,13 +39,14 @@ namespace GDEngine.Core.Rendering.UI
                 DepthStencilState.None,
                 RasterizerState.CullNone);
 
-            _rotation +=5;
+            _rotation +=1;
 
             var mousePosition = Mouse.GetState().Position.ToVector2();
             _spriteBatch.DrawString(_font, "Dist[3]", mousePosition + _offset, Color.Black);
             _spriteBatch.Draw(_texture, mousePosition, null,
                 Color.White, MathHelper.ToRadians(_rotation),
-                new Vector2(_texture.Width/2, _texture.Height/2), 2, SpriteEffects.None, 0);
+                new Vector2(_texture.Width/2, _texture.Height/2), 
+                6, SpriteEffects.None, 0);
             _spriteBatch.End();
         }
     }

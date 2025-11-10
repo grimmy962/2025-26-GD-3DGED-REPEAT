@@ -58,7 +58,7 @@ namespace GDGame
         protected override void Initialize()
         {
             #region Core
-            InitializeGraphics(ScreenResolution.R_SXGA_5_4_1280x1024);
+            InitializeGraphics(ScreenResolution.R_VGA_4_3_640x480);
 
             InitializeMouse();
 
