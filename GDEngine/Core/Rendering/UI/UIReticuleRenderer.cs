@@ -33,7 +33,7 @@ namespace GDEngine.Core.Rendering.UI
                 throw new NullReferenceException(nameof(_spriteBatch));
 
             _spriteBatch.Begin(
-                SpriteSortMode.BackToFront,
+                SpriteSortMode.FrontToBack,
                 BlendState.AlphaBlend,         
                 SamplerState.PointClamp,
                 DepthStencilState.None,

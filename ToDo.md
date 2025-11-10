@@ -81,16 +81,16 @@ This document contains a step-by-step development plan of MonoGame content cover
 - [x] Add `WindowUtility` to centre game to prevent annoying drag on open
 - [ ] Add drivable model with 3rd person camera
 - [ ] Add other camera controller types
-- [ ] Add event on resolution change
 - [ ] Add **event bus**: lightweight pub/sub for decoupled messages between systems.
 - [ ] Add physics engine (physics and CDCR)
 - [ ] Add UI support for HUD and menu
 
 ## Week 9
 - [ ] Add support for opaque/transparent objects
-- [ ] Split gameobjects in Scene into opaque/transparent, active/inactive, static/dynamic
+- [ ] Split gameobjects in `Scene` into opaque/transparent, active/inactive, static/dynamic
 - [ ] Add **audio hooks**: `AudioSystem` to support 2D and 3D sound; service access via event bus.
 - [ ] Add **frustum culling** with `BoundingFrustum` against `MeshFilter.Bounds`.
+- [ ] Add event on resolution change
 - [ ] Add demos for effect supporting normal maps and environment maps
 
 ## Bugs

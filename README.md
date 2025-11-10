@@ -27,6 +27,7 @@ It is designed for **incremental classroom live-coding** and emphasizes clear se
 ## Lab Exercises
 - [Systems: Adding PerfStatsSystem](Labs/Lab%20-%20PerfStats.md)
 - [Serialization: Loading models with JSON](Labs/Lab%20-%20JSON%20Serialization.md)
+- [UI: Adding reticle and text renderers](Labs/Lab%20-%20UI%20Renderer%20-%20Reticle%20and%20Text.md)
 
 ## Project Folder Structure
 ```
