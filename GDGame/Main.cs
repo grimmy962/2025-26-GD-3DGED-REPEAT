@@ -13,11 +13,13 @@ using GDEngine.Core.Serialization;
 using GDEngine.Core.Services;
 using GDEngine.Core.Systems;
 using GDEngine.Core.Timing;
+using GDEngine.Core.Utilities;
 using GDGame.Demos;
 using GDGame.Demos.Controllers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
 
@@ -42,6 +44,7 @@ namespace GDGame
         private GameObject _cameraGO;
         private UIStatsRenderer _uiStatsRenderer;
         private KeyboardState _prevKeyboard;
+        private int _dummyHealth;
         #endregion
 
         #region Core Methods (Common to all games)     
@@ -55,7 +58,7 @@ namespace GDGame
         protected override void Initialize()
         {
             #region Core
-            InitializeGraphics(ScreenResolution.R1024x768);
+            InitializeGraphics(ScreenResolution.R_SXGA_5_4_1280x1024);
 
             InitializeMouse();
 
@@ -83,17 +86,17 @@ namespace GDGame
 
             #endregion
 
-            InitializeUIRenderers();
-
             #region Demos
             // Camera-demos
-            InitializeCameraCurves();
-            InitializePIPCamera(new Vector3(-35, 5, 5),
-                new Viewport(0,
-                0,
-                400,
-                200),
-                -1, 0);
+            InitializeAnimationCurves();
+            
+            // Uncomment to see PiP - otherwise its a little annoying
+            //InitializePIPCamera(new Vector3(-35, 5, 5),
+            //    new Viewport(0,
+            //    0,
+            //    400,
+            //    200),
+            //    -1, 0);
 
             // Level-demos
             DemoTestObject();
@@ -101,6 +104,12 @@ namespace GDGame
             DemoLoadFromJSON();
             #endregion
 
+            #region Core
+
+            // Setup renderers after all game objects added since ui text may use a gameobject as target
+            InitializeUIRenderers();
+
+            #endregion
             base.Initialize();
         }
 
@@ -127,7 +136,7 @@ namespace GDGame
             _scene.Add(pipCameraGO);
         }
 
-        private void InitializeCameraCurves()
+        private void InitializeAnimationCurves()
         {
             //1D animation curve demo (e.g. scale, audio volume, lerp factor for color, etc)
             _animationCurve = new AnimationCurve(CurveLoopType.Cycle);
@@ -154,10 +163,14 @@ namespace GDGame
 
         private void InitializeGraphics(Integer2 resolution)
         {
+            // Enable per-monitor DPI awareness so the window/UI scales crisply on multi-monitor setups with different DPIs (avoids blurriness when moving between screens).
             Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
+
+            // Set preferred resolution
             ScreenResolution.SetResolution(_graphics, resolution);
 
-            //   System.Diagnostics.Debug.WriteLine(ScreenResolution.R1024x768.Aspect());
+            // Center on primary display (set to index of your preferred monitor)
+            WindowUtility.CenterOnMonitor(this, 1);
         }
 
         private void InitializeMouse()
@@ -167,7 +180,7 @@ namespace GDGame
 
         private void InitializeContext()
         {
-            EngineContext.Initialize(_graphics.GraphicsDevice, Content);
+            EngineContext.Initialize(GraphicsDevice, Content);
         }
 
         private void InitializeAssetDictionaries()
@@ -193,10 +206,8 @@ namespace GDGame
 
         private void LoadFonts()
         {
-            //TODO - LAB EXERCISE
-            _fontDictionary.Add("perfStats", "assets/fonts/perfStats");
-
-            _fontDictionary.Add("mouse_reticule_font", "assets/fonts/testfont");
+            _fontDictionary.Add("perf_stats_font", "assets/fonts/perfStats");
+            _fontDictionary.Add("mouse_reticle_font", "assets/fonts/uiReticleText");
         }
 
         private void LoadTextures()
@@ -221,7 +232,9 @@ namespace GDGame
             _textureDictionary.Add("checkerboard", "assets/textures/demo/checkerboard");
             _textureDictionary.Add("mona lisa", "assets/textures/demo/mona lisa");
 
-            _textureDictionary.Add("mouse_reticule", "assets/textures/ui/controls/reticuleClosed");
+            //ui
+            _textureDictionary.Add("mouse_reticle", "assets/textures/ui/mouse/reticleClosed");
+            _textureDictionary.Add("Crosshair_21", "assets/textures/ui/mouse/Crosshair_01");
 
         }
 
@@ -289,15 +302,16 @@ namespace GDGame
 
         private void InitializeSystems()
         {
+            InitializeEventSystem();
             InitializeInputSystem();
             InitializeCameraSystem();
             InitializeRenderingSystem();
             InitializeUIRenderingSystem();
         }
 
-        private void InitializeUIRenderingSystem()
+        private void InitializeEventSystem()
         {
-            _scene.Add(new UIRenderSystem(100)); // draws in PostRender after RenderingSystem (order = -100)
+            _scene.Add(new EventSystem(EngineContext.Instance.Events));             
         }
 
         private void InitializeCameraSystem()
@@ -330,6 +344,11 @@ namespace GDGame
             inputSystem.Add(new GDGamepadInput(PlayerIndex.One, "Gamepad P1"));
 
             _scene.Add(inputSystem);
+        }
+
+        private void InitializeUIRenderingSystem()
+        {
+            _scene.Add(new UIRenderSystem(100)); // draws in PostRender after RenderingSystem (order = -100)
         }
 
         private void InitializeCamera(Vector3 position)
@@ -477,15 +496,20 @@ namespace GDGame
 
         private void InitializeUIRenderers()
         {
-            #region Perf Stats
+            InitializeStatsRenderer();
+            InitializeMouseReticleRenderer();
+        }
+
+        private void InitializeStatsRenderer()
+        {
             // Create a GO to host the UI
-            var uiGO = new GameObject("Perf Overlay");
+            var uiGO = new GameObject("Stats Overlay");
 
             // Attach stats overlay (auto-registers with UIRenderSystem in Awake)
             _uiStatsRenderer = uiGO.AddComponent<UIStatsRenderer>();
 
             // Set font 
-            _uiStatsRenderer.Font = _fontDictionary.Get("perfStats");
+            _uiStatsRenderer.Font = _fontDictionary.Get("perf_stats_font");
 
             // Optional: add your own debug lines (same pattern you used before)
             _uiStatsRenderer.LinesProvider = () =>
@@ -505,14 +529,16 @@ namespace GDGame
 
             // Add to scene so Awake runs and it registers itself
             _scene.Add(uiGO);
-            #endregion
+        }
 
+        private void InitializeMouseReticleRenderer()
+        {
             // Mouse reticule (distance to objective)
             var mouseUIRet = new GameObject("mouse reticule");
 
             var uiReticuleRenderer = mouseUIRet.AddComponent<UIReticuleRenderer>();
-            uiReticuleRenderer.Texture = _textureDictionary.Get("mouse_reticule");
-            uiReticuleRenderer.Font = _fontDictionary.Get("mouse_reticule_font");
+            uiReticuleRenderer.Texture = _textureDictionary.Get("mouse_reticle");
+            uiReticuleRenderer.Font = _fontDictionary.Get("mouse_reticle_font");
             uiReticuleRenderer.Offset = new Vector2(0, 30);
 
             IsMouseVisible = false;
@@ -520,6 +546,11 @@ namespace GDGame
             _scene.Add(mouseUIRet);
 
         }
+
+        //private void InitializeMouseReticleRenderer()
+        //{
+        //    //TODO - EXERCISE - Refactor UIReticuleRenderer and add UITextRenderer
+        //}
 
         /// <summary>
         /// Adds a single-part FBX model into the scene.
@@ -549,12 +580,18 @@ namespace GDGame
         protected override void Update(GameTime gameTime)
         {
             //call time update
+            #region Core
             Time.Update(gameTime);
 
             //update Scene
             _scene.Update(Time.DeltaTimeSecs);
 
-            ToggleStatsWindow();
+            ToggleStatsWindow(); 
+            #endregion
+
+            #region Demo
+            _dummyHealth++; 
+            #endregion
 
             base.Update(gameTime);
         }

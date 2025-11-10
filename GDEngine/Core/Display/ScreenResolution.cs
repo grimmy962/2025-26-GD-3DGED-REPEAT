@@ -10,26 +10,50 @@ namespace GDEngine.Core
     public static class ScreenResolution
     {
         #region Static Fields
-        // 16:9
-        public static readonly Integer2 R1280x720 = new Integer2(1280, 720);
-        public static readonly Integer2 R1920x1080 = new Integer2(1920, 1080);
-        public static readonly Integer2 R2560x1440 = new Integer2(2560, 1440);
-        public static readonly Integer2 R3840x2160 = new Integer2(3840, 2160);
+        // 16:9 
+        public static readonly Integer2 R_HD_16_9_1280x720 = new Integer2(1280, 720);     // 720p
+        public static readonly Integer2 R_WXGA_16_9_1366x768 = new Integer2(1366, 768);     // WXGA (16:9 variant)
+        public static readonly Integer2 R_HDPlus_16_9_1600x900 = new Integer2(1600, 900);     // 900p
+        public static readonly Integer2 R_FHD_16_9_1920x1080 = new Integer2(1920, 1080);    // 1080p
+        public static readonly Integer2 R_QHD_16_9_2560x1440 = new Integer2(2560, 1440);    // 1440p
+        public static readonly Integer2 R_QHDPlus_16_9_3200x1800 = new Integer2(3200, 1800);    // QHD+
+        public static readonly Integer2 R_UHD_16_9_3840x2160 = new Integer2(3840, 2160);    // 2160p / UHD     // common alias
+        public static readonly Integer2 R_5K_16_9_5120x2880 = new Integer2(5120, 2880);    // 5K
+        public static readonly Integer2 R_8K_16_9_7680x4320 = new Integer2(7680, 4320);    // 8K
 
-        // 16:10
-        public static readonly Integer2 R1280x800 = new Integer2(1280, 800);
-        public static readonly Integer2 R1440x900 = new Integer2(1440, 900);
-        public static readonly Integer2 R1920x1200 = new Integer2(1920, 1200);
-        public static readonly Integer2 R2560x1600 = new Integer2(2560, 1600);
+        // 16:10 
+        public static readonly Integer2 R_WXGA_16_10_1280x800 = new Integer2(1280, 800);
+        public static readonly Integer2 R_WXGAPlus_16_10_1440x900 = new Integer2(1440, 900);
+        public static readonly Integer2 R_WUXGA_16_10_1920x1200 = new Integer2(1920, 1200);
+        public static readonly Integer2 R_WQXGA_16_10_2560x1600 = new Integer2(2560, 1600);
+        public static readonly Integer2 R_WQUXGA_16_10_3840x2400 = new Integer2(3840, 2400);
 
-        // 4:3
-        public static readonly Integer2 R640x480 = new Integer2(640, 480);
-        public static readonly Integer2 R1024x768 = new Integer2(1024, 768);
-        public static readonly Integer2 R1280x960 = new Integer2(1280, 960);
-        public static readonly Integer2 R1600x1200 = new Integer2(1600, 1200);
-        public static readonly Integer2 R2048x1536 = new Integer2(2048, 1536);
+        // 21:9 Ultra-wide 
+        public static readonly Integer2 R_UWFHD_21_9_2560x1080 = new Integer2(2560, 1080);    // Ultra-Wide FHD
+        public static readonly Integer2 R_UWQHD_21_9_3440x1440 = new Integer2(3440, 1440);    // Ultra-Wide QHD
+        public static readonly Integer2 R_UWQHDPlus_21_9_3840x1600 = new Integer2(3840, 1600);  // Ultra-Wide QHD+
+        public static readonly Integer2 R_5K2K_21_9_5120x2160 = new Integer2(5120, 2160);    // 5K2K ultra-wide
 
+        // 32:9 Super-ultra-wide 
+        public static readonly Integer2 R_DFHD_32_9_3840x1080 = new Integer2(3840, 1080);    // Dual FHD
+        public static readonly Integer2 R_DQHD_32_9_5120x1440 = new Integer2(5120, 1440);    // Dual QHD
+        public static readonly Integer2 R_DQUHD_32_9_7680x2160 = new Integer2(7680, 2160);    // Dual UHD (informal)
+
+        // 4:3 & 5:4 
+        public static readonly Integer2 R_VGA_4_3_640x480 = new Integer2(640, 480);
+        public static readonly Integer2 R_XGA_4_3_1024x768 = new Integer2(1024, 768);
+        public static readonly Integer2 R_XGAPlus_4_3_1152x864 = new Integer2(1152, 864);     // XGA+
+        public static readonly Integer2 R_SXGA_5_4_1280x1024 = new Integer2(1280, 1024);    // 5:4
+        public static readonly Integer2 R_SXGAPlus_4_3_1400x1050 = new Integer2(1400, 1050);
+        public static readonly Integer2 R_UXGA_4_3_1600x1200 = new Integer2(1600, 1200);
+        public static readonly Integer2 R_QXGA_4_3_2048x1536 = new Integer2(2048, 1536);
+
+        // 3:2 laptop 
+        public static readonly Integer2 R_3_2_1920x1280 = new Integer2(1920, 1280);    // Surface-class
+        public static readonly Integer2 R_3_2_2160x1440 = new Integer2(2160, 1440);    // 3:2 QHD-class
+        public static readonly Integer2 R_3_2_3000x2000 = new Integer2(3000, 2000);    // 3:2 3K-class
         #endregion
+
 
         #region Fields
         #endregion

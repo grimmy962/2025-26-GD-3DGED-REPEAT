@@ -73,15 +73,26 @@ This document contains a step-by-step development plan of MonoGame content cover
 - [x] Add `PerfStats` to show FPS, etc
 - [x] Add `Scene::Find` and `Scene::FindAll` for finding GameObjects by `Predicate`
 - [x] Add `Main::InitializeModel()` to load FBX models
-- [ ] Add event on resolution change
-- [ ] Add drivable model with 3rd person camera
-- [ ] Add other camera controller types
-- [ ] Add **serialization**: simple JSON for spawning `GameObject`.
-- [ ] Add **event bus**: lightweight pub/sub for decoupled messages between systems.
+- [x] Add **serialization**: simple JSON for spawning `GameObject`.
+- [x] Add `UIReticuleRender` demo to show `UIRenderingSystem` in action
 
 ## Week 8
+- [x] Improve name formatting on `ScreenResolution` fields
+- [x] Add `WindowUtility` to centre game to prevent annoying drag on open
+- [ ] Add drivable model with 3rd person camera
+- [ ] Add other camera controller types
+- [ ] Add event on resolution change
+- [ ] Add **event bus**: lightweight pub/sub for decoupled messages between systems.
 - [ ] Add physics engine (physics and CDCR)
 - [ ] Add UI support for HUD and menu
+
+## Week 9
+- [ ] Add support for opaque/transparent objects
+- [ ] Split gameobjects in Scene into opaque/transparent, active/inactive, static/dynamic
 - [ ] Add **audio hooks**: `AudioSystem` to support 2D and 3D sound; service access via event bus.
 - [ ] Add **frustum culling** with `BoundingFrustum` against `MeshFilter.Bounds`.
+- [ ] Add demos for effect supporting normal maps and environment maps
 
+## Bugs
+- [ ] Is camera filtering by layermask?
+- [ ] Can I add multiple overlay cameras sorted by depth?

@@ -1,5 +1,4 @@
-﻿using GDEngine.Core.Entities;
-using GDEngine.Core.Rendering;
+﻿using GDEngine.Core.Rendering;
 using GDEngine.Core.Systems;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -324,9 +323,7 @@ namespace GDEngine.Core.Components
         private void RecalculateView()
         {
             if (Transform == null)
-            {
                 throw new NullReferenceException(nameof(Transform));
-            }
 
             Vector3 position = Transform.Position;
             Vector3 forward = Transform.Forward;

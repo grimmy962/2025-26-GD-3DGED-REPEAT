@@ -1,4 +1,5 @@
-﻿using GDEngine.Core.Components;
+﻿#nullable enable
+using GDEngine.Core.Components;
 using GDEngine.Core.Timing;
 using Microsoft.Xna.Framework;
 using System;

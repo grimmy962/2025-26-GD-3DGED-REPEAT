@@ -27,7 +27,7 @@ namespace GDEngine.Core.Serialization
                 float x = 0, y = 0, z = 0;
                 while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
                 {
-                    string name = reader.GetString();
+                    string? name = reader.GetString();
                     reader.Read();
                     float val = (float)reader.GetDouble();
                     if (string.Equals(name, "x", StringComparison.OrdinalIgnoreCase)) x = val;

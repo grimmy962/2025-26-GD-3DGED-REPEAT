@@ -53,7 +53,10 @@ namespace GDEngine.Core.Components
 
         private void MatchCameraRotation()
         {
-            if (_cameraSystem == null || _cameraSystem.ActiveCamera == null || Transform == null)
+            if (Transform == null)
+                return;
+
+            if (_cameraSystem == null || _cameraSystem.ActiveCamera == null || _cameraSystem.ActiveCamera.Transform == null)
                 return;
 
             // World-space current & target

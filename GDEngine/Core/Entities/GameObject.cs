@@ -13,7 +13,7 @@ namespace GDEngine.Core.Entities
         #region Fields
         private readonly Transform _transform;
         private readonly List<Component> _components = new();
-        private Scene _scene;
+        private Scene? _scene;
         private bool _disposed = false;
         private LayerMask _layer = LayerMask.All;
         private bool _isStatic;
@@ -24,7 +24,7 @@ namespace GDEngine.Core.Entities
         public bool Enabled { get; set; } = true;
         public Transform Transform => _transform;
         public IReadOnlyList<Component> Components => _components;
-        public Scene Scene { get => _scene; set => _scene = value; }
+        public Scene? Scene { get => _scene; set => _scene = value; }
         /// <summary>
         /// Per-object layer mask used for camera culling.
         /// </summary>

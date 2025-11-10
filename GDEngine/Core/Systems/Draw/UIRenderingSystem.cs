@@ -2,6 +2,7 @@
 using GDEngine.Core.Enums;
 using GDEngine.Core.Rendering;
 using GDEngine.Core.Services;
+using GDEngine.Core.Systems.Base;
 using Microsoft.Xna.Framework.Graphics;
 
 namespace GDEngine.Core.Systems
@@ -19,7 +20,7 @@ namespace GDEngine.Core.Systems
         private Scene _scene = null!;
         private EngineContext _context = null!;
         private GraphicsDevice _device = null!;
-        private CameraSystem _cameraSystem = null!;
+        private CameraSystem? _cameraSystem = null!;
         private readonly List<UIRenderer> _drawables = new List<UIRenderer>(16);
         #endregion
 
@@ -57,6 +58,7 @@ namespace GDEngine.Core.Systems
             _scene = Scene;
             _context = _scene.Context;
             _device = _context.GraphicsDevice;
+
             _cameraSystem = _scene.GetSystem<CameraSystem>();
         }
 

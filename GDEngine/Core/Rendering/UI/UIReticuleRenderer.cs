@@ -8,13 +8,13 @@ namespace GDEngine.Core.Rendering.UI
     public class UIReticuleRenderer : UIRenderer
     {
         private SpriteBatch? _spriteBatch;
-        private Texture2D _texture;
-        private SpriteFont _font;
+        private Texture2D? _texture;
+        private SpriteFont? _font;
         private Vector2 _offset;
         private float _rotation;
 
-        public Texture2D Texture { get => _texture; set => _texture = value; }
-        public SpriteFont Font { get => _font; set => _font = value; }
+        public Texture2D? Texture { get => _texture; set => _texture = value; }
+        public SpriteFont? Font { get => _font; set => _font = value; }
         public Vector2 Offset { get => _offset; set => _offset = value; }
 
         protected override void Awake()
@@ -32,16 +32,17 @@ namespace GDEngine.Core.Rendering.UI
             if (_spriteBatch == null)
                 throw new NullReferenceException(nameof(_spriteBatch));
 
-            //BUG - transparency
-            _spriteBatch.Begin(SpriteSortMode.BackToFront,
-                BlendState.AlphaBlend, null, DepthStencilState.Default,
-                null);
+            _spriteBatch.Begin(
+                SpriteSortMode.BackToFront,
+                BlendState.AlphaBlend,         
+                SamplerState.PointClamp,
+                DepthStencilState.None,
+                RasterizerState.CullNone);
 
-            _rotation+=5;
+            _rotation +=5;
 
             var mousePosition = Mouse.GetState().Position.ToVector2();
-            //_spriteBatch.DrawString(_font, "Dist[3]", mousePosition + _offset,
-            //    Color.Black);
+            _spriteBatch.DrawString(_font, "Dist[3]", mousePosition + _offset, Color.Black);
             _spriteBatch.Draw(_texture, mousePosition, null,
                 Color.White, MathHelper.ToRadians(_rotation),
                 new Vector2(_texture.Width/2, _texture.Height/2), 2, SpriteEffects.None, 0);

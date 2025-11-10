@@ -2,7 +2,7 @@
 using GDEngine.Core.Enums;
 using GDEngine.Core.Services;
 
-namespace GDEngine.Core.Systems
+namespace GDEngine.Core.Systems.Base
 {
     /// <summary>
     /// Base class for frame-scheduled systems that operate over a <see cref="Scene"/>.

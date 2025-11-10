@@ -1,4 +1,5 @@
 ﻿using GDEngine.Core.Entities;
+using GDEngine.Core.Events;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -11,6 +12,7 @@ namespace GDEngine.Core.Services
     /// <see cref="Scene"/>
     /// <see cref="GameObject"/>
     /// <see cref="Camera"/>
+    /// <see cref="EventSystem"/>
     /// <see cref="https://www.geeksforgeeks.org/system-design/solid-principle-in-programming-understand-with-real-life-examples/"/>
     public class EngineContext : IDisposable       //TODO - add thread lock
     {
@@ -19,13 +21,16 @@ namespace GDEngine.Core.Services
         #endregion
 
         #region Fields
-        private bool _disposed = false; 
+        private bool _disposed = false;
         #endregion
 
         #region Properties
         public GraphicsDevice GraphicsDevice { get; }
         public ContentManager Content { get; }
         public SpriteBatch SpriteBatch { get; }
+
+        public EventBus Events { get; }
+
         public static EngineContext? Instance
         {
             get
@@ -37,10 +42,9 @@ namespace GDEngine.Core.Services
             }
         }
         #endregion
- 
-        #region Core Methods
-        public static void Initialize(GraphicsDevice graphicsDevice,
-    ContentManager content)
+
+        #region Lifecycle Methods
+        public static void Initialize(GraphicsDevice graphicsDevice, ContentManager content)
         {
             if (_instance != null)
                 throw new InvalidOperationException("EngineContext already initialized");
@@ -48,17 +52,16 @@ namespace GDEngine.Core.Services
             _instance = new EngineContext(graphicsDevice, content);
         }
 
-        private EngineContext(GraphicsDevice graphicsDevice,
-            ContentManager content)
+        private EngineContext(GraphicsDevice graphicsDevice, ContentManager content)
         {
             GraphicsDevice = graphicsDevice ?? throw new ArgumentNullException(nameof(graphicsDevice));
             Content = content ?? throw new ArgumentNullException(nameof(content));
             SpriteBatch = new SpriteBatch(graphicsDevice);
+            Events = new EventBus();
         }
         #endregion
 
         #region Housekeeping Methods
-
         public void Dispose()
         {
             Dispose(true);
@@ -76,6 +79,7 @@ namespace GDEngine.Core.Services
                 SpriteBatch?.Dispose();
                 Content?.Dispose();
                 // Note: GraphicsDevice is typically owned by the Game class, so we don't dispose it here
+                // If EventBus becomes IDisposable in future, dispose it here.
             }
 
             _disposed = true;

@@ -17,7 +17,6 @@
   <ItemGroup>
     <Folder Include="Core\Gizmos\" />
     <Folder Include="Core\Optimisation\" />
-    <Folder Include="Core\Utilities\" />
   </ItemGroup>
 
 </Project>

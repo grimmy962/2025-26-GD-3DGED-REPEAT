@@ -4,6 +4,7 @@ using GDEngine.Core.Entities;
 using GDEngine.Core.Enums;
 using GDEngine.Core.Rendering;
 using GDEngine.Core.Services;
+using GDEngine.Core.Systems.Base;
 using Microsoft.Xna.Framework.Graphics;
 
 namespace GDEngine.Core.Systems
@@ -20,7 +21,7 @@ namespace GDEngine.Core.Systems
         private Scene _scene = null!;
         private EngineContext _context = null!;
         private GraphicsDevice _device = null!;
-        private CameraSystem _cameraSystem = null!;
+        private CameraSystem? _cameraSystem = null!;
         private readonly List<Camera> _cameraStack = new List<Camera>(8);
         private readonly List<MeshRenderer> _visible = new List<MeshRenderer>(512);
         #endregion
@@ -50,7 +51,10 @@ namespace GDEngine.Core.Systems
             // No renderables? early out
             var sceneRenderers = _scene.Renderers;
             if (sceneRenderers == null || sceneRenderers.Count == 0)
-                return;
+                throw new ArgumentNullException(nameof(sceneRenderers));
+
+            if (_cameraSystem == null)
+                throw new ArgumentNullException(nameof(_cameraSystem));
 
             _cameraSystem.GetSortedStack(_cameraStack);
 
