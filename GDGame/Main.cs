@@ -338,6 +338,10 @@ namespace GDGame
 
         private void InitializeCameras()
         {
+         
+
+         
+
             #region First-person camera
             var position = new Vector3(0, 5, 25);
 
@@ -361,11 +365,18 @@ namespace GDGame
             #endregion
 
             //TODO - add more cameras!
+            _cameraGO = new GameObject("Third person camera");
+            _camera = _cameraGO.AddComponent<Camera>();
+            var thirdPersonController = new ThirdPersonController("The Player");
+            _cameraGO.AddComponent(thirdPersonController);
+            _scene.Add(_cameraGO);
+
 
             // Set the active camera by finding and getting its camera component
-            _scene.ActiveCamera = _scene.Find(go => go.Name.Equals("First person camera")).GetComponent<Camera>();
-            //Obviously, since we have _camera we could also just use the line below
-            //_scene.ActiveCamera = _camera;
+            //BUG
+            //var theCamera = _scene.Find(go => go.Name.Equals("First person camera")).GetComponent<Camera>();
+            ////Obviously, since we have _camera we could also just use the line below
+            //_scene.ActiveCamera = theCamera;
         }
 
         /// <summary>
@@ -546,7 +557,7 @@ namespace GDGame
 
             // Distance/health lines under the cursor
             var waypointObject = _scene.Find((go) => go.Name.Equals("test crate textured cube"));
-            var cameraObject = _scene.Find(go => go.Name.Equals("First person camera"));
+            var cameraObject = _scene.Find(go => go.Name.Equals("Third person camera"));
 
             Func<IEnumerable<string>> linesProvider = () =>
             {

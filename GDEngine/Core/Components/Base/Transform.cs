@@ -162,11 +162,20 @@ namespace GDEngine.Core.Components
             }
         }
 
-        // --- in Transform.cs ---
-        // Row-based extraction (correct for MonoGame/XNA matrices)
-        public Vector3 Right { get { var m = WorldMatrix; return Vector3.Normalize(new Vector3(m.M11, m.M12, m.M13)); } }
-        public Vector3 Up { get { var m = WorldMatrix; return Vector3.Normalize(new Vector3(m.M21, m.M22, m.M23)); } }
-        public Vector3 Forward { get { var m = WorldMatrix; return Vector3.Normalize(new Vector3(m.M31, m.M32, m.M33)); } }
+        // Column-based extraction
+        public Vector3 Right
+        {
+            get { var m = WorldMatrix; return Vector3.Normalize(new Vector3(m.M11, m.M21, m.M31)); }
+        }
+        public Vector3 Up
+        {
+            get { var m = WorldMatrix; return Vector3.Normalize(new Vector3(m.M12, m.M22, m.M32)); }
+        }
+        public Vector3 Forward
+        {
+            // If you consider +Z forward, keep as below.
+            get { var m = WorldMatrix; return Vector3.Normalize(new Vector3(m.M13, m.M23, m.M33)); }
+        }
 
         #endregion
 
@@ -305,7 +314,7 @@ namespace GDEngine.Core.Components
             MarkLocalDirty(ChangeFlags.Scale);
         }
 
-        // ----- Dirty helpers -----
+        // Dirty helpers
 
         private void MarkLocalDirty(ChangeFlags reason)
         {

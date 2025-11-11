@@ -5,15 +5,15 @@ namespace GDEngine.Core.Components
 {
     /// <summary>
     /// Simple drive controller:
-    /// U/J = move forward/back along current facing; H/K = yaw left/right.
+    /// U/J = forward/back along current facing; H/K = yaw left/right (world-up).
+    /// Forward is taken from the world matrix so it matches visual rotation
+    /// regardless of row/column axis extraction.
     /// </summary>
-    /// <see cref="Component"/>
-    /// <see cref="Transform"/>
     public sealed class SimpleDriveController : Component
     {
         #region Fields
-        private float _moveSpeed = 15f;   // units/sec
-        private float _turnSpeed = 5f; // radians/sec
+        private float _moveSpeed = 15f;  // units/sec
+        private float _turnSpeed = 5f;   // radians/sec
         #endregion
 
         #region Lifecycle Methods
@@ -24,23 +24,32 @@ namespace GDEngine.Core.Components
 
             var k = Keyboard.GetState();
 
-            // Yaw (H left, K right)
-            float yaw = 0f;
-            if (k.IsKeyDown(Keys.H)) yaw += 1f;
-            if (k.IsKeyDown(Keys.K)) yaw -= 1f;
+            // --- Rotation (H left, K right) around WORLD UP to avoid roll coupling ---
+            float yawInput = 0f;
+            if (k.IsKeyDown(Keys.H)) yawInput += 1f;
+            if (k.IsKeyDown(Keys.K)) yawInput -= 1f;
 
-            if (yaw != 0f)
-                Transform.RotateEulerBy(new Vector3(0f, yaw * _turnSpeed * deltaTime, 0f));
-
-            // Forward/back (U forward, J back)
-            float fwd = 0f;
-            if (k.IsKeyDown(Keys.U)) fwd -= 1f;
-            if (k.IsKeyDown(Keys.J)) fwd += 1f;
-
-            if (fwd != 0f)
+            if (yawInput != 0f)
             {
-                Vector3 dir = Transform.Forward; // now correct after Transform fix
-                Vector3 worldDelta = -dir * (fwd * _moveSpeed * deltaTime);
+                // worldSpace:true guarantees pure yaw about +Y, even if the object has tilt
+                Transform.RotateEulerBy(new Vector3(0f, yawInput * _turnSpeed * deltaTime, 0f), worldSpace: true);
+            }
+
+            // --- Translation (U forward, J back) along actual current facing ---
+            float moveInput = 0f;
+            if (k.IsKeyDown(Keys.U)) moveInput += 1f;
+            if (k.IsKeyDown(Keys.J)) moveInput -= 1f;
+
+            if (moveInput != 0f)
+            {
+                // Derive forward from the world matrix (works regardless of row/column basis)
+                Vector3 dir = Vector3.Normalize(Vector3.TransformNormal(Vector3.Forward, Transform.WorldMatrix));
+
+                // Keep motion planar (comment out next line if you want vertical movement)
+                dir.Y = 0f;
+                if (dir.LengthSquared() > 1e-8f) dir.Normalize();
+
+                Vector3 worldDelta = -dir * (moveInput * _moveSpeed * deltaTime);
                 Transform.TranslateBy(worldDelta, worldSpace: true);
             }
         }

@@ -127,8 +127,6 @@ namespace GDEngine.Core.Entities
             if (ActiveCamera == null && cam != null && cam.Enabled)
                 ActiveCamera = cam;
 
-
-
             return gameObject;
         }
 
