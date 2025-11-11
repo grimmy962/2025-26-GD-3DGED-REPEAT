@@ -12,8 +12,8 @@ namespace GDEngine.Core.Components
     public sealed class SimpleDriveController : Component
     {
         #region Fields
-        private float _moveSpeed = 5f;   // units/sec
-        private float _turnSpeed = 2.5f; // radians/sec
+        private float _moveSpeed = 15f;   // units/sec
+        private float _turnSpeed = 5f; // radians/sec
         #endregion
 
         #region Lifecycle Methods
@@ -40,7 +40,7 @@ namespace GDEngine.Core.Components
             if (fwd != 0f)
             {
                 Vector3 dir = Transform.Forward; // now correct after Transform fix
-                Vector3 worldDelta = dir * (fwd * _moveSpeed * deltaTime);
+                Vector3 worldDelta = -dir * (fwd * _moveSpeed * deltaTime);
                 Transform.TranslateBy(worldDelta, worldSpace: true);
             }
         }

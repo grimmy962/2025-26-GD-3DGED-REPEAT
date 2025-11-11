@@ -82,11 +82,11 @@ This document contains a step-by-step development plan of MonoGame content cover
 - [x] Add **event bus**: lightweight pub/sub for decoupled messages between systems.
 - [x] Add JSON asset loading support to `ContentDictionary` and move JSON files to `Data` folder
 - [x] Add `NamedDictionary` to support loading assets that dont use `Content::Load` (e.g. `AnimationCurve`)
-- [ ] Add `UITextureRenderer` and simple menu demo
-- [ ] Rename `UIRenderingSystem` to `UIRenderSystem`
-- [ ] Rename `RenderingSystem` to `RenderSystem`
-- [ ] Set game window title and change icon
-- [ ] Add drivable model with 3rd person camera
+- [x] Add `UITextureRenderer` and simple menu demo
+- [x] Rename `UIRenderingSystem` to `UIRenderSystem`
+- [x] Rename `RenderingSystem` to `RenderSystem`
+- [x] Set game window title and change icon
+- [x] Add drivable model with 3rd person camera
 - [ ] Add other camera controller types
 - [ ] Add physics engine (physics and CDCR)
 - [ ] Add UI support for HUD and menu
