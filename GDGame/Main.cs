@@ -12,6 +12,7 @@ using GDEngine.Core.Rendering.UI;
 using GDEngine.Core.Serialization;
 using GDEngine.Core.Services;
 using GDEngine.Core.Systems;
+using GDEngine.Core.Systems.Draw;
 using GDEngine.Core.Timing;
 using GDEngine.Core.Utilities;
 using GDGame.Demos;
@@ -58,38 +59,45 @@ namespace GDGame
         protected override void Initialize()
         {
             #region Core
-            InitializeGraphics(ScreenResolution.R_VGA_4_3_640x480);
 
+            // Give the game a name
+            Window.Title = "My Amazing Game";
+
+            // Set resolution and centering (by monitor index)
+            InitializeGraphics(ScreenResolution.R_HD_16_9_1280x720);
+
+            // Center and hide the mouse!
             InitializeMouse();
 
+            // Shared data across entities
             InitializeContext();
 
-            InitializeAssetDictionaries();
+            // Assets from string names in JSON
+            var relativeFilePathAndName = "assets/data/asset_manifest.json";
+            LoadAssetsFromJSON(relativeFilePathAndName);
 
-            LoadAssets();
-
+            // All effects used in game
             InitializeEffects();
 
+            // Scene to hold game objects
             InitializeScene();
 
+            // Camera, UI, Menu, Physics, Rendering etc.
             InitializeSystems();
 
-            InitializeCamera(new Vector3(0, 5, 25));
+            // All cameras we want in the game are loaded now and one set as active
+            InitializeCameras();
 
+            // Setup world
             int scale = 500;
-
             InitializeSkyParent();
-
             InitializeSkyBox(scale);
-
             InitializeGround(scale);
-
-            #endregion
 
             #region Demos
             // Camera-demos
             InitializeAnimationCurves();
-            
+
             // Uncomment to see PiP - otherwise its a little annoying
             //InitializePIPCamera(new Vector3(-35, 5, 5),
             //    new Viewport(0,
@@ -103,14 +111,34 @@ namespace GDGame
             DemoAlphaCutoutFoliage(new Vector3(0, 10 /*note Y=heightscale/2*/, 0), 12, 20);
             DemoLoadFromJSON();
             #endregion
-
-            #region Core
-
+  
             // Setup renderers after all game objects added since ui text may use a gameobject as target
             InitializeUIRenderers();
 
+            // Setup menu
+            //InitializeMenu();
+
             #endregion
+
             base.Initialize();
+        }
+
+        private void InitializeMenu()
+        {
+            GameObject gameObject = null;
+
+            gameObject = new GameObject("main menu background");
+            var uiTextureRenderer = new UITextureRenderer();
+            uiTextureRenderer.Texture = _textureDictionary.Get("mainmenu_monkey");
+            uiTextureRenderer.DestinationRectangle = new Vector2(0, 0);
+            gameObject.AddComponent(uiTextureRenderer);
+            _scene.Add(gameObject);
+
+
+            //add menu components
+              //main (texture, play, exit, sound, controls)
+              //sound (texture, up, down, mute, back)
+              //controls (texture, back)
         }
 
         private void InitializePIPCamera(Vector3 position,
@@ -183,67 +211,30 @@ namespace GDGame
             EngineContext.Initialize(GraphicsDevice, Content);
         }
 
-        private void InitializeAssetDictionaries()
+        /// <summary>
+        /// New asset loading from JSON using AssetEntry and ContentDictionary::LoadFromManifest
+        /// </summary>
+        /// <param name="relativeFilePathAndName"></param>
+        /// <see cref="AssetEntry"/>
+        /// <see cref="ContentDictionary{T}"/>
+        private void LoadAssetsFromJSON(string relativeFilePathAndName)
         {
+            // Make dictionaries to store assets
             _textureDictionary = new ContentDictionary<Texture2D>();
             _modelDictionary = new ContentDictionary<Model>();
             _fontDictionary = new ContentDictionary<SpriteFont>();
 
-        }
-
-        private void LoadAssets()
-        {
-            LoadSounds();
-            LoadFonts();
-            LoadTextures();
-            LoadModels();
-        }
-
-        private void LoadSounds()
-        {
-            //TODO - LAB EXERCISE
-        }
-
-        private void LoadFonts()
-        {
-            _fontDictionary.Add("perf_stats_font", "assets/fonts/perfStats");
-            _fontDictionary.Add("mouse_reticle_font", "assets/fonts/uiReticleText");
-        }
-
-        private void LoadTextures()
-        {
-            //ground
-            _textureDictionary.Add("ground_grass", "assets/textures/foliage/ground/grass1");
-
-            //skybox
-            _textureDictionary.Add("skybox_back", "assets/textures/skybox/back");
-            _textureDictionary.Add("skybox_front", "assets/textures/skybox/front");
-            _textureDictionary.Add("skybox_left", "assets/textures/skybox/left");
-            _textureDictionary.Add("skybox_right", "assets/textures/skybox/right");
-            _textureDictionary.Add("skybox_sky", "assets/textures/skybox/sky");
-
-            //crate
-            _textureDictionary.Add("crate1", "assets/textures/props/crates/crate1");
-
-            //tree
-            _textureDictionary.Add("tree4", "assets/textures/foliage/trees/tree4");
-
-            //test texture for models
-            _textureDictionary.Add("checkerboard", "assets/textures/demo/checkerboard");
-            _textureDictionary.Add("mona lisa", "assets/textures/demo/mona lisa");
-
-            //ui
-            _textureDictionary.Add("mouse_reticle", "assets/textures/ui/mouse/reticleClosed");
-            _textureDictionary.Add("Crosshair_21", "assets/textures/ui/mouse/Crosshair_01");
-
-        }
-
-        private void LoadModels()
-        {
-            _modelDictionary.Add("monkey1", "assets/models/monkey1");
-            _modelDictionary.Add("cube", "assets/models/cube");
-            _modelDictionary.Add("teapot", "assets/models/teapot");
-            _modelDictionary.Add("teapot_lowpoly", "assets/models/teapot_lowpoly");
+            var manifests = JSONSerializationUtility.LoadData<AssetManifest>(Content, relativeFilePathAndName); // single or array
+            if (manifests.Count > 0)
+            {
+                foreach (var m in manifests)
+                {
+                    _modelDictionary.LoadFromManifest(m.Models, e => e.Name, e => e.ContentPath, overwrite: true);
+                    _textureDictionary.LoadFromManifest(m.Textures, e => e.Name, e => e.ContentPath, overwrite: true);
+                    _fontDictionary.LoadFromManifest(m.Fonts, e => e.Name, e => e.ContentPath, overwrite: true);
+                    //TODO - Add dictionary loading for other assets - song, soundeffect, other?
+                }
+            }
         }
 
         private void InitializeEffects()
@@ -307,6 +298,12 @@ namespace GDGame
             InitializeCameraSystem();
             InitializeRenderingSystem();
             InitializeUIRenderingSystem();
+            InitializeMenuSystem();
+        }
+
+        private void InitializeMenuSystem()
+        {
+            _scene.Add(new UIMenuSystem());
         }
 
         private void InitializeEventSystem()
@@ -322,7 +319,7 @@ namespace GDGame
 
         private void InitializeRenderingSystem()
         {
-            _scene.Add(new RenderingSystem(-100));
+            _scene.Add(new RenderSystem(-100));
         }
 
         private void InitializeInputSystem()
@@ -351,8 +348,11 @@ namespace GDGame
             _scene.Add(new UIRenderSystem(100)); // draws in PostRender after RenderingSystem (order = -100)
         }
 
-        private void InitializeCamera(Vector3 position)
+        private void InitializeCameras()
         {
+            #region First-person camera
+            var position = new Vector3(0, 5, 25);
+
             //camera GO
             _cameraGO = new GameObject("First person camera");
             //set position 
@@ -365,12 +365,19 @@ namespace GDGame
             _camera.FarPlane = 1000;
             ////feed off whatever screen dimensions you set InitializeGraphics
             _camera.AspectRatio = (float)_graphics.PreferredBackBufferWidth / _graphics.PreferredBackBufferHeight;
-
             _cameraGO.AddComponent<KeyboardWASDController>();
             _cameraGO.AddComponent<MouseYawPitchController>();
 
-            //finally add it to the scene
+            // Add it to the scene
             _scene.Add(_cameraGO);
+            #endregion
+
+            //TODO - add more cameras!
+
+            // Set the active camera by finding and getting its camera component
+            _scene.ActiveCamera = _scene.Find(go => go.Name.Equals("First person camera")).GetComponent<Camera>();
+            //Obviously, since we have _camera we could also just use the line below
+            //_scene.ActiveCamera = _camera;
         }
 
         /// <summary>
@@ -531,26 +538,64 @@ namespace GDGame
             _scene.Add(uiGO);
         }
 
-        private void InitializeMouseReticleRenderer()
-        {
-            // Mouse reticule (distance to objective)
-            var mouseUIRet = new GameObject("mouse reticule");
-
-            var uiReticuleRenderer = mouseUIRet.AddComponent<UIReticuleRenderer>();
-            uiReticuleRenderer.Texture = _textureDictionary.Get("mouse_reticle");
-            uiReticuleRenderer.Font = _fontDictionary.Get("mouse_reticle_font");
-            uiReticuleRenderer.Offset = new Vector2(0, 30);
-
-            IsMouseVisible = false;
-
-            _scene.Add(mouseUIRet);
-
-        }
-
         //private void InitializeMouseReticleRenderer()
         //{
-        //    //TODO - EXERCISE - Refactor UIReticuleRenderer and add UITextRenderer
+        //    // Mouse reticule (distance to objective)
+        //    var mouseUIRet = new GameObject("mouse reticule");
+
+        //    var uiReticuleRenderer = mouseUIRet.AddComponent<UIReticuleRenderer>();
+        //    uiReticuleRenderer.Texture = _textureDictionary.Get("mouse_reticle");
+        //    uiReticuleRenderer.Font = _fontDictionary.Get("mouse_reticle_font");
+        //    uiReticuleRenderer.Offset = new Vector2(0, 30);
+
+        //    IsMouseVisible = false;
+
+        //    _scene.Add(mouseUIRet);
+
         //}
+
+        private void InitializeMouseReticleRenderer()
+        {
+            var uiGO = new GameObject("HUD");
+
+            var reticleAtlas = _textureDictionary.Get("Crosshair_21");
+            var uiFont = _fontDictionary.Get("mouse_reticle_font");
+
+            var reticle = new UIReticleRenderer(reticleAtlas);
+            reticle.SourceRectangle = null;// new Rectangle(0,0, 200, 300);
+            reticle.Scale = new Vector2(0.1f, 0.1f);
+            reticle.RotationSpeedDegPerSec = 45;
+            uiGO.AddComponent(reticle);
+
+            var waypointObject = _scene.Find((go) => go.Name.Equals("test crate textured cube"));
+            var cameraObject = _scene.Find(go => go.Name.Equals("First person camera"));
+
+            Func<IEnumerable<string>> linesProvider = () =>
+            {
+                var distToWaypoint = Vector3.Distance(
+                    cameraObject.Transform.Position,
+                    waypointObject.Transform.Position);
+                var hp = _dummyHealth;
+                return new[]
+                {
+                    $"Dist: {distToWaypoint:F2} m",
+                    $"Health:   {hp}"
+                };
+            };
+
+            var text = new UITextRenderer(uiFont);
+            text.PositionProvider = () => Mouse.GetState().Position.ToVector2();
+            text.Anchor = TextAnchor.Center;
+            text.Offset = new Vector2(0, 50);
+            text.FallbackColor = Color.White;
+            text.DropShadow = true;
+            text.ShadowColor = Color.Black;
+            text.TextProvider = () => string.Join("\n", linesProvider());
+
+            uiGO.AddComponent(text);
+            _scene.Add(uiGO);
+            IsMouseVisible = false;
+        }
 
         /// <summary>
         /// Adds a single-part FBX model into the scene.
@@ -582,6 +627,8 @@ namespace GDGame
             //call time update
             #region Core
             Time.Update(gameTime);
+
+            //Time.TimeScale = 0;
 
             //update Scene
             _scene.Update(Time.DeltaTimeSecs);
@@ -705,14 +752,16 @@ namespace GDGame
         #region Demo Methods (remove in your game)
         private void DemoLoadFromJSON()
         {
-            List<ModelSpawnData> mList = JSONSerializationUtility.LoadData<ModelSpawnData>(Content, "single_model_spawn.json");
+            var relativeFilePathAndName = "assets/data/single_model_spawn.json";
+            List<ModelSpawnData> mList = JSONSerializationUtility.LoadData<ModelSpawnData>(Content, relativeFilePathAndName);
            
             //load a single model
             foreach (var d in mList)
                 InitializeModel(d.Position, d.RotationDegrees, d.Scale, d.TextureName, d.ModelName, d.ObjectName);
 
+            relativeFilePathAndName = "assets/data/multi_model_spawn.json";
             //load multiple models
-            foreach (var d in JSONSerializationUtility.LoadData<ModelSpawnData>(Content, "multi_model_spawn.json"))
+            foreach (var d in JSONSerializationUtility.LoadData<ModelSpawnData>(Content, relativeFilePathAndName))
                 InitializeModel(d.Position, d.RotationDegrees, d.Scale, d.TextureName, d.ModelName, d.ObjectName);
         }
 

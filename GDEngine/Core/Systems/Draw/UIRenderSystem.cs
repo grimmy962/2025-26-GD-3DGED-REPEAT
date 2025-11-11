@@ -13,7 +13,7 @@ namespace GDEngine.Core.Systems
     /// </summary>
     /// <see cref="Scene"/>
     /// <see cref="UIRenderer"/>
-    /// <see cref="RenderingSystem"/>
+    /// <see cref="RenderSystem"/>
     public sealed class UIRenderSystem : SystemBase
     {
         #region Fields
@@ -70,7 +70,7 @@ namespace GDEngine.Core.Systems
 
             for (int i = 0; i < _drawables.Count; i++)
                 if (_drawables[i].Enabled)
-                    _drawables[i].Render(_device, camera);
+                    _drawables[i].Draw(_device, camera);
         }
         #endregion
     }

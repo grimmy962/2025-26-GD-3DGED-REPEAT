@@ -1,4 +1,9 @@
 {
+  "version": 1,
+  "meta": {
+    "author": "NMCG",
+    "asset": "Single game object loaded from JSON"
+  },
   "position": [ -30, 5, 0 ],
   "rotationDegrees": [ 45, 45, 45 ],
   "scale": [ 4, 4, 4 ],

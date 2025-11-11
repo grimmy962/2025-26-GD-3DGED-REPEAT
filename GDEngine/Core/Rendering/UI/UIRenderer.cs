@@ -11,7 +11,7 @@ namespace GDEngine.Core.Rendering
     /// </summary>
     /// <see cref="Component"/>
     /// <see cref="UIRenderSystem"/>
-    public class UIRenderer : Component, IRender
+    public class UIRenderer : Component, IDraw
     {
         #region Fields
         protected UIRenderSystem? _uiRenderSystem;
@@ -21,7 +21,7 @@ namespace GDEngine.Core.Rendering
         /// <summary>
         /// Override to draw your overlay using the supplied device and camera.
         /// </summary>
-        public virtual void Render(GraphicsDevice device, Camera camera) { }
+        public virtual void Draw(GraphicsDevice device, Camera camera) { }
         #endregion
 
         #region Lifecycle Methods

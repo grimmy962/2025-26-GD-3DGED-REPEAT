@@ -15,7 +15,7 @@ namespace GDEngine.Core.Systems
     /// - For each camera: sets the device viewport from PixelViewport, applies camera clear, and renders visible renderers.
     /// - Restores the full backbuffer viewport at the end so UI/post systems can assume full-screen.
     /// </summary>
-    public class RenderingSystem : SystemBase
+    public class RenderSystem : SystemBase
     {
         #region Fields
         private Scene _scene = null!;
@@ -27,7 +27,7 @@ namespace GDEngine.Core.Systems
         #endregion
 
         #region Constructors
-        public RenderingSystem(int order = -100)
+        public RenderSystem(int order = -100)
             : base(FrameLifecycle.Render, order: 0)
         {
         }
@@ -81,7 +81,7 @@ namespace GDEngine.Core.Systems
                 // Render each visible renderer with this camera
                 for (int j = 0; j < _visible.Count; j++)
                 {
-                    _visible[j].Render(_device, camera);
+                    _visible[j].Draw(_device, camera);
                 }
             }
 

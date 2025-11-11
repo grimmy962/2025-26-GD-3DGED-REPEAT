@@ -80,7 +80,7 @@ namespace GDEngine.Core.Debug
         #endregion
 
         #region Housekeeping Methods
-        public override void Render(GraphicsDevice device, Camera camera)
+        public override void Draw(GraphicsDevice device, Camera camera)
         {
             if (_spriteBatch == null || _font == null)
                 return;

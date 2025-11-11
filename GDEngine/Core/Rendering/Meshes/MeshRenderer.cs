@@ -9,7 +9,7 @@ namespace GDEngine.Core.Rendering
     /// <see cref="MeshFilter"/>
     /// <see cref="Material"/>
     /// <see cref="Camera"/>
-    public sealed class MeshRenderer : Component, IRender
+    public sealed class MeshRenderer : Component, IDraw
     {
         #region Static Fields
         #endregion
@@ -34,7 +34,7 @@ namespace GDEngine.Core.Rendering
         #endregion
 
         #region Methods
-        public void Render(GraphicsDevice device, Camera camera)
+        public void Draw(GraphicsDevice device, Camera camera)
         {
             if (Transform == null) return;
             if (_meshFilter == null) return;

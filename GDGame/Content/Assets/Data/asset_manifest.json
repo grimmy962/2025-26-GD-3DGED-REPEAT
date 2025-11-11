@@ -1,0 +1,97 @@
+{
+  "version": 1,
+  "meta": {
+    "author": "NMCG", "asset": "Game assets - Level 1 - Forbidden Planet"
+    },
+  "fonts": [
+    {
+      "name": "perf_stats_font",
+      "contentPath": "assets/fonts/perfStats"
+    },
+    {
+      "name": "mouse_reticle_font",
+      "contentPath": "assets/fonts/uiReticleText"
+    }
+  ],
+  "textures": [
+    {
+      "name": "ground_grass",
+      "contentPath": "assets/textures/foliage/ground/grass1"
+    },
+
+    {
+      "name": "skybox_back",
+      "contentPath": "assets/textures/skybox/back"
+    },
+    {
+      "name": "skybox_front",
+      "contentPath": "assets/textures/skybox/front"
+    },
+    {
+      "name": "skybox_left",
+      "contentPath": "assets/textures/skybox/left"
+    },
+    {
+      "name": "skybox_right",
+      "contentPath": "assets/textures/skybox/right"
+    },
+    {
+      "name": "skybox_sky",
+      "contentPath": "assets/textures/skybox/sky"
+    },
+
+    {
+      "name": "crate1",
+      "contentPath": "assets/textures/props/crates/crate1"
+    },
+    {
+      "name": "tree4",
+      "contentPath": "assets/textures/foliage/trees/tree4"
+    },
+
+    {
+      "name": "checkerboard",
+      "contentPath": "assets/textures/demo/checkerboard"
+    },
+    {
+      "name": "mona lisa",
+      "contentPath": "assets/textures/demo/mona lisa"
+    },
+
+    {
+      "name": "mouse_reticle",
+      "contentPath": "assets/textures/ui/mouse/reticleClosed"
+    },
+    {
+      "name": "Crosshair_21",
+      "contentPath": "assets/textures/ui/mouse/Crosshair_01"
+    },
+
+    {
+      "name": "mainmenu",
+      "contentPath": "assets/textures/ui/backgrounds/mainmenu"
+    },
+    {
+      "name": "mainmenu_monkey",
+      "contentPath": "assets/textures/ui/backgrounds/mainmenu_monkey"
+    }
+  ],
+  "models": [
+    {
+      "name": "monkey1",
+      "contentPath": "assets/models/monkey1"
+    },
+    {
+      "name": "cube",
+      "contentPath": "assets/models/cube"
+    },
+    {
+      "name": "teapot",
+      "contentPath": "assets/models/teapot"
+    },
+    {
+      "name": "teapot_lowpoly",
+      "contentPath": "assets/models/teapot_lowpoly"
+    }
+  ]
+}

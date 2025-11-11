@@ -9,8 +9,11 @@
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <ApplicationIcon>Icon.ico</ApplicationIcon>
+    <ApplicationIcon>gd_icon.ico</ApplicationIcon>
   </PropertyGroup>
+  <ItemGroup>
+    <Content Include="gd_icon.ico" />
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MonoGame.Framework.WindowsDX" Version="3.8.*" />
     <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.*" />
@@ -19,10 +22,13 @@
     <ProjectReference Include="..\GDEngine\GDEngine.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Update="Content\multi_model_spawn.json">
+    <None Update="Content\Assets\Data\asset_manifest.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Update="Content\single_model_spawn.json">
+    <None Update="Content\Assets\Data\multi_model_spawn.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="Content\Assets\Data\single_model_spawn.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>

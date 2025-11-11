@@ -2,6 +2,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System;
 
 namespace GDEngine.Core.Rendering.UI
 {
@@ -26,7 +27,7 @@ namespace GDEngine.Core.Rendering.UI
             
 
         }
-        public override void Render(GraphicsDevice device, 
+        public override void Draw(GraphicsDevice device, 
             Camera camera)
         {
             if (_spriteBatch == null)
