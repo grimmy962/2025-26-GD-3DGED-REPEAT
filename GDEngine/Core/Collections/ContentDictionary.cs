@@ -200,16 +200,16 @@ namespace GDEngine.Core.Collections
         /// <summary>
         /// Bulk load/register entries from arbitrary DTOs using selectors (e.g., manifest AssetEntry).
         /// </summary>
-        /// <typeparam name="T">Entry type (e.g., AssetEntry)</typeparam>
+        /// <typeparam name="E">Entry type (e.g., AssetEntry)</typeparam>
         /// <param name="entries">Entries to register.</param>
         /// <param name="keySelector">Selects the dictionary key from the entry.</param>
         /// <param name="pathSelector">Selects the Content pipeline path from the entry.</param>
         /// <param name="overwrite">If true, existing keys will be reloaded when the path differs.</param>
         /// <returns>Number of items added or reloaded.</returns>
-        public int LoadFromManifest<T>(
-            IEnumerable<T> entries,
-            Func<T, string> keySelector,
-            Func<T, string> pathSelector,
+        public int LoadFromManifest<E>(
+            IEnumerable<E> entries,
+            Func<E, string> keySelector,
+            Func<E, string> pathSelector,
             bool overwrite = false)
         {
             if (entries == null)

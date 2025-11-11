@@ -13,6 +13,13 @@
 
 #---------------------------------- Content ---------------------------------#
 
+#begin Assets/Fonts/menufont.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/build:Assets/Fonts/menufont.spritefont
+
 #begin Assets/Fonts/perfStats.spritefont
 /importer:FontDescriptionImporter
 /processor:LocalizedFontProcessor
@@ -430,6 +437,18 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:Assets/Textures/UI/Backgrounds/audiomenu.png;Assets/Textures/UI/Backgrounds/audiomenu
+
+#begin Assets/Textures/UI/Backgrounds/controlsmenu_monkey.jpeg
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Assets/Textures/UI/Backgrounds/controlsmenu_monkey.jpeg
 
 #begin Assets/Textures/UI/Backgrounds/controlsmenu.png
 /importer:TextureImporter

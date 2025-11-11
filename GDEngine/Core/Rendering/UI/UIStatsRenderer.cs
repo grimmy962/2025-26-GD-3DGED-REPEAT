@@ -5,13 +5,14 @@ using GDEngine.Core.Rendering;
 using GDEngine.Core.Timing;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System.Collections.Generic;
 
 namespace GDEngine.Core.Debug
 {
     /// <summary>
     /// FPS + custom text lines overlay that draws in PostRender. Attach to a GameObject.
+    /// Uses centralized batching via <see cref="UIRenderer"/>.
     /// </summary>
-    /// <see cref="UIRenderer"/>
     public sealed class UIStatsRenderer : UIRenderer
     {
         #region Fields
@@ -20,46 +21,32 @@ namespace GDEngine.Core.Debug
         private Vector2 _anchor = new Vector2(5, 5);
         private Color _shadow = Color.Black;
         private Color _text = Color.Yellow;
-        private Func<IEnumerable<string>>? _linesProvider;
-        private SpriteBatch? _spriteBatch;
+        private System.Func<IEnumerable<string>>? _linesProvider;
         private GraphicsDevice? _graphicsDevice;
         private Texture2D? _backgroundTexture;
         private Color _bgColor = new Color(40, 40, 40, 125); // grey with alpha
         private Vector2 _texturePadding = new Vector2(5f, 5f);
         private float _headerTemplateWidth;
+        private string _header = string.Empty;
+        private Rectangle _backRect;
+        private float _gapAfterHeader;
+        private System.Collections.Generic.List<string>? _extra;
         #endregion
 
         #region Properties
         public Vector2 Anchor { get => _anchor; set => _anchor = value; }
         public Color Shadow { get => _shadow; set => _shadow = value; }
         public Color TextColor { get => _text; set => _text = value; }
-        public Func<IEnumerable<string>>? LinesProvider { get => _linesProvider; set => _linesProvider = value; }
+        public System.Func<IEnumerable<string>>? LinesProvider { get => _linesProvider; set => _linesProvider = value; }
         public SpriteFont Font { get => _font; set => _font = value; }
         public Color BackgroundColor { get => _bgColor; set => _bgColor = value; }
         public Vector2 TexturePadding { get => _texturePadding; set => _texturePadding = value; }
-
-        #endregion
-
-        #region Constructors
-        public UIStatsRenderer() { }
-
-        public UIStatsRenderer(SpriteFont font, Func<IEnumerable<string>>? linesProvider = null)
-        {
-            _font = font ?? throw new ArgumentNullException(nameof(font));
-            _linesProvider = linesProvider;
-        }
-        #endregion
-
-        #region Methods
         #endregion
 
         #region Lifecycle Methods
         protected override void Awake()
         {
             base.Awake();
-
-            // Get ref to draw textures and strings
-            _spriteBatch = GameObject?.Scene?.Context.SpriteBatch;
 
             // Generate a background texture that is 1x1 and white
             _graphicsDevice = GameObject?.Scene?.Context.GraphicsDevice;
@@ -69,23 +56,15 @@ namespace GDEngine.Core.Debug
                 _backgroundTexture.SetData(new[] { Color.White }); // tint with background color at draw time
             }
 
-
-            // In Awake()
             if (_font != null)
             {
-                string template = "FPS: 0000.0  |  Render: 00.00 ms  |  Uptime: 000000s"; // adjust zeros to your expected max
+                string template = "FPS: 0000.0  |  Render: 00.00 ms  |  Uptime: 000000s";
                 _headerTemplateWidth = _font.MeasureString(template).X;
             }
         }
-        #endregion
 
-        #region Housekeeping Methods
-        public override void Draw(GraphicsDevice device, Camera camera)
+        protected override void LateUpdate(float deltaTime)
         {
-            if (_spriteBatch == null || _font == null)
-                return;
-
-            // Unscaled delta so timescale doesn't change the FPS readout.
             float dt = MathF.Max(Time.UnscaledDeltaTimeSecs, 1e-6f);
             _recentDt.Push(dt);
 
@@ -96,66 +75,60 @@ namespace GDEngine.Core.Debug
 
             float fps = avgDt > 0f ? 1f / avgDt : 0f;
             float ms = avgDt * 1000f;
-            string header = $"FPS: {fps:0.0}  | Render: {ms:0.00} ms  |  Uptime: {Time.RealtimeSinceStartupSecs,6:F2}s";
+            _header = $"FPS: {fps:0.0}  | Render: {ms:0.00} ms  |  Uptime: {Time.RealtimeSinceStartupSecs,6:F2}s";
 
-            // Build the lines we draw so we can measure the needed background size.
-            // First line is the header, then optional custom lines.
             int linesCount = 1;
             float maxWidth = _headerTemplateWidth;
 
-            // We’ll re-enumerate once for drawing; keep measurement pass minimal.
-            List<string>? extra = null;
+            _extra = null;
             if (_linesProvider != null)
             {
-                extra = new List<string>();
+                _extra = new System.Collections.Generic.List<string>();
                 foreach (var line in _linesProvider())
                 {
-                    extra.Add(line);
+                    _extra.Add(line);
                     float w = _font.MeasureString(line).X;
                     if (w > maxWidth) maxWidth = w;
                 }
-                linesCount += extra.Count;
+                linesCount += _extra.Count;
             }
 
-            // Height: one header + N extra lines, with a small gap after the header.
-            float gapAfterHeader = (extra != null && extra.Count > 0) ? 5f : 0f;
-            float totalHeight = _texturePadding.Y * 2f + _font.LineSpacing * linesCount + gapAfterHeader;
+            _gapAfterHeader = (_extra != null && _extra.Count > 0) ? 5f : 0f;
+            float totalHeight = _texturePadding.Y * 2f + _font.LineSpacing * linesCount + _gapAfterHeader;
             float totalWidth = _texturePadding.X * 2f + maxWidth;
 
-            var backRect = new Rectangle(
-                (int)MathF.Floor(_anchor.X - _texturePadding.X),
-                (int)MathF.Floor(_anchor.Y - _texturePadding.Y),
-                (int)MathF.Ceiling(totalWidth),
-                (int)MathF.Ceiling(totalHeight)
+            _backRect = new Rectangle(
+                (int)System.MathF.Floor(_anchor.X - _texturePadding.X),
+                (int)System.MathF.Floor(_anchor.Y - _texturePadding.Y),
+                (int)System.MathF.Ceiling(totalWidth),
+                (int)System.MathF.Ceiling(totalHeight)
             );
+        }
 
-            // Draw
-            _spriteBatch.Begin();
+        public override void Draw(GraphicsDevice device, Camera? camera)
+        {
+            if (_spriteBatch == null || _font == null) return;
 
-            // Background (semi-transparent grey)
+            // Background (slightly behind text)
             if (_backgroundTexture != null)
-                _spriteBatch.Draw(_backgroundTexture, backRect, _bgColor);
+                _spriteBatch.Draw(_backgroundTexture, _backRect, null, _bgColor, 0f, Vector2.Zero, SpriteEffects.None, LayerDepth);
 
-            // Header text (shadow + text)
-            _spriteBatch.DrawString(_font, header, _anchor + new Vector2(2, 2), _shadow);
-            _spriteBatch.DrawString(_font, header, _anchor, _text);
+            _spriteBatch.DrawString(_font, _header, _anchor + _shadowNudge, _shadow, RotationRadians, Vector2.Zero, 1f, Effects, LayerDepth);
+            _spriteBatch.DrawString(_font, _header, _anchor, TextColor, RotationRadians, Vector2.Zero, 1f, Effects, LayerDepth);
 
             // Extra lines
-            float y = _anchor.Y + _font.LineSpacing + gapAfterHeader;
-            if (extra != null)
+            float y = _anchor.Y + _font.LineSpacing + _gapAfterHeader;
+            if (_extra != null)
             {
-                for (int i = 0; i < extra.Count; i++)
+                for (int i = 0; i < _extra.Count; i++)
                 {
                     var pos = new Vector2(_anchor.X, y);
-                    _spriteBatch.DrawString(_font, extra[i], pos + new Vector2(2, 2), _shadow);
-                    _spriteBatch.DrawString(_font, extra[i], pos, _text);
+                    _spriteBatch.DrawString(_font, _extra[i], pos + _shadowNudge, _shadow, RotationRadians, Vector2.Zero, 1f, Effects, LayerDepth);
+                    _spriteBatch.DrawString(_font, _extra[i], pos, TextColor, RotationRadians, Vector2.Zero, 1f, Effects, LayerDepth);
                     y += _font.LineSpacing;
                 }
             }
-
-            _spriteBatch.End();
         }
-
         #endregion
     }
 }

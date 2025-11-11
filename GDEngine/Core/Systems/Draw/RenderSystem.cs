@@ -49,9 +49,9 @@ namespace GDEngine.Core.Systems
         public override void Draw(float deltaTime)
         {
             // No renderables? early out
-            var sceneRenderers = _scene.Renderers;
-            if (sceneRenderers == null || sceneRenderers.Count == 0)
-                throw new ArgumentNullException(nameof(sceneRenderers));
+            var renderers = _scene.Renderers;
+            if (renderers == null || renderers.Count == 0)
+                throw new ArgumentNullException(nameof(renderers));
 
             if (_cameraSystem == null)
                 throw new ArgumentNullException(nameof(_cameraSystem));
@@ -76,7 +76,7 @@ namespace GDEngine.Core.Systems
                 _cameraSystem.ApplyClears(camera);
 
                 // Build visible set (mask + later bounds test)
-                _cameraSystem.BuildVisibleSet(camera, sceneRenderers, _visible);
+                _cameraSystem.BuildVisibleSet(camera, renderers, _visible);
 
                 // Render each visible renderer with this camera
                 for (int j = 0; j < _visible.Count; j++)

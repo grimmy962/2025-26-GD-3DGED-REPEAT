@@ -16,12 +16,20 @@ namespace GDEngine.Core.Systems
     /// <see cref="RenderSystem"/>
     public sealed class UIRenderSystem : SystemBase
     {
+        #region Static Fields
+        private static readonly SpriteSortMode _sort = SpriteSortMode.BackToFront;
+        private static readonly RasterizerState _raster = RasterizerState.CullNone;
+        private static readonly DepthStencilState _depth = DepthStencilState.None;
+        private static readonly BlendState _blend = BlendState.AlphaBlend;
+        private static readonly SamplerState _sampler = SamplerState.PointClamp;
+        #endregion
+
         #region Fields
         private Scene _scene = null!;
         private EngineContext _context = null!;
         private GraphicsDevice _device = null!;
-        private CameraSystem? _cameraSystem = null!;
-        private readonly List<UIRenderer> _drawables = new List<UIRenderer>(16);
+        private SpriteBatch _spriteBatch;
+        private readonly List<UIRenderer> _renderers = new List<UIRenderer>(16);
         #endregion
 
         #region Constructors
@@ -32,20 +40,20 @@ namespace GDEngine.Core.Systems
         #endregion
 
         #region Methods
-        public void Add(UIRenderer uiOverlay)
+        public void Add(UIRenderer renderer)
         {
-            if (uiOverlay == null)
-                throw new ArgumentNullException(nameof(uiOverlay));
-            if (_drawables.Contains(uiOverlay))
+            if (renderer == null)
+                throw new ArgumentNullException(nameof(renderer));
+            if (_renderers.Contains(renderer))
                 return;
-            _drawables.Add(uiOverlay);
+            _renderers.Add(renderer);
         }
 
-        public void Remove(UIRenderer uiOverlay)
+        public void Remove(UIRenderer renderer)
         {
-            if (uiOverlay == null)
+            if (renderer == null)
                 return;
-            _drawables.Remove(uiOverlay);
+            _renderers.Remove(renderer);
         }
         #endregion
 
@@ -58,19 +66,18 @@ namespace GDEngine.Core.Systems
             _scene = Scene;
             _context = _scene.Context;
             _device = _context.GraphicsDevice;
-
-            _cameraSystem = _scene.GetSystem<CameraSystem>();
+            _spriteBatch = _context.SpriteBatch;
         }
 
         public override void Draw(float deltaTime)
         {
-            var camera = _cameraSystem?.ActiveCamera;
-            if (camera == null)
-                throw new ArgumentNullException(nameof(camera));
+            _spriteBatch.Begin(_sort, _blend, _sampler, _depth, _raster);
 
-            for (int i = 0; i < _drawables.Count; i++)
-                if (_drawables[i].Enabled)
-                    _drawables[i].Draw(_device, camera);
+            for (int i = 0; i < _renderers.Count; i++)
+                if (_renderers[i].Enabled)
+                    _renderers[i].Draw(_device, null);
+
+            _spriteBatch.End();
         }
         #endregion
     }

@@ -162,32 +162,12 @@ namespace GDEngine.Core.Components
             }
         }
 
-        public Vector3 Right
-        {
-            get
-            {
-                var world = WorldMatrix;
-                return Vector3.Normalize(new Vector3(world.M11, world.M21, world.M31));
-            }
-        }
+        // --- in Transform.cs ---
+        // Row-based extraction (correct for MonoGame/XNA matrices)
+        public Vector3 Right { get { var m = WorldMatrix; return Vector3.Normalize(new Vector3(m.M11, m.M12, m.M13)); } }
+        public Vector3 Up { get { var m = WorldMatrix; return Vector3.Normalize(new Vector3(m.M21, m.M22, m.M23)); } }
+        public Vector3 Forward { get { var m = WorldMatrix; return Vector3.Normalize(new Vector3(m.M31, m.M32, m.M33)); } }
 
-        public Vector3 Up
-        {
-            get
-            {
-                var world = WorldMatrix;
-                return Vector3.Normalize(new Vector3(world.M12, world.M22, world.M32));
-            }
-        }
-
-        public Vector3 Forward
-        {
-            get
-            {
-                var world = WorldMatrix;
-                return Vector3.Normalize(new Vector3(world.M13, world.M23, world.M33));
-            }
-        }
         #endregion
 
         #region Constructors

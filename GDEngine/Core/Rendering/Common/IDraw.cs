@@ -1,7 +1,7 @@
 ﻿using GDEngine.Core.Components;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace GDEngine.Core.Rendering
+namespace GDEngine.Core.Rendering.Base
 {
     /// <summary>
     /// Base interface for any component that has a Draw method and runs in Render or PostRender frame lifecycle
@@ -10,6 +10,6 @@ namespace GDEngine.Core.Rendering
     /// <see cref="Systems.UIRenderSystem"/>
     public interface IDraw
     {
-        public void Draw(GraphicsDevice device, Camera camera);
+        public void Draw(GraphicsDevice device, Camera? camera);
     }
 }

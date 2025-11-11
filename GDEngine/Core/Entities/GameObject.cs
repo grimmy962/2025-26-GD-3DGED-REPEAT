@@ -1,5 +1,5 @@
 ﻿using GDEngine.Core.Components;
-using GDEngine.Core.Rendering;
+using GDEngine.Core.Rendering.Base;
 
 namespace GDEngine.Core.Entities
 {

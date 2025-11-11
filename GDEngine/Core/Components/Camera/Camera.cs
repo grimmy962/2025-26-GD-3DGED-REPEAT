@@ -1,4 +1,4 @@
-﻿using GDEngine.Core.Rendering;
+﻿using GDEngine.Core.Rendering.Base;
 using GDEngine.Core.Systems;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;

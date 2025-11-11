@@ -11,7 +11,12 @@
     {
       "name": "mouse_reticle_font",
       "contentPath": "assets/fonts/uiReticleText"
+    },
+    {
+      "name": "menufont",
+      "contentPath": "assets/fonts/menufont"
     }
+
   ],
   "textures": [
     {

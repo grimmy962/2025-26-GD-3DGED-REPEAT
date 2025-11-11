@@ -1,4 +1,5 @@
 ﻿using GDEngine.Core.Components;
+using GDEngine.Core.Rendering.Base;
 using Microsoft.Xna.Framework.Graphics;
 
 namespace GDEngine.Core.Rendering
@@ -34,11 +35,12 @@ namespace GDEngine.Core.Rendering
         #endregion
 
         #region Methods
-        public void Draw(GraphicsDevice device, Camera camera)
+        public void Draw(GraphicsDevice device, Camera? camera)
         {
             if (Transform == null) return;
             if (_meshFilter == null) return;
             if (_material == null) return;
+            if (camera == null) return;
 
             _meshFilter.BindBuffers(device);
             _material.Apply(

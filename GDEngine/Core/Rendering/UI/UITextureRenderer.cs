@@ -1,47 +1,56 @@
 ﻿using GDEngine.Core.Components;
-using GDEngine.Core.Systems.Draw;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
 namespace GDEngine.Core.Rendering.UI
 {
+    /// <summary>
+    /// Draws a Texture2D in screen space via centralized batching in <see cref="UIRenderer"/>.
+    /// </summary>
     public class UITextureRenderer : UIRenderer
     {
-        private Texture2D _texture;
-        private Vector2 _destinationRectangle;
+        #region Fields
+        private Texture2D? _texture;
+        private Rectangle? _sourceRect;
+        private Vector2 _position;
+        private Vector2 _origin;
+        private Vector2 _scale = Vector2.One;
+        private Color _tint = Color.White;
+        #endregion
 
-        private SpriteBatch _spriteBatch;
+        #region Properties
+        public Texture2D? Texture { get => _texture; set => _texture = value; }
+        public Rectangle? SourceRectangle { get => _sourceRect; set => _sourceRect = value; }
+        public Vector2 Position { get => _position; set => _position = value; }
+        public Vector2 Origin { get => _origin; set => _origin = value; }
+        public Vector2 Scale { get => _scale; set => _scale = value; }
+        public Color Tint { get => _tint; set => _tint = value; }
+        #endregion
 
-        public Texture2D Texture { get => _texture; set => _texture = value; }
-        public Vector2 DestinationRectangle { get => _destinationRectangle; set => _destinationRectangle = value; }
-
-        protected override void Awake()
+        #region Methods
+        public void CenterOrigin()
         {
-            var scene = GameObject?.Scene;
-            if (scene == null)
-                throw new NullReferenceException("OverlayRenderer requires a GameObject in a Scene.");
-
-            var _uiMenuSystem = scene.GetSystem<UIMenuSystem>();
-            if (_uiMenuSystem == null)
-                throw new InvalidOperationException("_uiMenuSystem not found. Add it to the Scene before using OverlayRenderer.");
-
-            _uiMenuSystem.Add(this);
-
-            if (GameObject == null || GameObject.Scene == null)
-                throw new NullReferenceException("Something is null!");
-
-            _spriteBatch = GameObject.Scene.Context.SpriteBatch;
+            if (_texture == null) return;
+            if (_sourceRect.HasValue)
+            {
+                var r = _sourceRect.Value;
+                _origin = new Vector2(r.Width * 0.5f, r.Height * 0.5f);
+            }
+            else
+            {
+                _origin = new Vector2(_texture.Width * 0.5f, _texture.Height * 0.5f);
+            }
         }
-        public override void Draw(GraphicsDevice device, Camera camera)
+        #endregion
+
+        #region Lifecycle Methods
+        public override void Draw(GraphicsDevice device, Camera? camera)
         {
-            //null checks
+            if (_spriteBatch == null || _texture == null) return;
 
-
-            _spriteBatch.Begin();
-            _spriteBatch.Draw(_texture, _destinationRectangle, Color.White);
-            _spriteBatch.End();
+            _spriteBatch.Draw(_texture, _position, _sourceRect, _tint,
+                RotationRadians, _origin, _scale, Effects, LayerDepth);
         }
+        #endregion
     }
-
-     
 }

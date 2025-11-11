@@ -85,6 +85,7 @@ This document contains a step-by-step development plan of MonoGame content cover
 - [ ] Add `UITextureRenderer` and simple menu demo
 - [ ] Rename `UIRenderingSystem` to `UIRenderSystem`
 - [ ] Rename `RenderingSystem` to `RenderSystem`
+- [ ] Set game window title and change icon
 - [ ] Add drivable model with 3rd person camera
 - [ ] Add other camera controller types
 - [ ] Add physics engine (physics and CDCR)

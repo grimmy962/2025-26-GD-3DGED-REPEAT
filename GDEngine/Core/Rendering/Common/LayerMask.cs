@@ -1,4 +1,4 @@
-﻿namespace GDEngine.Core.Rendering
+﻿namespace GDEngine.Core.Rendering.Base
 {
     /// <summary>
     /// Bitmask representing a set of render layers (Unity-style).

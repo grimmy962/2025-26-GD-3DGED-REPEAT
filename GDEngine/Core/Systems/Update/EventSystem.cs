@@ -38,7 +38,7 @@ namespace GDEngine.Core.Systems
         #region Lifecycle Methods
         public override void Update(float deltaTime)
         {
-            // Dispatch all that was posted since last frame.
+            // Dispatch all that were posted since last frame.
             _bus.DispatchAll();
         }
         #endregion

@@ -12,7 +12,6 @@ using GDEngine.Core.Rendering.UI;
 using GDEngine.Core.Serialization;
 using GDEngine.Core.Services;
 using GDEngine.Core.Systems;
-using GDEngine.Core.Systems.Draw;
 using GDEngine.Core.Timing;
 using GDEngine.Core.Utilities;
 using GDGame.Demos;
@@ -111,9 +110,9 @@ namespace GDGame
             DemoAlphaCutoutFoliage(new Vector3(0, 10 /*note Y=heightscale/2*/, 0), 12, 20);
             DemoLoadFromJSON();
             #endregion
-  
+
             // Setup renderers after all game objects added since ui text may use a gameobject as target
-            InitializeUIRenderers();
+            InitializeUI();
 
             // Setup menu
             //InitializeMenu();
@@ -123,26 +122,8 @@ namespace GDGame
             base.Initialize();
         }
 
-        private void InitializeMenu()
-        {
-            GameObject gameObject = null;
-
-            gameObject = new GameObject("main menu background");
-            var uiTextureRenderer = new UITextureRenderer();
-            uiTextureRenderer.Texture = _textureDictionary.Get("mainmenu_monkey");
-            uiTextureRenderer.DestinationRectangle = new Vector2(0, 0);
-            gameObject.AddComponent(uiTextureRenderer);
-            _scene.Add(gameObject);
-
-
-            //add menu components
-              //main (texture, play, exit, sound, controls)
-              //sound (texture, up, down, mute, back)
-              //controls (texture, back)
-        }
-
         private void InitializePIPCamera(Vector3 position,
-            Viewport viewport, int depth, int index = 0)
+      Viewport viewport, int depth, int index = 0)
         {
             var pipCameraGO = new GameObject("PIP camera");
             pipCameraGO.Transform.TranslateTo(position);
@@ -282,33 +263,25 @@ namespace GDGame
             _matAlphaCutout.SamplerState = SamplerState.LinearClamp;
 
             #endregion
-
         }
 
         private void InitializeScene()
         {
-            //make a scene
+            // Make a scene that will store all drawn objects and systems for that level
             _scene = new Scene(EngineContext.Instance, "outdoors - level 1");
         }
 
         private void InitializeSystems()
         {
-            InitializeEventSystem();
-            InitializeInputSystem();
-            InitializeCameraSystem();
-            InitializeRenderingSystem();
-            InitializeUIRenderingSystem();
-            InitializeMenuSystem();
+            InitializeEventSystem();  //propagate events
+            InitializeInputSystem();  //input
+            InitializeCameraSystem(); //update cameras
+            InitializeRenderingSystem(); //draw renderable game objects 
+            InitializeUIRenderSystem(); //draw ui and menu
         }
-
-        private void InitializeMenuSystem()
-        {
-            _scene.Add(new UIMenuSystem());
-        }
-
         private void InitializeEventSystem()
         {
-            _scene.Add(new EventSystem(EngineContext.Instance.Events));             
+            _scene.Add(new EventSystem(EngineContext.Instance.Events));
         }
 
         private void InitializeCameraSystem()
@@ -343,7 +316,7 @@ namespace GDGame
             _scene.Add(inputSystem);
         }
 
-        private void InitializeUIRenderingSystem()
+        private void InitializeUIRenderSystem()
         {
             _scene.Add(new UIRenderSystem(100)); // draws in PostRender after RenderingSystem (order = -100)
         }
@@ -501,7 +474,7 @@ namespace GDGame
             _scene.Add(gameObject);
         }
 
-        private void InitializeUIRenderers()
+        private void InitializeUI()
         {
             InitializeStatsRenderer();
             InitializeMouseReticleRenderer();
@@ -514,6 +487,9 @@ namespace GDGame
 
             // Attach stats overlay (auto-registers with UIRenderSystem in Awake)
             _uiStatsRenderer = uiGO.AddComponent<UIStatsRenderer>();
+
+            // Layering: HUD should sit behind a cursor but in front of menu backgrounds
+            _uiStatsRenderer.LayerDepth = UILayer.HUD;
 
             // Set font 
             _uiStatsRenderer.Font = _fontDictionary.Get("perf_stats_font");
@@ -538,22 +514,6 @@ namespace GDGame
             _scene.Add(uiGO);
         }
 
-        //private void InitializeMouseReticleRenderer()
-        //{
-        //    // Mouse reticule (distance to objective)
-        //    var mouseUIRet = new GameObject("mouse reticule");
-
-        //    var uiReticuleRenderer = mouseUIRet.AddComponent<UIReticuleRenderer>();
-        //    uiReticuleRenderer.Texture = _textureDictionary.Get("mouse_reticle");
-        //    uiReticuleRenderer.Font = _fontDictionary.Get("mouse_reticle_font");
-        //    uiReticuleRenderer.Offset = new Vector2(0, 30);
-
-        //    IsMouseVisible = false;
-
-        //    _scene.Add(mouseUIRet);
-
-        //}
-
         private void InitializeMouseReticleRenderer()
         {
             var uiGO = new GameObject("HUD");
@@ -561,12 +521,15 @@ namespace GDGame
             var reticleAtlas = _textureDictionary.Get("Crosshair_21");
             var uiFont = _fontDictionary.Get("mouse_reticle_font");
 
+            // Reticle (cursor): always on top
             var reticle = new UIReticleRenderer(reticleAtlas);
-            reticle.SourceRectangle = null;// new Rectangle(0,0, 200, 300);
+            reticle.SourceRectangle = null;
             reticle.Scale = new Vector2(0.1f, 0.1f);
             reticle.RotationSpeedDegPerSec = 45;
+            reticle.LayerDepth = UILayer.Cursor;
             uiGO.AddComponent(reticle);
 
+            // Distance/health lines under the cursor
             var waypointObject = _scene.Find((go) => go.Name.Equals("test crate textured cube"));
             var cameraObject = _scene.Find(go => go.Name.Equals("First person camera"));
 
@@ -578,11 +541,12 @@ namespace GDGame
                 var hp = _dummyHealth;
                 return new[]
                 {
-                    $"Dist: {distToWaypoint:F2} m",
-                    $"Health:   {hp}"
-                };
+            $"Dist: {distToWaypoint:F2} m",
+            $"Health:   {hp}"
+        };
             };
 
+            // Text anchored at mouse, slightly below the reticle
             var text = new UITextRenderer(uiFont);
             text.PositionProvider = () => Mouse.GetState().Position.ToVector2();
             text.Anchor = TextAnchor.Center;
@@ -590,12 +554,19 @@ namespace GDGame
             text.FallbackColor = Color.White;
             text.DropShadow = true;
             text.ShadowColor = Color.Black;
+
+            // Place HUD text below the cursor in the same pass
+            text.LayerDepth = UILayer.HUD;
+
             text.TextProvider = () => string.Join("\n", linesProvider());
 
             uiGO.AddComponent(text);
             _scene.Add(uiGO);
+
+            // Hide mouse since reticle will take its place
             IsMouseVisible = false;
         }
+
 
         /// <summary>
         /// Adds a single-part FBX model into the scene.
@@ -633,11 +604,11 @@ namespace GDGame
             //update Scene
             _scene.Update(Time.DeltaTimeSecs);
 
-            ToggleStatsWindow(); 
+            ToggleStatsWindow();
             #endregion
 
             #region Demo
-            _dummyHealth++; 
+            _dummyHealth++;
             #endregion
 
             base.Update(gameTime);
@@ -754,7 +725,7 @@ namespace GDGame
         {
             var relativeFilePathAndName = "assets/data/single_model_spawn.json";
             List<ModelSpawnData> mList = JSONSerializationUtility.LoadData<ModelSpawnData>(Content, relativeFilePathAndName);
-           
+
             //load a single model
             foreach (var d in mList)
                 InitializeModel(d.Position, d.RotationDegrees, d.Scale, d.TextureName, d.ModelName, d.ObjectName);
@@ -795,7 +766,7 @@ namespace GDGame
 
             //demo the new input system support for keyboard, mouse and gamepad
             gameObject.AddComponent(new InputReceiverComponent());
-            
+
             #endregion
 
             //  testCrateGO.Layer = LayerMask.World;

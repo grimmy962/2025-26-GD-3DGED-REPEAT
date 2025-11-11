@@ -1,4 +1,5 @@
-﻿using GDEngine.Core.Components;
+﻿#nullable enable
+using GDEngine.Core.Components;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -8,7 +9,6 @@ namespace GDEngine.Core.Rendering.UI
 {
     public class UIReticuleRenderer : UIRenderer
     {
-        private SpriteBatch? _spriteBatch;
         private Texture2D? _texture;
         private SpriteFont? _font;
         private Vector2 _offset;
@@ -27,8 +27,7 @@ namespace GDEngine.Core.Rendering.UI
             
 
         }
-        public override void Draw(GraphicsDevice device, 
-            Camera camera)
+        public override void Draw(GraphicsDevice device, Camera? camera)
         {
             if (_spriteBatch == null)
                 throw new NullReferenceException(nameof(_spriteBatch));
