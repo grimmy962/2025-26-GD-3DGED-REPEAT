@@ -1,7 +1,8 @@
 {
   "version": 1,
   "meta": {
-    "author": "NMCG", "asset": "Game assets - Level 1 - Forbidden Planet"
+    "author": "NMCG", 
+    "asset": "Game assets - Level 1 - Forbidden Planet"
     },
   "fonts": [
     {
@@ -15,6 +16,10 @@
     {
       "name": "menufont",
       "contentPath": "assets/fonts/menufont"
+    },
+    {
+      "name": "dummyfont",
+      "contentPath": "assets/fonts/dummyfont"
     }
 
   ],
@@ -79,6 +84,10 @@
     {
       "name": "mainmenu_monkey",
       "contentPath": "assets/textures/ui/backgrounds/mainmenu_monkey"
+    },
+    {
+      "name": "controlsmenu_monkey",
+      "contentPath": "assets/textures/ui/backgrounds/controlsmenu_monkey",
     }
   ],
   "models": [

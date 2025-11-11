@@ -1,5 +1,4 @@
 ﻿using GDEngine.Core.Components;
-using GDEngine.Core.Entities;
 using GDEngine.Core.Rendering.Base;
 using GDEngine.Core.Systems;
 using Microsoft.Xna.Framework;
@@ -66,6 +65,20 @@ namespace GDEngine.Core.Rendering
         /// <summary>Common flip flags for SpriteBatch (applies to both text and textures).</summary>
         public SpriteEffects Effects { get => _effects; set => _effects = value; }
         #endregion
+
+        #region Helper Methods
+        public const float LAYER_DEPTH_EPSILON = 1E-2f; //0.01f;
+        public static float Behind(float layerDepth, float e = LAYER_DEPTH_EPSILON)
+        {
+            return Math.Clamp(layerDepth + e, 0, 1);
+        }
+
+        public static float Before(float layerDepth, float e = LAYER_DEPTH_EPSILON) //0.01f
+        {
+            return Math.Clamp(layerDepth - e, 0, 1);
+        } 
+        #endregion
+
 
         #region Methods
         /// <summary>Subclasses issue SpriteBatch draw calls here. Never call SpriteBatch.Begin/End inside components.</summary>

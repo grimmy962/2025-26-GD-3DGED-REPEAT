@@ -109,11 +109,13 @@ namespace GDEngine.Core.Debug
         {
             if (_spriteBatch == null || _font == null) return;
 
+            var dropShadowLayerDepth = Behind(LayerDepth);
+
             // Background (slightly behind text)
             if (_backgroundTexture != null)
-                _spriteBatch.Draw(_backgroundTexture, _backRect, null, _bgColor, 0f, Vector2.Zero, SpriteEffects.None, LayerDepth);
+                _spriteBatch.Draw(_backgroundTexture, _backRect, null, _bgColor, 0f, Vector2.Zero, SpriteEffects.None, dropShadowLayerDepth);
 
-            _spriteBatch.DrawString(_font, _header, _anchor + _shadowNudge, _shadow, RotationRadians, Vector2.Zero, 1f, Effects, LayerDepth);
+            _spriteBatch.DrawString(_font, _header, _anchor + _shadowNudge, _shadow, RotationRadians, Vector2.Zero, 1f, Effects, dropShadowLayerDepth);
             _spriteBatch.DrawString(_font, _header, _anchor, TextColor, RotationRadians, Vector2.Zero, 1f, Effects, LayerDepth);
 
             // Extra lines
@@ -123,7 +125,7 @@ namespace GDEngine.Core.Debug
                 for (int i = 0; i < _extra.Count; i++)
                 {
                     var pos = new Vector2(_anchor.X, y);
-                    _spriteBatch.DrawString(_font, _extra[i], pos + _shadowNudge, _shadow, RotationRadians, Vector2.Zero, 1f, Effects, LayerDepth);
+                    _spriteBatch.DrawString(_font, _extra[i], pos + _shadowNudge, _shadow, RotationRadians, Vector2.Zero, 1f, Effects, dropShadowLayerDepth);
                     _spriteBatch.DrawString(_font, _extra[i], pos, TextColor, RotationRadians, Vector2.Zero, 1f, Effects, LayerDepth);
                     y += _font.LineSpacing;
                 }

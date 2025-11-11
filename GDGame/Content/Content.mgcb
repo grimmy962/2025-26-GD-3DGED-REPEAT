@@ -13,6 +13,13 @@
 
 #---------------------------------- Content ---------------------------------#
 
+#begin Assets/Fonts/dummyfont.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/build:Assets/Fonts/dummyfont.spritefont
+
 #begin Assets/Fonts/menufont.spritefont
 /importer:FontDescriptionImporter
 /processor:FontDescriptionProcessor
@@ -71,7 +78,7 @@
 /processorParam:PremultiplyTextureAlpha=True
 /processorParam:PremultiplyVertexColors=True
 /processorParam:ResizeTexturesToPowerOfTwo=False
-/processorParam:RotationX=0
+/processorParam:RotationX=-90
 /processorParam:RotationY=0
 /processorParam:RotationZ=0
 /processorParam:Scale=1

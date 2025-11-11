@@ -93,6 +93,9 @@ namespace GDGame
             InitializeSkyBox(scale);
             InitializeGround(scale);
 
+            // Setup player
+            InitializePlayer();
+
             #region Demos
             // Camera-demos
             InitializeAnimationCurves();
@@ -120,6 +123,17 @@ namespace GDGame
             #endregion
 
             base.Initialize();
+        }
+
+        private void InitializePlayer()
+        {
+            GameObject player = InitializeModel(new Vector3(0, 5, 10), 
+                new Vector3(0, 0, 0),
+                2*Vector3.One, "crate1", "monkey1", "The Player");
+
+            var simpleDriveController = new SimpleDriveController();
+            player.AddComponent(simpleDriveController);
+            //player.AddComponent<SimpleDriveController>();
         }
 
         private void InitializePIPCamera(Vector3 position,
@@ -204,6 +218,7 @@ namespace GDGame
             _textureDictionary = new ContentDictionary<Texture2D>();
             _modelDictionary = new ContentDictionary<Model>();
             _fontDictionary = new ContentDictionary<SpriteFont>();
+
 
             var manifests = JSONSerializationUtility.LoadData<AssetManifest>(Content, relativeFilePathAndName); // single or array
             if (manifests.Count > 0)
@@ -571,11 +586,10 @@ namespace GDGame
         /// <summary>
         /// Adds a single-part FBX model into the scene.
         /// </summary>
-        private void InitializeModel(Vector3 position,
+        private GameObject InitializeModel(Vector3 position,
             Vector3 eulerRotationDegrees, Vector3 scale,
             string textureName, string modelName, string objectName)
         {
-
             var go = new GameObject(objectName);
             go.Transform.TranslateTo(position);
             go.Transform.RotateEulerBy(eulerRotationDegrees * MathHelper.Pi / 180f);
@@ -592,6 +606,8 @@ namespace GDGame
             meshRenderer.Overrides.MainTexture = texture;
 
             _scene.Add(go);
+
+            return go;
         }
         protected override void Update(GameTime gameTime)
         {

@@ -103,7 +103,7 @@ namespace GDEngine.Core.Rendering.UI
 
             if (_dropShadow)
                 _spriteBatch.DrawString(_font, _text, _drawPos + _shadowNudge, _shadowColor,
-                    RotationRadians, _originFromAnchor, _scale, Effects, LayerDepth);
+                    RotationRadians, _originFromAnchor, _scale, Effects, Behind(LayerDepth));
 
             _spriteBatch.DrawString(_font, _text, _drawPos, _resolvedColor,
                 RotationRadians, _originFromAnchor, _scale, Effects, LayerDepth);
