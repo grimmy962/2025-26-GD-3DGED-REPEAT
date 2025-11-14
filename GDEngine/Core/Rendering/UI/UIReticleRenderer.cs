@@ -8,7 +8,7 @@ using Microsoft.Xna.Framework.Input;
 namespace GDEngine.Core.Rendering.UI
 {
     /// <summary>
-    /// Draws a rotating reticle sprite at the mouse position (with optional offset/scale).
+    /// Draws a rotating reticle sprite at the screen centre (with optional offset/scale).
     /// Uses centralized batching in <see cref="UIRenderer"/>.
     /// </summary>
     public class UIReticleRenderer : UIRenderer
@@ -27,25 +27,64 @@ namespace GDEngine.Core.Rendering.UI
         public UIReticleRenderer(Texture2D texture)
         {
             _texture = texture;
-        } 
+        }
         #endregion
 
         #region Properties
-        public Texture2D Texture { get => _texture; set { _texture = value; RecenterOriginFromSource(); } }
-        public Rectangle? SourceRectangle { get => _sourceRect; set { _sourceRect = value; RecenterOriginFromSource(); } }
-        public Vector2 Scale { get => _scale; set => _scale = value; }
-        public Vector2 Offset { get => _offset; set => _offset = value; }
-        public float RotationSpeedDegPerSec { get => _rotationSpeedDegPerSec; set => _rotationSpeedDegPerSec = value; }
-        public Color Tint { get => _tint; set => _tint = value; }
+        public Texture2D Texture
+        {
+            get => _texture;
+            set
+            {
+                _texture = value;
+                RecenterOriginFromSource();
+            }
+        }
+
+        public Rectangle? SourceRectangle
+        {
+            get => _sourceRect;
+            set
+            {
+                _sourceRect = value;
+                RecenterOriginFromSource();
+            }
+        }
+
+        public Vector2 Scale
+        {
+            get => _scale;
+            set => _scale = value;
+        }
+
+        /// <summary>
+        /// Optional 2D offset from the screen centre in pixels.
+        /// </summary>
+        public Vector2 Offset
+        {
+            get => _offset;
+            set => _offset = value;
+        }
+
+        public float RotationSpeedDegPerSec
+        {
+            get => _rotationSpeedDegPerSec;
+            set => _rotationSpeedDegPerSec = value;
+        }
+
+        public Color Tint
+        {
+            get => _tint;
+            set => _tint = value;
+        }
         #endregion
-
-
-
 
         #region Methods
         public void RecenterOriginFromSource()
         {
-            if (_texture == null) return;
+            if (_texture == null)
+                return;
+
             if (_sourceRect.HasValue)
             {
                 var r = _sourceRect.Value;
@@ -73,8 +112,16 @@ namespace GDEngine.Core.Rendering.UI
             var mouse = Mouse.GetState().Position.ToVector2();
             var pos = mouse + _offset;
 
-            _spriteBatch.Draw(_texture, pos, _sourceRect, _tint,
-                RotationRadians, _origin, _scale, Effects, LayerDepth);
+            _spriteBatch.Draw(
+                _texture,
+                pos,
+                _sourceRect,
+                _tint,
+                RotationRadians,
+                _origin,
+                _scale,
+                Effects,
+                LayerDepth);
         }
         #endregion
     }

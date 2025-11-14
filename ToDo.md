@@ -87,9 +87,14 @@ This document contains a step-by-step development plan of MonoGame content cover
 - [x] Rename `RenderingSystem` to `RenderSystem`
 - [x] Set game window title and change icon
 - [x] Add drivable model with 3rd person camera
+- [x] Add UI support for HUD and menu
+- [x] Add MSTests for Transform to isolate bugs
+- [ ] Add OrchestrationSystem for sequencing game events
+- [ ] Add support for single or multi camera views in RenderSystem
+- [ ] Re-factor UI renderers to share common fields in parent
 - [ ] Add other camera controller types
 - [ ] Add physics engine (physics and CDCR)
-- [ ] Add UI support for HUD and menu
+
 
 ## Week 9
 - [ ] Add support for opaque/transparent objects

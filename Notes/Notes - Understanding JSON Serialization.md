@@ -1,10 +1,12 @@
 # JSON Serialization 
 
-## Learning goals
-- Understand what JSON is and how it maps to C# types.
-- Read (deserialize) JSON into a simple C# class.
-- Write (serialize) a C# object back to JSON text.
-- Understand every non-trivial line used in the serializer/deserializer.
+## Learning Objectives
+
+By the end of this lesson, you will be able to:
+1. **Understand** what JSON is and how it maps to C# types.
+2. **Read** (deserialize) JSON into a simple C# class.
+3. **Write** (serialize) a C# object back to JSON text.
+4. **Understand** every non-trivial line used in the serializer/deserializer.
 
 ---
 

@@ -15,7 +15,7 @@ namespace GDEngine.Core.Entities
         private readonly List<Component> _components = new();
         private Scene? _scene;
         private bool _disposed = false;
-        private LayerMask _layer = LayerMask.All;
+        private LayerMask _layer = LayerMask.World;
         private bool _isStatic;
         #endregion
 
@@ -25,14 +25,16 @@ namespace GDEngine.Core.Entities
         public Transform Transform => _transform;
         public IReadOnlyList<Component> Components => _components;
         public Scene? Scene { get => _scene; set => _scene = value; }
+
         /// <summary>
-        /// Per-object layer mask used for camera culling.
+        /// Logical layer for render and query filtering.
         /// </summary>
         public LayerMask Layer
         {
             get => _layer;
             set => _layer = value;
         }
+
         /// <summary>
         /// Marks this object as immovable (eligible for static octree/bakes).
         /// </summary>
@@ -94,6 +96,7 @@ namespace GDEngine.Core.Entities
         {
             for (int i = 0; i < _components.Count; i++)
                 if (_components[i] is T t) return t;
+
             return null;
         }
 
@@ -134,6 +137,7 @@ namespace GDEngine.Core.Entities
                     return true;
                 }
             }
+
             return false;
         }
 
@@ -167,26 +171,16 @@ namespace GDEngine.Core.Entities
             if (_disposed)
                 return;
 
+            _disposed = true;
+
             for (int i = _components.Count - 1; i >= 0; i--)
             {
-                var c = _components[i];
-                if (c is Transform)
-                    continue;
-
-                // Dispose if component implements IDisposable
-                if (c is IDisposable disposable)
-                {
-                    disposable.Dispose();
-                }
-
-                c.InternalDestroy();
-                _components.RemoveAt(i);
+                var component = _components[i];
+                component.InternalDestroy();
             }
 
-            _transform.InternalDestroy();
             _components.Clear();
-
-            _disposed = true;
+            _scene = null;
         }
 
         public void Dispose()

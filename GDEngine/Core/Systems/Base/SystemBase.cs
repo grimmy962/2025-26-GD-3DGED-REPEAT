@@ -79,7 +79,7 @@ namespace GDEngine.Core.Systems.Base
         /// <summary>
         /// Called by <see cref="Scene"/> when this system is about to be removed.
         /// </summary>
-        internal void OnRemovedFromScene()
+        internal void OnRemovedFromScene(Scene scene)
         {
             if (_scene == null)
                 return;

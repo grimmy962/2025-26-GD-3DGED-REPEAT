@@ -66,21 +66,7 @@ namespace GDEngine.Core.Rendering.UI
         #endregion
 
         #region Methods
-        public static Vector2 ComputeAnchorOffset(Vector2 size, TextAnchor anchor)
-        {
-            switch (anchor)
-            {
-                case TextAnchor.TopLeft: return Vector2.Zero;
-                case TextAnchor.Top: return new Vector2(size.X * 0.5f, 0);
-                case TextAnchor.TopRight: return new Vector2(size.X, 0);
-                case TextAnchor.Left: return new Vector2(0, size.Y * 0.5f);
-                case TextAnchor.Center: return size * 0.5f;
-                case TextAnchor.Right: return new Vector2(size.X, size.Y * 0.5f);
-                case TextAnchor.BottomLeft: return new Vector2(0, size.Y);
-                case TextAnchor.Bottom: return new Vector2(size.X * 0.5f, size.Y);
-                default: return new Vector2(size.X, size.Y); // BottomRight
-            }
-        }
+
         #endregion
 
         #region Lifecycle Methods
@@ -91,11 +77,15 @@ namespace GDEngine.Core.Rendering.UI
 
             var basePos = _positionProvider?.Invoke() ?? Vector2.Zero;
             _size = _font.MeasureString(_text) * _scale;
-            _originFromAnchor = ComputeAnchorOffset(_size, _anchor);
-            _drawPos = basePos + _offset; // origin applied in Draw via DrawString's origin param
+
+            // Use base helper
+            _originFromAnchor = ComputeAnchorOffset(_size, Anchor);
+
+            _drawPos = basePos + _offset;
 
             _resolvedColor = _colorProvider != null ? _colorProvider() : _fallbackColor;
         }
+
 
         public override void Draw(GraphicsDevice device, Camera? camera)
         {
@@ -109,12 +99,5 @@ namespace GDEngine.Core.Rendering.UI
                 RotationRadians, _originFromAnchor, _scale, Effects, LayerDepth);
         }
         #endregion
-    }
-
-    public enum TextAnchor
-    {
-        TopLeft, Top, TopRight,
-        Left, Center, Right,
-        BottomLeft, Bottom, BottomRight
     }
 }

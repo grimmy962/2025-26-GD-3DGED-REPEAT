@@ -3,12 +3,12 @@
 ## Learning Objectives
 
 By the end of this lesson, you will be able to:
-- Understand what PrimitiveType means in the graphics pipeline
-- Identify and describe each PrimitiveType available in MonoGame/XNA
-- Choose the appropriate PrimitiveType for different rendering scenarios
-- Implement rendering using each PrimitiveType correctly
-- Optimize vertex data based on topology requirements
-- Debug rendering issues related to incorrect PrimitiveType usage
+1. **Understand** what PrimitiveType means in the graphics pipeline
+2. **Identify** and **describe** each PrimitiveType available in MonoGame/XNA
+3. **Choose** the appropriate PrimitiveType for different rendering scenarios
+4. **Implement** rendering using each PrimitiveType correctly
+5. **Optimize** vertex data based on topology requirements
+6. **Debug** rendering issues related to incorrect PrimitiveType usage
 
 ---
 

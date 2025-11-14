@@ -88,10 +88,10 @@ namespace GDEngine.Core.Components
                 dir -= Transform.Forward;
 
             if (kb.IsKeyDown(_right))
-                dir -= Transform.Right;
+                dir += Transform.Right;
 
             if (kb.IsKeyDown(_left))
-                dir += Transform.Right;
+                dir -= Transform.Right;
 
             // TODO - Add QE left/drop
 

@@ -10,7 +10,7 @@ namespace GDEngine.Core.Systems
 {
     /// <summary>
     /// Manages runtime cameras: registration, aspect/resize sync, clear flags, sorting, and helpers.
-    /// Runs in Render lifecycle before the RenderingSystem.
+    /// Runs in Render lifecycle before the <see cref="RenderSystem"/>.
     /// </summary>
     public sealed class CameraSystem : SystemBase
     {
@@ -134,7 +134,8 @@ namespace GDEngine.Core.Systems
         }
 
         /// <summary>
-        /// Builds a visible set using layer-mask filtering. (Bounding tests can be added when bounds are exposed.)
+        /// Builds a visible set using layer-mask filtering and enabled flags.
+        /// Bounding tests can be added when bounds are exposed.
         /// </summary>
         public void BuildVisibleSet(Camera camera, IEnumerable<MeshRenderer> allRenderers, List<MeshRenderer> destinationList)
         {
@@ -151,9 +152,21 @@ namespace GDEngine.Core.Systems
 
             foreach (var meshRenderer in allRenderers)
             {
-                // Layer now comes from GameObject (per your preference)
-                LayerMask objectLayer = meshRenderer.GameObject != null ? meshRenderer.GameObject.Layer : LayerMask.All;
-                if ((objectLayer & cameraMask) == 0)
+                if (meshRenderer == null)
+                    continue;
+
+                // Respect component/GameObject enable flags
+                if (!meshRenderer.Enabled)
+                    continue;
+
+                var owner = meshRenderer.GameObject;
+                if (owner == null || !owner.Enabled)
+                    continue;
+
+                LayerMask objectLayer = owner.Layer;
+
+                // Only include renderers whose layer overlaps this camera's mask
+                if (!cameraMask.Overlaps(objectLayer))
                     continue;
 
                 // TODO: add frustum test once you expose bounds
@@ -188,15 +201,16 @@ namespace GDEngine.Core.Systems
         {
             var viewport = camera.GetViewport(_graphicsDevice);
 
-            Vector3 nearPoint = viewport.Unproject(new Vector3(screenPixel, 0f), camera.Projection, camera.View, Matrix.Identity);
-            Vector3 farPoint = viewport.Unproject(new Vector3(screenPixel, 1f), camera.Projection, camera.View, Matrix.Identity);
-            Vector3 direction = Vector3.Normalize(farPoint - nearPoint);
-            return new Ray(nearPoint, direction);
-        }
-        #endregion
+            var nearPoint = new Vector3(screenPixel, 0f);
+            var farPoint = new Vector3(screenPixel, 1f);
 
-        #region Lifecycle Methods
-        // Runs in the Render lifecycle (Scene.Draw dispatches this). Use Draw() for “pre-render” prep.
+            var nearWorld = viewport.Unproject(nearPoint, camera.Projection, camera.View, Matrix.Identity);
+            var farWorld = viewport.Unproject(farPoint, camera.Projection, camera.View, Matrix.Identity);
+
+            var direction = Vector3.Normalize(farWorld - nearWorld);
+            return new Ray(nearWorld, direction);
+        }
+
         public override void Draw(float deltaTime)
         {
             // Handle resize which requires an update to aspect sync
@@ -205,6 +219,10 @@ namespace GDEngine.Core.Systems
             {
                 _backbufferWidth = presentation.BackBufferWidth;
                 _backbufferHeight = presentation.BackBufferHeight;
+
+                // Re-sync aspect ratio for all cameras that follow backbuffer
+                for (int i = 0; i < _cameras.Count; i++)
+                    SyncAspect(_cameras[i]);
             }
 
             // Refresh frusta from latest camera matrices (after components’ LateUpdate)
@@ -219,7 +237,7 @@ namespace GDEngine.Core.Systems
             if (camera == null)
                 return;
 
-            // If the camera is PiP (PixelViewport set), its projection derives aspect from that.
+            // If the camera is PiP (Viewport set), its projection derives aspect from that.
             // Otherwise, keep the camera's default aspect equal to backbuffer aspect.
             if (camera.Viewport.HasValue == false)
                 camera.AspectRatio = _backbufferWidth / MathF.Max(1, _backbufferHeight);

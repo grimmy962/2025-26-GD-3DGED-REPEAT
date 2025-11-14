@@ -162,19 +162,51 @@ namespace GDEngine.Core.Components
             }
         }
 
-        // Column-based extraction
+        //// Column-based extraction
+        //public Vector3 Right
+        //{
+        //    get { var m = WorldMatrix; return Vector3.Normalize(new Vector3(m.M11, m.M21, m.M31)); }
+        //}
+        //public Vector3 Up
+        //{
+        //    get { var m = WorldMatrix; return Vector3.Normalize(new Vector3(m.M12, m.M22, m.M32)); }
+        //}
+        //public Vector3 Forward
+        //{
+        //    // If you consider +Z forward, keep as below.
+        //    get { var m = WorldMatrix; return Vector3.Normalize(new Vector3(m.M13, m.M23, m.M33)); }
+        //}
+
+        // Axis extraction based on world rotation (Quaternion) so that
+        // Right/Up/Forward are simply the rotated basis vectors.
         public Vector3 Right
         {
-            get { var m = WorldMatrix; return Vector3.Normalize(new Vector3(m.M11, m.M21, m.M31)); }
+            get
+            {
+                var rotMatrix = Matrix.CreateFromQuaternion(Rotation);
+                var v = Vector3.Transform(Vector3.Right, rotMatrix);
+                return Vector3.Normalize(v);
+            }
         }
+
         public Vector3 Up
         {
-            get { var m = WorldMatrix; return Vector3.Normalize(new Vector3(m.M12, m.M22, m.M32)); }
+            get
+            {
+                var rotMatrix = Matrix.CreateFromQuaternion(Rotation);
+                var v = Vector3.Transform(Vector3.Up, rotMatrix);
+                return Vector3.Normalize(v);
+            }
         }
+
         public Vector3 Forward
         {
-            // If you consider +Z forward, keep as below.
-            get { var m = WorldMatrix; return Vector3.Normalize(new Vector3(m.M13, m.M23, m.M33)); }
+            get
+            {
+                var rotMatrix = Matrix.CreateFromQuaternion(Rotation);
+                var v = Vector3.Transform(Vector3.Forward, rotMatrix);
+                return Vector3.Normalize(v);
+            }
         }
 
         #endregion
@@ -283,6 +315,18 @@ namespace GDEngine.Core.Components
             RotateBy(Quaternion.CreateFromYawPitchRoll(eulerRadians.Y, eulerRadians.X, eulerRadians.Z), 
                 worldSpace);
         }
+
+
+        /// <summary>
+        /// Sets this transform's world-space rotation directly.
+        /// Useful for camera look-at controllers that want to avoid incremental drift.
+        /// </summary>
+        /// <param name="worldRotation">Desired world-space rotation.</param>
+        public void RotateToWorld(in Quaternion worldRotation)
+        {
+            Rotation = Quaternion.Normalize(worldRotation);
+        }
+
 
         /// <summary>
         /// Scales this transform to a non-uniform vector in local space.

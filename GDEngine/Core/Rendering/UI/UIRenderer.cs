@@ -1,5 +1,4 @@
 ﻿using GDEngine.Core.Components;
-using GDEngine.Core.Rendering.Base;
 using GDEngine.Core.Systems;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -43,27 +42,53 @@ namespace GDEngine.Core.Rendering
     /// </summary>
     /// <see cref="Component"/>
     /// <see cref="UIRenderSystem"/>
-    public class UIRenderer : Component, IDraw
+    /// <summary>
+    /// Base class for screen-space UI renderers using centralized SpriteBatch.
+    /// </summary>
+    public abstract class UIRenderer : Component
     {
         #region Static Fields
         protected static readonly Vector2 _shadowNudge = new Vector2(1f, 1f);
         #endregion
 
         #region Fields
-        protected UIRenderSystem? _uiRenderSystem;
-        protected SpriteBatch? _spriteBatch;     // shared batch from EngineContext
-        private float _layerDepth = 0.1f;   // default mid-layer
+        protected SpriteBatch? _spriteBatch;
+
+        private float _layerDepth = 0.9f;
         private float _rotationRadians = 0f;
         private SpriteEffects _effects = SpriteEffects.None;
+
+        private TextAnchor _anchor = TextAnchor.TopLeft;
         #endregion
 
         #region Properties
-        /// <summary>Layer depth for BackToFront sorting (0 = in front, 1 = back).</summary>
-        public float LayerDepth { get => _layerDepth; set => _layerDepth = MathHelper.Clamp(value, 0f, 1f); }
-        /// <summary>Common rotation (radians) for both text and textures.</summary>
-        public float RotationRadians { get => _rotationRadians; set => _rotationRadians = value; }
-        /// <summary>Common flip flags for SpriteBatch (applies to both text and textures).</summary>
-        public SpriteEffects Effects { get => _effects; set => _effects = value; }
+        public float LayerDepth
+        {
+            get { return _layerDepth; }
+            set { _layerDepth = MathHelper.Clamp(value, 0f, 1f); }
+        }
+
+        public float RotationRadians
+        {
+            get { return _rotationRadians; }
+            set { _rotationRadians = value; }
+        }
+
+        public SpriteEffects Effects
+        {
+            get { return _effects; }
+            set { _effects = value; }
+        }
+
+        /// <summary>
+        /// Logical anchor to use when positioning this UI element relative to its
+        /// base position or rectangle (TopLeft, Center, BottomRight, etc).
+        /// </summary>
+        public TextAnchor Anchor
+        {
+            get { return _anchor; }
+            set { _anchor = value; }
+        }
         #endregion
 
         #region Helper Methods
@@ -76,35 +101,64 @@ namespace GDEngine.Core.Rendering
         public static float Before(float layerDepth, float e = LAYER_DEPTH_EPSILON) //0.01f
         {
             return Math.Clamp(layerDepth - e, 0, 1);
-        } 
+        }
         #endregion
 
+        #region Constructors
+        protected UIRenderer()
+        {
+        }
+        #endregion
 
         #region Methods
-        /// <summary>Subclasses issue SpriteBatch draw calls here. Never call SpriteBatch.Begin/End inside components.</summary>
-        public virtual void Draw(GraphicsDevice device, Camera? camera) { }
+        /// <summary>
+        /// Returns an offset from the top-left of a region of the given size so that
+        /// drawing with this offset as the origin will respect the chosen anchor.
+        /// (Same logic that used to live in <see cref="UITextRenderer"/>.)
+        /// </summary>
+        protected static Vector2 ComputeAnchorOffset(Vector2 size, TextAnchor anchor)
+        {
+            switch (anchor)
+            {
+                case TextAnchor.TopLeft: return Vector2.Zero;
+                case TextAnchor.Top: return new Vector2(size.X * 0.5f, 0f);
+                case TextAnchor.TopRight: return new Vector2(size.X, 0f);
+                case TextAnchor.Left: return new Vector2(0f, size.Y * 0.5f);
+                case TextAnchor.Center: return size * 0.5f;
+                case TextAnchor.Right: return new Vector2(size.X, size.Y * 0.5f);
+                case TextAnchor.BottomLeft: return new Vector2(0f, size.Y);
+                case TextAnchor.Bottom: return new Vector2(size.X * 0.5f, size.Y);
+                default: return new Vector2(size.X, size.Y); // BottomRight
+            }
+        }
+
+        /// <summary>
+        /// Convenience helper: given a base position and content size, returns the
+        /// actual draw position and origin to use for DrawString/Draw.
+        /// </summary>
+        protected void ApplyAnchor(Vector2 basePosition, Vector2 contentSize,
+            out Vector2 drawPosition, out Vector2 originFromAnchor)
+        {
+            originFromAnchor = ComputeAnchorOffset(contentSize, _anchor);
+            drawPosition = basePosition;
+        }
         #endregion
 
         #region Lifecycle Methods
         protected override void Awake()
         {
-            var scene = GameObject?.Scene;
-            if (scene == null)
-                throw new NullReferenceException("UIRenderer requires a GameObject in a Scene.");
-
-            _uiRenderSystem = scene.GetSystem<UIRenderSystem>()
-                ?? throw new InvalidOperationException("UIRenderSystem not found. Add it to the Scene before using UIRenderer.");
-
-            _uiRenderSystem.Add(this);
-            _spriteBatch = scene.Context.SpriteBatch;
+            base.Awake();
+            _spriteBatch = GameObject?.Scene?.Context.SpriteBatch;
         }
 
-        protected override void OnDestroy()
-        {
-            _uiRenderSystem?.Remove(this);
-            _uiRenderSystem = null;
-            _spriteBatch = null;
-        }
+        public abstract void Draw(GraphicsDevice device, Camera? camera);
         #endregion
+    }
+
+    public enum TextAnchor
+    {
+        TopLeft, Top, TopRight,
+        Left, Center, Right,
+        BottomLeft, Bottom, BottomRight
     }
 }

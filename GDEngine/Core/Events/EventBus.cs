@@ -26,7 +26,9 @@ namespace GDEngine.Core.Events
         #endregion
 
         #region Constructors
-        public EventBus() { }
+        public EventBus()
+        {
+        }
         #endregion
 
         #region Methods
@@ -37,18 +39,20 @@ namespace GDEngine.Core.Events
         /// </summary>
         public IDisposable Subscribe<T>(Action<T> handler, int priority = 0, Predicate<T>? filter = null, bool once = false)
         {
-            if (handler == null) throw new ArgumentNullException(nameof(handler));
+            if (handler == null)
+                throw new ArgumentNullException(nameof(handler));
 
             // Convert the student's Predicate<T> into a generic object-based filter we can store.
             Func<object, bool>? filterObj = null;
-            if (filter != null) filterObj = (o) => filter((T)o);
+            if (filter != null)
+                filterObj = (o) => filter((T)o);
 
             // Create a small record describing this subscription.
-            var sub = new EventSubscription(handler, priority, filterObj, once);
+            EventSubscription sub = new EventSubscription(handler, priority, filterObj, once);
 
             lock (_mapLock) // lock because multiple threads might add/remove subscribers
             {
-                if (!_map.TryGetValue(typeof(T), out var list))
+                if (!_map.TryGetValue(typeof(T), out List<EventSubscription>? list))
                 {
                     // First subscriber for this event type — make a list.
                     list = new List<EventSubscription>(4);
@@ -72,7 +76,20 @@ namespace GDEngine.Core.Events
         public void Post<T>(T evt)
         {
             if (evt != null)
-                _queue.Enqueue(evt);
+                _queue.Enqueue(evt!);
+        }
+
+        /// <summary>
+        /// Publish an event by enqueuing it for main-thread delivery.
+        /// This is a convenience alias over <see cref="Post{T}(T)"/> so that game
+        /// code and orchestration scripts can use "Publish" in a natural way.
+        /// </summary>
+        public void Publish<T>(T evt)
+        {
+            if (evt == null)
+                return;
+
+            Post(evt);
         }
 
         /// <summary>
@@ -80,8 +97,8 @@ namespace GDEngine.Core.Events
         /// </summary>
         public void PublishImmediate<T>(T evt)
         {
-            if(evt != null)
-                Dispatch(evt);
+            if (evt != null)
+                Dispatch(evt!);
         }
 
         /// <summary>
@@ -90,7 +107,7 @@ namespace GDEngine.Core.Events
         /// </summary>
         internal void DispatchAll()
         {
-            while (_queue.TryDequeue(out var evt))
+            while (_queue.TryDequeue(out object? evt))
                 Dispatch(evt);
         }
         #endregion
@@ -101,13 +118,17 @@ namespace GDEngine.Core.Events
         #region Housekeeping Methods
         public void Dispose()
         {
-            if (_disposed) return;
+            if (_disposed)
+                return;
 
             // Clear all subscribers under a lock to avoid racing with new subscribes.
-            lock (_mapLock) _map.Clear();
+            lock (_mapLock)
+                _map.Clear();
 
             // Drain the queue so the GC doesn't keep references alive.
-            while (_queue.TryDequeue(out _)) { }
+            while (_queue.TryDequeue(out _))
+            {
+            }
 
             // Mark as disposed — future Dispose() calls do nothing (idempotent).
             _disposed = true;
@@ -117,7 +138,8 @@ namespace GDEngine.Core.Events
         #region Methods (private)
         private void Dispatch(object evt)
         {
-            if (evt == null) return;
+            if (evt == null)
+                return;
 
             List<EventSubscription>? snapshot = null;
 
@@ -125,7 +147,7 @@ namespace GDEngine.Core.Events
             // We don't iterate the live list to avoid issues if someone subscribes/unsubscribes during dispatch.
             lock (_mapLock)
             {
-                if (!_map.TryGetValue(evt.GetType(), out var list) || list.Count == 0)
+                if (!_map.TryGetValue(evt.GetType(), out List<EventSubscription>? list) || list.Count == 0)
                     return;
 
                 snapshot = new List<EventSubscription>(list); // copy for safe iteration
@@ -137,10 +159,11 @@ namespace GDEngine.Core.Events
             // Walk the snapshot in priority order (already sorted at subscribe-time).
             for (int i = 0; i < snapshot.Count; i++)
             {
-                var s = snapshot[i];
+                EventSubscription s = snapshot[i];
 
                 // If a filter exists and returns false, skip this handler.
-                if (s.Filter != null && !s.Filter(evt)) continue;
+                if (s.Filter != null && !s.Filter(evt))
+                    continue;
 
                 try
                 {
@@ -157,7 +180,9 @@ namespace GDEngine.Core.Events
 
                 if (s.Once)
                 {
-                    if (toRemove == null) toRemove = new List<EventSubscription>(2);
+                    if (toRemove == null)
+                        toRemove = new List<EventSubscription>(2);
+
                     toRemove.Add(s);
                 }
             }
@@ -167,9 +192,11 @@ namespace GDEngine.Core.Events
             {
                 lock (_mapLock)
                 {
-                    if (_map.TryGetValue(evt.GetType(), out var list))
+                    if (_map.TryGetValue(evt.GetType(), out List<EventSubscription>? list))
+                    {
                         for (int i = 0; i < toRemove.Count; i++)
                             list.Remove(toRemove[i]);
+                    }
                 }
             }
         }
@@ -192,12 +219,15 @@ namespace GDEngine.Core.Events
 
             public void Dispose()
             {
-                if (_done) return;
+                if (_done)
+                {
+                    return;
+                }
 
                 // Remove this exact subscription from the bus under a lock.
                 lock (_owner._mapLock)
                 {
-                    if (_owner._map.TryGetValue(_type, out var list))
+                    if (_owner._map.TryGetValue(_type, out List<EventSubscription>? list))
                         list.Remove(_sub);
                 }
 
@@ -330,7 +360,9 @@ namespace GDEngine.Core.Events
             /// </summary>
             public SubscriptionBuilder<T> WhenNotNull<U>(Func<T, U> selector) where U : class
             {
-                if (selector == null) throw new ArgumentNullException(nameof(selector));
+                if (selector == null)
+                    throw new ArgumentNullException(nameof(selector));
+
                 return When(e => selector(e) != null);
             }
 
@@ -352,13 +384,14 @@ namespace GDEngine.Core.Events
             /// <summary>Finalize: creates the subscription and returns the IDisposable token.</summary>
             public IDisposable Do(Action<T> handler)
             {
-                if (handler == null) throw new ArgumentNullException(nameof(handler));
+                if (handler == null)
+                    throw new ArgumentNullException(nameof(handler));
 
-                var bus = _bus;
-                var prio = _priority;
-                var filter = _filter;
-                var once = _once;
-                var until = _until;
+                EventBus bus = _bus;
+                int prio = _priority;
+                Predicate<T>? filter = _filter;
+                bool once = _once;
+                Predicate<T>? until = _until;
 
                 IDisposable? token = null;
 

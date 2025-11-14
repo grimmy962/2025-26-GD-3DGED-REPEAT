@@ -7,6 +7,7 @@ using GDEngine.Core.Extensions;
 using GDEngine.Core.Factories;
 using GDEngine.Core.Input.Data;
 using GDEngine.Core.Input.Devices;
+using GDEngine.Core.Orchestration;
 using GDEngine.Core.Rendering;
 using GDEngine.Core.Rendering.UI;
 using GDEngine.Core.Serialization;
@@ -14,7 +15,6 @@ using GDEngine.Core.Services;
 using GDEngine.Core.Systems;
 using GDEngine.Core.Timing;
 using GDEngine.Core.Utilities;
-using GDGame.Demos;
 using GDGame.Demos.Controllers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -45,6 +45,8 @@ namespace GDGame
         private UIStatsRenderer _uiStatsRenderer;
         private KeyboardState _prevKeyboard;
         private int _dummyHealth;
+        private OrchestrationSystem _orchestrationSystem;
+        private Material _matBasicUnlitGround;
         #endregion
 
         #region Core Methods (Common to all games)     
@@ -112,6 +114,7 @@ namespace GDGame
             DemoTestObject();
             DemoAlphaCutoutFoliage(new Vector3(0, 10 /*note Y=heightscale/2*/, 0), 12, 20);
             DemoLoadFromJSON();
+            DemoOrchestration();
             #endregion
 
             // Setup renderers after all game objects added since ui text may use a gameobject as target
@@ -127,9 +130,9 @@ namespace GDGame
 
         private void InitializePlayer()
         {
-            GameObject player = InitializeModel(new Vector3(0, 5, 10), 
+            GameObject player = InitializeModel(new Vector3(0, 5, 10),
                 new Vector3(0, 0, 0),
-                2*Vector3.One, "crate1", "monkey1", "The Player");
+                2 * Vector3.One, "crate1", "monkey1", "The Player");
 
             var simpleDriveController = new SimpleDriveController();
             player.AddComponent(simpleDriveController);
@@ -246,6 +249,11 @@ namespace GDGame
             _matBasicUnlit.StateBlock = RenderStates.Opaque3D();      // depth on, cull CCW
             _matBasicUnlit.SamplerState = SamplerState.LinearClamp;   // helps avoid texture seams on sky
 
+            //ground texture where UVs above [0,0]-[1,1]
+            _matBasicUnlitGround = new Material(unlitBasicEffect);
+            _matBasicUnlitGround.StateBlock = RenderStates.Opaque3D();      // depth on, cull CCW
+            _matBasicUnlitGround.SamplerState = SamplerState.LinearWrap;   // wrap texture based on UV values
+
             #endregion
 
             #region Lit Textured BasicEffect 
@@ -290,24 +298,24 @@ namespace GDGame
         {
             InitializeEventSystem();  //propagate events
             InitializeInputSystem();  //input
-            InitializeCameraSystem(); //update cameras
-            InitializeRenderingSystem(); //draw renderable game objects 
-            InitializeUIRenderSystem(); //draw ui and menu
+            InitializeCameraAndRenderSystems(); //update cameras, draw renderable game objects, draw ui and menu
         }
+
         private void InitializeEventSystem()
         {
             _scene.Add(new EventSystem(EngineContext.Instance.Events));
         }
 
-        private void InitializeCameraSystem()
+        private void InitializeCameraAndRenderSystems()
         {
             var cameraSystem = new CameraSystem(_graphics.GraphicsDevice, -100);
             _scene.Add(cameraSystem);
-        }
 
-        private void InitializeRenderingSystem()
-        {
-            _scene.Add(new RenderSystem(-100));
+            var renderSystem = new RenderSystem(-100);
+            _scene.Add(renderSystem);
+
+            var uiRenderSystem = new UIRenderSystem(100);
+            _scene.Add(uiRenderSystem); // draws in PostRender after RenderingSystem (order = -100)
         }
 
         private void InitializeInputSystem()
@@ -331,16 +339,20 @@ namespace GDGame
             _scene.Add(inputSystem);
         }
 
-        private void InitializeUIRenderSystem()
-        {
-            _scene.Add(new UIRenderSystem(100)); // draws in PostRender after RenderingSystem (order = -100)
-        }
+
 
         private void InitializeCameras()
         {
-         
 
-         
+            #region Third-person camera
+            _cameraGO = new GameObject("Third person camera");
+            _camera = _cameraGO.AddComponent<Camera>();
+
+            var thirdPersonController = new ThirdPersonController();
+            thirdPersonController.TargetName = "The Player";
+            _cameraGO.AddComponent(thirdPersonController);
+            _scene.Add(_cameraGO);
+            #endregion
 
             #region First-person camera
             var position = new Vector3(0, 5, 25);
@@ -349,9 +361,6 @@ namespace GDGame
             _cameraGO = new GameObject("First person camera");
             //set position 
             _cameraGO.Transform.TranslateTo(position);
-            //turn around as Forward is by default (0,0,1)
-            _cameraGO.Transform.RotateEulerBy(
-                new Vector3(0, MathHelper.ToRadians(180), 0), true);
             //add camera component to the GO
             _camera = _cameraGO.AddComponent<Camera>();
             _camera.FarPlane = 1000;
@@ -364,19 +373,11 @@ namespace GDGame
             _scene.Add(_cameraGO);
             #endregion
 
-            //TODO - add more cameras!
-            _cameraGO = new GameObject("Third person camera");
-            _camera = _cameraGO.AddComponent<Camera>();
-            var thirdPersonController = new ThirdPersonController("The Player");
-            _cameraGO.AddComponent(thirdPersonController);
-            _scene.Add(_cameraGO);
-
-
             // Set the active camera by finding and getting its camera component
-            //BUG
-            //var theCamera = _scene.Find(go => go.Name.Equals("First person camera")).GetComponent<Camera>();
+            //BUG - FIXED
+            var theCamera = _scene.Find(go => go.Name.Equals("First person camera")).GetComponent<Camera>();
             ////Obviously, since we have _camera we could also just use the line below
-            //_scene.ActiveCamera = theCamera;
+            _scene.SetActiveCamera(theCamera);
         }
 
         /// <summary>
@@ -488,13 +489,22 @@ namespace GDGame
             MeshRenderer meshRenderer = null;
 
             gameObject = new GameObject("ground");
-            meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
+            //meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
+
+            meshFilter = MeshFilterFactory.CreateQuadGridTexturedUnlit(_graphics.GraphicsDevice,
+                 20,
+                 20,
+                 1,
+                 1,
+                 20f,
+                 20f);
+
             gameObject.Transform.ScaleBy(new Vector3(scale, scale, 1));
             gameObject.Transform.RotateEulerBy(new Vector3(MathHelper.ToRadians(-90), 0, 0), true);
 
             gameObject.AddComponent(meshFilter);
             meshRenderer = gameObject.AddComponent<MeshRenderer>();
-            meshRenderer.Material = _matBasicUnlit;
+            meshRenderer.Material = _matBasicUnlitGround;
             meshRenderer.Overrides.MainTexture = _textureDictionary.Get("ground_grass");
 
             _scene.Add(gameObject);
@@ -519,6 +529,9 @@ namespace GDGame
 
             // Set font 
             _uiStatsRenderer.Font = _fontDictionary.Get("perf_stats_font");
+
+            _uiStatsRenderer.ScreenCorner = ScreenCorner.BottomRight;
+            _uiStatsRenderer.Margin = new Vector2(10f, 10f);
 
             // Optional: add your own debug lines (same pattern you used before)
             _uiStatsRenderer.LinesProvider = () =>
@@ -557,7 +570,7 @@ namespace GDGame
 
             // Distance/health lines under the cursor
             var waypointObject = _scene.Find((go) => go.Name.Equals("test crate textured cube"));
-            var cameraObject = _scene.Find(go => go.Name.Equals("Third person camera"));
+            var cameraObject = _scene.Find(go => go.Name.Equals("First person camera"));
 
             Func<IEnumerable<string>> linesProvider = () =>
             {
@@ -567,9 +580,9 @@ namespace GDGame
                 var hp = _dummyHealth;
                 return new[]
                 {
-            $"Dist: {distToWaypoint:F2} m",
-            $"Health:   {hp}"
-        };
+                    $"Dist: {distToWaypoint:F2} m",
+                    $"Health:   {hp}"
+                };
             };
 
             // Text anchored at mouse, slightly below the reticle
@@ -649,21 +662,6 @@ namespace GDGame
                 if (kb.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.F1) && !_prevKeyboard.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.F1))
                     _uiStatsRenderer.Enabled = !_uiStatsRenderer.Enabled;
             }
-
-            //if(_scene != null)
-            //{
-            //    if (kb.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.F2) && !_prevKeyboard.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.F2))
-            //    {
-            //        _scene.Clear();
-            //    }
-
-            //    if (kb.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.F3) && !_prevKeyboard.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.F3))
-            //    {
-            //        //re-load your JSON again
-            //        foreach (var d in JSONSerializationUtility.LoadData<ModelSpawnData>(Content, "multi_model_spawn.json"))
-            //                InitializeModel(d.Position, d.RotationDegrees, d.Scale, d.TextureName, d.ModelName, d.ObjectName);
-            //    }
-            //}
 
             _prevKeyboard = kb;
         }
@@ -748,6 +746,30 @@ namespace GDGame
         #endregion    }
 
         #region Demo Methods (remove in your game)
+        private void DemoOrchestration()
+        {
+            if (_orchestrationSystem == null)
+                return;
+
+            GameObject crate = _scene.Find((GameObject go) => go.Name.Equals("test crate textured cube"));
+            if (crate == null)
+                return;
+
+            Transform transform = crate.Transform;
+
+            Vector3 startPosition = transform.Position;
+            Vector3 peakPosition = startPosition + new Vector3(0, 5, 0);
+
+            Orchestrator orchestrator = _orchestrationSystem.Orchestrator;
+
+            orchestrator.Build("Demo_CrateBounce")
+                .WaitSeconds(1.0f)
+                .MoveTo(transform, peakPosition, 1.5f, Ease.EaseInOutSine)
+                .WaitSeconds(0.5f)
+                .MoveTo(transform, startPosition, 1.5f, Ease.EaseInOutSine)
+                .Register();
+        }
+
         private void DemoLoadFromJSON()
         {
             var relativeFilePathAndName = "assets/data/single_model_spawn.json";
@@ -783,18 +805,18 @@ namespace GDGame
 
             _scene.Add(gameObject);
 
-            #region Demo - Curve and Input
-            var posRotController = new PositionRotationController
-            {
-                RotationCurve = _animationRotationCurve,
-                PositionCurve = _animationPositionCurve
-            };
-            gameObject.AddComponent(posRotController);
+            //#region Demo - Curve and Input
+            //var posRotController = new PositionRotationController
+            //{
+            //    RotationCurve = _animationRotationCurve,
+            //    PositionCurve = _animationPositionCurve
+            //};
+            //gameObject.AddComponent(posRotController);
 
-            //demo the new input system support for keyboard, mouse and gamepad
-            gameObject.AddComponent(new InputReceiverComponent());
+            ////demo the new input system support for keyboard, mouse and gamepad
+            //gameObject.AddComponent(new InputReceiverComponent());
 
-            #endregion
+            //#endregion
 
             //  testCrateGO.Layer = LayerMask.World;
         }

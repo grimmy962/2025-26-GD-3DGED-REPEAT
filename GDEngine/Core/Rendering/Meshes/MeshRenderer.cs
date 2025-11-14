@@ -1,5 +1,5 @@
 ﻿using GDEngine.Core.Components;
-using GDEngine.Core.Rendering.Base;
+using GDEngine.Core.Entities;
 using Microsoft.Xna.Framework.Graphics;
 
 namespace GDEngine.Core.Rendering
@@ -10,7 +10,7 @@ namespace GDEngine.Core.Rendering
     /// <see cref="MeshFilter"/>
     /// <see cref="Material"/>
     /// <see cref="Camera"/>
-    public sealed class MeshRenderer : Component, IDraw
+    public sealed class MeshRenderer : Component
     {
         #region Static Fields
         #endregion
@@ -22,34 +22,55 @@ namespace GDEngine.Core.Rendering
         #endregion
 
         #region Properties
-        public Material? Material
+        public Material Material
         {
             get => _material;
             set => _material = value;
         }
 
-        public EffectPropertyBlock Overrides => _overrides;
+        public EffectPropertyBlock Overrides
+        {
+            get => _overrides;
+        }
         #endregion
 
         #region Constructors
         #endregion
 
         #region Methods
-        public void Draw(GraphicsDevice device, Camera? camera)
+        /// <summary>
+        /// Renders this renderer using the supplied graphics device and camera.
+        /// </summary>
+        public void Render(GraphicsDevice device, Camera camera)
         {
-            if (Transform == null) return;
-            if (_meshFilter == null) return;
-            if (_material == null) return;
-            if (camera == null) return;
+            if (Transform == null)
+                return;
+            if (_meshFilter == null)
+                return;
+            if (_material == null)
+                return;
 
             _meshFilter.BindBuffers(device);
+
             _material.Apply(
                 device,
                 Transform.WorldMatrix,
                 camera.View,
                 camera.Projection,
                 _overrides,
-                () => device.DrawIndexedPrimitives(_meshFilter.PrimitiveType, 0, 0, _meshFilter.PrimitiveCount));
+                () => device.DrawIndexedPrimitives(
+                    _meshFilter.PrimitiveType,
+                    0,
+                    0,
+                    _meshFilter.PrimitiveCount));
+        }
+
+        /// <summary>
+        /// Convenience wrapper so systems that expect Draw() still work.
+        /// </summary>
+        public void Draw(GraphicsDevice device, Camera camera)
+        {
+            Render(device, camera);
         }
         #endregion
 
@@ -60,10 +81,27 @@ namespace GDEngine.Core.Rendering
                 return;
 
             _meshFilter = GameObject.GetComponent<MeshFilter>();
+
+            // Register with the owning Scene so RenderSystem/CameraSystem can see us
+            Scene? scene = GameObject.Scene;
+            if (scene != null)
+                scene.RegisterRenderer(this);
         }
         #endregion
 
         #region Housekeeping Methods
+        protected override void OnDestroy()
+        {
+            // Unregister from the scene so we are no longer considered for rendering
+            if (GameObject != null)
+            {
+                Scene? scene = GameObject.Scene;
+                if (scene != null)
+                    scene.UnregisterRenderer(this);
+            }
+
+            base.OnDestroy();
+        }
         #endregion
     }
 }

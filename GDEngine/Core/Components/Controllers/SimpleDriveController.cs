@@ -13,7 +13,7 @@ namespace GDEngine.Core.Components
     {
         #region Fields
         private float _moveSpeed = 15f;  // units/sec
-        private float _turnSpeed = 5f;   // radians/sec
+        private float _turnSpeed = 2.5f;   // radians/sec
         #endregion
 
         #region Lifecycle Methods
@@ -37,8 +37,8 @@ namespace GDEngine.Core.Components
 
             // --- Translation (U forward, J back) along actual current facing ---
             float moveInput = 0f;
-            if (k.IsKeyDown(Keys.U)) moveInput += 1f;
-            if (k.IsKeyDown(Keys.J)) moveInput -= 1f;
+            if (k.IsKeyDown(Keys.U)) moveInput -= 1f;
+            if (k.IsKeyDown(Keys.J)) moveInput += 1f;
 
             if (moveInput != 0f)
             {

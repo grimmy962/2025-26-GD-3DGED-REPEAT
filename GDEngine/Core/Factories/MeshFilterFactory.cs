@@ -448,6 +448,187 @@ namespace GDEngine.Core.Factories
         }
 
         /// <summary>
+        /// Creates a subdivided textured quad on the XY plane centered at the origin.
+        /// Lets you:
+        /// 1) Control the number of segments across width/height.
+        /// 2) Control how many times the UVs tile across the whole quad.
+        ///
+        /// Useful for large ground planes (e.g. grass) where you want repeated detail.
+        /// </summary>
+        /// <param name="device">Graphics device for buffer creation.</param>
+        /// <param name="widthSegments">Number of segments along the X axis (minimum 1).</param>
+        /// <param name="heightSegments">Number of segments along the Y axis (minimum 1).</param>
+        /// <param name="width">World-space width of the quad (in X).</param>
+        /// <param name="height">World-space height of the quad (in Y).</param>
+        /// <param name="uvTilesX">How many times the texture repeats across X.</param>
+        /// <param name="uvTilesY">How many times the texture repeats across Y.</param>
+        public static MeshFilter CreateQuadGridTexturedLit(
+            GraphicsDevice device,
+            int widthSegments,
+            int heightSegments,
+            float width,
+            float height,
+            float uvTilesX,
+            float uvTilesY)
+        {
+            if (widthSegments < 1)
+                widthSegments = 1;
+            if (heightSegments < 1)
+                heightSegments = 1;
+
+            int vx = widthSegments + 1;
+            int vy = heightSegments + 1;
+            int vertexCount = vx * vy;
+            int indexCount = widthSegments * heightSegments * 6;
+
+            var verts = new VertexPositionNormalTexture[vertexCount];
+            var indices = new short[indexCount];
+
+            // Centered at origin on XY plane
+            float halfWidth = width * 0.5f;
+            float halfHeight = height * 0.5f;
+            Vector2 origin = new Vector2(-halfWidth, -halfHeight);
+
+            float stepX = width / widthSegments;
+            float stepY = height / heightSegments;
+
+            var normal = new Vector3(0f, 0f, 1f);
+
+            int k = 0;
+            for (int y = 0; y < vy; y++)
+            {
+                float fy = origin.Y + y * stepY;
+                float v = (1f - (y / (float)heightSegments)) * uvTilesY; // bottom -> top : uvTilesY -> 0
+
+                for (int x = 0; x < vx; x++)
+                {
+                    float fx = origin.X + x * stepX;
+                    float u = (x / (float)widthSegments) * uvTilesX;      // left -> right : 0 -> uvTilesX
+
+                    verts[k++] = new VertexPositionNormalTexture(
+                        new Vector3(fx, fy, 0f),
+                        normal,
+                        new Vector2(u, v));
+                }
+            }
+
+            int t = 0;
+            for (int y = 0; y < heightSegments; y++)
+            {
+                for (int x = 0; x < widthSegments; x++)
+                {
+                    int i0 = y * vx + x;
+                    int i1 = i0 + 1;
+                    int i2 = i0 + vx;
+                    int i3 = i2 + 1;
+
+                    // Same CW winding as your other quads (left-handed)
+                    indices[t++] = (short)i2; // TL
+                    indices[t++] = (short)i1; // BR
+                    indices[t++] = (short)i0; // BL
+
+                    indices[t++] = (short)i3; // TR
+                    indices[t++] = (short)i1; // BR
+                    indices[t++] = (short)i2; // TL
+                }
+            }
+
+            var mf = new MeshFilter();
+            mf.SetGeometry(device, verts, indices, PrimitiveType.TriangleList);
+            return mf;
+        }
+
+        /// <summary>
+        /// Creates a subdivided textured quad on the XY plane centered at the origin.
+        /// Unlit version: positions + UVs only (VertexPositionTexture).
+        /// Lets you:
+        /// 1) Control the number of segments across width/height.
+        /// 2) Control how many times the UVs tile across the whole quad.
+        ///
+        /// Ideal for large ground planes (e.g. grass) using an unlit shader.
+        /// </summary>
+        /// <param name="device">Graphics device for buffer creation.</param>
+        /// <param name="widthSegments">Number of segments along the X axis (minimum 1).</param>
+        /// <param name="heightSegments">Number of segments along the Y axis (minimum 1).</param>
+        /// <param name="width">World-space width of the quad (in X).</param>
+        /// <param name="height">World-space height of the quad (in Y).</param>
+        /// <param name="uvTilesX">How many times the texture repeats across X.</param>
+        /// <param name="uvTilesY">How many times the texture repeats across Y.</param>
+        public static MeshFilter CreateQuadGridTexturedUnlit(
+            GraphicsDevice device,
+            int widthSegments,
+            int heightSegments,
+            float width,
+            float height,
+            float uvTilesX,
+            float uvTilesY)
+        {
+            if (widthSegments < 1)
+                widthSegments = 1;
+            if (heightSegments < 1)
+                heightSegments = 1;
+
+            int vx = widthSegments + 1;
+            int vy = heightSegments + 1;
+            int vertexCount = vx * vy;
+            int indexCount = widthSegments * heightSegments * 6;
+
+            var verts = new VertexPositionTexture[vertexCount];
+            var indices = new short[indexCount];
+
+            // Centered at origin on XY plane
+            float halfWidth = width * 0.5f;
+            float halfHeight = height * 0.5f;
+            Vector2 origin = new Vector2(-halfWidth, -halfHeight);
+
+            float stepX = width / widthSegments;
+            float stepY = height / heightSegments;
+
+            int k = 0;
+            for (int y = 0; y < vy; y++)
+            {
+                float fy = origin.Y + y * stepY;
+                float v = (1f - (y / (float)heightSegments)) * uvTilesY; // bottom -> top : uvTilesY -> 0
+
+                for (int x = 0; x < vx; x++)
+                {
+                    float fx = origin.X + x * stepX;
+                    float u = (x / (float)widthSegments) * uvTilesX;      // left -> right : 0 -> uvTilesX
+
+                    verts[k++] = new VertexPositionTexture(
+                        new Vector3(fx, fy, 0f),
+                        new Vector2(u, v));
+                }
+            }
+
+            int t = 0;
+            for (int y = 0; y < heightSegments; y++)
+            {
+                for (int x = 0; x < widthSegments; x++)
+                {
+                    int i0 = y * vx + x;
+                    int i1 = i0 + 1;
+                    int i2 = i0 + vx;
+                    int i3 = i2 + 1;
+
+                    // Same CW winding as your other quads (left-handed)
+                    indices[t++] = (short)i2; // TL
+                    indices[t++] = (short)i1; // BR
+                    indices[t++] = (short)i0; // BL
+
+                    indices[t++] = (short)i3; // TR
+                    indices[t++] = (short)i1; // BR
+                    indices[t++] = (short)i2; // TL
+                }
+            }
+
+            var mf = new MeshFilter();
+            mf.SetGeometry(device, verts, indices, PrimitiveType.TriangleList);
+            return mf;
+        }
+
+
+        /// <summary>
         /// Creates a textured 1x1x1 cube centered at the origin, with per-face normals
         /// (VertexPositionNormalTexture). UVs are (0,1) BL, (1,1) BR, (1,0) TR, (0,0) TL per face.
         /// </summary>
