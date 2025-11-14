@@ -16,23 +16,32 @@ namespace GDEngine.Core.Rendering
         #endregion
 
         #region Static Fields
-        public static readonly UILayer Cursor = new UILayer(0f); // on-top pointers/reticles
-        public static readonly UILayer MenuFront = new UILayer(0.05f); // highlights/selection states
-        public static readonly UILayer Menu = new UILayer(0.1f); // menu text/buttons
-        public static readonly UILayer HUD = new UILayer(0.4f); // in-game HUD overlays
-        public static readonly UILayer Background = new UILayer(1f); // background images / backdrops
+        public static readonly UILayer Cursor = new UILayer(0f);          // on-top pointers/reticles
+        public static readonly UILayer MenuFront = new UILayer(0.05f);    // highlights/selection states
+        public static readonly UILayer Menu = new UILayer(0.1f);          // menu text/buttons
+        public static readonly UILayer HUD = new UILayer(0.4f);           // in-game HUD overlays
+        public static readonly UILayer Background = new UILayer(1f);      // background images / backdrops
         #endregion
 
         #region Constructors
-        public UILayer(float depth) { Depth = depth; }
+        public UILayer(float depth)
+        {
+            Depth = depth;
+        }
         #endregion
 
         #region Operator Overloading
-        public static implicit operator float(UILayer layer) => layer.Depth;
+        public static implicit operator float(UILayer layer)
+        {
+            return layer.Depth;
+        }
         #endregion
 
         #region Housekeeping Methods
-        public override string ToString() => Depth.ToString("0.00");
+        public override string ToString()
+        {
+            return Depth.ToString("0.00");
+        }
         #endregion
     }
 
@@ -42,13 +51,11 @@ namespace GDEngine.Core.Rendering
     /// </summary>
     /// <see cref="Component"/>
     /// <see cref="UIRenderSystem"/>
-    /// <summary>
-    /// Base class for screen-space UI renderers using centralized SpriteBatch.
-    /// </summary>
     public abstract class UIRenderer : Component
     {
         #region Static Fields
         protected static readonly Vector2 _shadowNudge = new Vector2(1f, 1f);
+        public const float LAYER_DEPTH_EPSILON = 1E-1f; //0.01f;
         #endregion
 
         #region Fields
@@ -92,25 +99,17 @@ namespace GDEngine.Core.Rendering
         #endregion
 
         #region Helper Methods
-        public const float LAYER_DEPTH_EPSILON = 1E-2f; //0.01f;
+
         public static float Behind(float layerDepth, float e = LAYER_DEPTH_EPSILON)
         {
             return Math.Clamp(layerDepth + e, 0, 1);
         }
 
-        public static float Before(float layerDepth, float e = LAYER_DEPTH_EPSILON) //0.01f
+        public static float Before(float layerDepth, float e = LAYER_DEPTH_EPSILON)
         {
             return Math.Clamp(layerDepth - e, 0, 1);
         }
-        #endregion
 
-        #region Constructors
-        protected UIRenderer()
-        {
-        }
-        #endregion
-
-        #region Methods
         /// <summary>
         /// Returns an offset from the top-left of a region of the given size so that
         /// drawing with this offset as the origin will respect the chosen anchor.
@@ -136,11 +135,20 @@ namespace GDEngine.Core.Rendering
         /// Convenience helper: given a base position and content size, returns the
         /// actual draw position and origin to use for DrawString/Draw.
         /// </summary>
-        protected void ApplyAnchor(Vector2 basePosition, Vector2 contentSize,
-            out Vector2 drawPosition, out Vector2 originFromAnchor)
+        protected void ApplyAnchor(
+            Vector2 basePosition,
+            Vector2 contentSize,
+            out Vector2 drawPosition,
+            out Vector2 originFromAnchor)
         {
             originFromAnchor = ComputeAnchorOffset(contentSize, _anchor);
             drawPosition = basePosition;
+        }
+        #endregion
+
+        #region Constructors
+        protected UIRenderer()
+        {
         }
         #endregion
 
@@ -148,7 +156,18 @@ namespace GDEngine.Core.Rendering
         protected override void Awake()
         {
             base.Awake();
+
+            // Cache SpriteBatch from the scene context
             _spriteBatch = GameObject?.Scene?.Context.SpriteBatch;
+
+            // Auto-register with the scene's UIRenderSystem so it can be drawn
+            var scene = GameObject?.Scene;
+            if (scene == null)
+                return;
+
+            var uiSystem = scene.GetSystem<UIRenderSystem>();
+            if (uiSystem != null)
+                uiSystem.Add(this);
         }
 
         public abstract void Draw(GraphicsDevice device, Camera? camera);

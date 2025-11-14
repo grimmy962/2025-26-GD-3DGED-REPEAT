@@ -23,7 +23,6 @@ namespace GDEngine.Core.Rendering.UI
         private bool _dropShadow = true;
         private Color _fallbackColor = Color.White;
         private Color _shadowColor = new Color(0, 0, 0, 180);
-        private TextAnchor _anchor = TextAnchor.TopLeft;
 
         private string _text = string.Empty;
         private Vector2 _size;
@@ -42,7 +41,6 @@ namespace GDEngine.Core.Rendering.UI
         public bool DropShadow { get => _dropShadow; set => _dropShadow = value; }
         public Color FallbackColor { get => _fallbackColor; set => _fallbackColor = value; }
         public Color ShadowColor { get => _shadowColor; set => _shadowColor = value; }
-        public TextAnchor Anchor { get => _anchor; set => _anchor = value; }
         #endregion
 
         #region Constructors

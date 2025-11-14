@@ -274,17 +274,43 @@ namespace GDEngine.Core.Debug
                         _margin.X,
                         _margin.Y);
 
+                case ScreenCorner.TopMiddle:
+                    return new Vector2(
+                        (vp.Width - panelWidth) * 0.5f,
+                        _margin.Y);
+
                 case ScreenCorner.TopRight:
                     return new Vector2(
                         vp.Width - panelWidth - _margin.X,
                         _margin.Y);
+
+                case ScreenCorner.LeftMiddle:
+                    return new Vector2(
+                        _margin.X,
+                        (vp.Height - panelHeight) * 0.5f);
+
+                case ScreenCorner.Center:
+                    return new Vector2(
+                        (vp.Width - panelWidth) * 0.5f,
+                        (vp.Height - panelHeight) * 0.5f);
+
+                case ScreenCorner.RightMiddle:
+                    return new Vector2(
+                        vp.Width - panelWidth - _margin.X,
+                        (vp.Height - panelHeight) * 0.5f);
 
                 case ScreenCorner.BottomLeft:
                     return new Vector2(
                         _margin.X,
                         vp.Height - panelHeight - _margin.Y);
 
-                default: // BottomRight
+                case ScreenCorner.BottomMiddle:
+                    return new Vector2(
+                        (vp.Width - panelWidth) * 0.5f,
+                        vp.Height - panelHeight - _margin.Y);
+
+                case ScreenCorner.BottomRight:
+                default:
                     return new Vector2(
                         vp.Width - panelWidth - _margin.X,
                         vp.Height - panelHeight - _margin.Y);
@@ -296,8 +322,13 @@ namespace GDEngine.Core.Debug
     public enum ScreenCorner
     {
         TopLeft,
+        TopMiddle,
         TopRight,
+        LeftMiddle,
+        Center,
+        RightMiddle,
         BottomLeft,
+        BottomMiddle,
         BottomRight
     }
 }

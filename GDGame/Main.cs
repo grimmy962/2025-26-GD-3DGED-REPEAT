@@ -3,6 +3,7 @@ using GDEngine.Core.Collections;
 using GDEngine.Core.Components;
 using GDEngine.Core.Debug;
 using GDEngine.Core.Entities;
+using GDEngine.Core.Events;
 using GDEngine.Core.Extensions;
 using GDEngine.Core.Factories;
 using GDEngine.Core.Input.Data;
@@ -21,7 +22,6 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
 
 namespace GDGame
 {
@@ -47,6 +47,7 @@ namespace GDGame
         private int _dummyHealth;
         private OrchestrationSystem _orchestrationSystem;
         private Material _matBasicUnlitGround;
+        private KeyboardState _kb;
         #endregion
 
         #region Core Methods (Common to all games)     
@@ -132,12 +133,15 @@ namespace GDGame
         {
             GameObject player = InitializeModel(new Vector3(0, 5, 10),
                 new Vector3(0, 0, 0),
-                2 * Vector3.One, "crate1", "monkey1", "The Player");
+                2 * Vector3.One, "crate1", "monkey1", AppData.PLAYER_NAME);
 
             var simpleDriveController = new SimpleDriveController();
             player.AddComponent(simpleDriveController);
-            //player.AddComponent<SimpleDriveController>();
+
+            // Listen for damage events on the player
+            player.AddComponent<DamageListener>();
         }
+
 
         private void InitializePIPCamera(Vector3 position,
       Viewport viewport, int depth, int index = 0)
@@ -190,7 +194,7 @@ namespace GDGame
         private void InitializeGraphics(Integer2 resolution)
         {
             // Enable per-monitor DPI awareness so the window/UI scales crisply on multi-monitor setups with different DPIs (avoids blurriness when moving between screens).
-            Application.SetHighDpiMode(HighDpiMode.PerMonitorV2);
+            System.Windows.Forms.Application.SetHighDpiMode(System.Windows.Forms.HighDpiMode.PerMonitorV2);
 
             // Set preferred resolution
             ScreenResolution.SetResolution(_graphics, resolution);
@@ -245,14 +249,15 @@ namespace GDGame
                 LightingEnabled = false,
                 VertexColorEnabled = false
             };
+
             _matBasicUnlit = new Material(unlitBasicEffect);
             _matBasicUnlit.StateBlock = RenderStates.Opaque3D();      // depth on, cull CCW
             _matBasicUnlit.SamplerState = SamplerState.LinearClamp;   // helps avoid texture seams on sky
 
             //ground texture where UVs above [0,0]-[1,1]
-            _matBasicUnlitGround = new Material(unlitBasicEffect);
+            _matBasicUnlitGround = new Material(unlitBasicEffect.Clone());
             _matBasicUnlitGround.StateBlock = RenderStates.Opaque3D();      // depth on, cull CCW
-            _matBasicUnlitGround.SamplerState = SamplerState.LinearWrap;   // wrap texture based on UV values
+            _matBasicUnlitGround.SamplerState = SamplerState.AnisotropicWrap;   // wrap texture based on UV values
 
             #endregion
 
@@ -339,17 +344,18 @@ namespace GDGame
             _scene.Add(inputSystem);
         }
 
-
-
         private void InitializeCameras()
         {
 
-            #region Third-person camera
-            _cameraGO = new GameObject("Third person camera");
+                       #region Third-person camera
+            _cameraGO = new GameObject(AppData.CAMERA_NAME_THIRD_PERSON);
             _camera = _cameraGO.AddComponent<Camera>();
 
             var thirdPersonController = new ThirdPersonController();
-            thirdPersonController.TargetName = "The Player";
+            thirdPersonController.TargetName = AppData.PLAYER_NAME;
+            thirdPersonController.ShoulderOffset = 0;
+            thirdPersonController.FollowDistance = 50;
+            thirdPersonController.RotationDamping = 20;
             _cameraGO.AddComponent(thirdPersonController);
             _scene.Add(_cameraGO);
             #endregion
@@ -358,7 +364,7 @@ namespace GDGame
             var position = new Vector3(0, 5, 25);
 
             //camera GO
-            _cameraGO = new GameObject("First person camera");
+            _cameraGO = new GameObject(AppData.CAMERA_NAME_FIRST_PERSON);
             //set position 
             _cameraGO.Transform.TranslateTo(position);
             //add camera component to the GO
@@ -375,7 +381,7 @@ namespace GDGame
 
             // Set the active camera by finding and getting its camera component
             //BUG - FIXED
-            var theCamera = _scene.Find(go => go.Name.Equals("First person camera")).GetComponent<Camera>();
+            var theCamera = _scene.Find(go => go.Name.Equals(AppData.CAMERA_NAME_THIRD_PERSON)).GetComponent<Camera>();
             ////Obviously, since we have _camera we could also just use the line below
             _scene.SetActiveCamera(theCamera);
         }
@@ -492,12 +498,12 @@ namespace GDGame
             //meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
 
             meshFilter = MeshFilterFactory.CreateQuadGridTexturedUnlit(_graphics.GraphicsDevice,
-                 20,
-                 20,
                  1,
                  1,
-                 20f,
-                 20f);
+                 1,
+                 1,
+                 20,
+                 20);
 
             gameObject.Transform.ScaleBy(new Vector3(scale, scale, 1));
             gameObject.Transform.RotateEulerBy(new Vector3(MathHelper.ToRadians(-90), 0, 0), true);
@@ -530,12 +536,14 @@ namespace GDGame
             // Set font 
             _uiStatsRenderer.Font = _fontDictionary.Get("perf_stats_font");
 
-            _uiStatsRenderer.ScreenCorner = ScreenCorner.BottomRight;
+            _uiStatsRenderer.ScreenCorner = ScreenCorner.TopRight;
             _uiStatsRenderer.Margin = new Vector2(10f, 10f);
 
             // Optional: add your own debug lines (same pattern you used before)
             _uiStatsRenderer.LinesProvider = () =>
             {
+                var camera = _scene.ActiveCamera;
+
                 return new[]
                 {
                     "",
@@ -543,9 +551,9 @@ namespace GDGame
                     $" - Renderer Count: {_scene.Renderers.Count}",
                     "",
                     $"Camera Stats:",
-                    $" - Camera [name]: {_scene.ActiveCamera.GameObject.Name}",
-                    $" - Camera [Position]: {_cameraGO.Transform.Position.ToFixed()}",
-                    $" - Camera [Forward]: {_cameraGO.Transform.Forward.ToFixed()}"
+                    $" - Camera [name]: {camera.GameObject.Name}",
+                    $" - Camera [Position]: {camera.Transform.Position.ToFixed()}",
+                    $" - Camera [Forward]: {camera.Transform.Forward.ToFixed()}"
                 };
             };
 
@@ -644,7 +652,7 @@ namespace GDGame
             //update Scene
             _scene.Update(Time.DeltaTimeSecs);
 
-            ToggleStatsWindow();
+            DemoStuff();
             #endregion
 
             #region Demo
@@ -654,16 +662,97 @@ namespace GDGame
             base.Update(gameTime);
         }
 
-        private void ToggleStatsWindow()
+        private void DemoStuff()
         {
-            var kb = Keyboard.GetState();
-            if (_uiStatsRenderer != null)
+            _kb = Keyboard.GetState();
+            DemoStatsToggle();
+            DemoEventPublish();
+            DemoCameraSwitch();
+            _prevKeyboard = _kb;
+        }
+
+        private void DemoCameraSwitch()
+        {
+            var cameraSystem = _scene.GetSystem<CameraSystem>();
+            if (cameraSystem == null)
             {
-                if (kb.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.F1) && !_prevKeyboard.IsKeyDown(Microsoft.Xna.Framework.Input.Keys.F1))
-                    _uiStatsRenderer.Enabled = !_uiStatsRenderer.Enabled;
+                return;
             }
 
-            _prevKeyboard = kb;
+            var cameras = cameraSystem.Cameras;
+            if (cameras == null || cameras.Count == 0)
+            {
+                return;
+            }
+
+            bool prevPressed = _kb.IsKeyDown(Keys.F2) && !_prevKeyboard.IsKeyDown(Keys.F2);
+            bool nextPressed = _kb.IsKeyDown(Keys.F3) && !_prevKeyboard.IsKeyDown(Keys.F3);
+
+            if (!prevPressed && !nextPressed)
+            {
+                return;
+            }
+
+            var active = _scene.ActiveCamera;
+            int index = 0;
+
+            if (active != null)
+            {
+                for (int i = 0; i < cameras.Count; i++)
+                {
+                    if (ReferenceEquals(cameras[i], active))
+                    {
+                        index = i;
+                        break;
+                    }
+                }
+            }
+
+            if (nextPressed)
+            {
+                index++;
+                if (index >= cameras.Count)
+                {
+                    index = 0;
+                }
+            }
+            else if (prevPressed)
+            {
+                index--;
+                if (index < 0)
+                {
+                    index = cameras.Count - 1;
+                }
+            }
+
+            _scene.ActiveCamera = cameras[index];
+        }
+
+
+        private void DemoEventPublish()
+        {
+            // F2: publish a test DamageEvent
+            if (_kb.IsKeyDown(Keys.F5) && !_prevKeyboard.IsKeyDown(Keys.F5))
+            {
+                // Simple “debug” damage example
+                var cameraPos = _cameraGO.Transform.Position;
+                var hitPos = cameraPos + _cameraGO.Transform.Forward * 5f;
+
+                var damageEvent = new DamageEvent(10, DamageEvent.DamageType.Strength,
+                    "DebugGun", AppData.PLAYER_NAME, hitPos, false);
+
+                EngineContext.Instance.Events.Post(damageEvent);
+            }
+        }
+
+        private void DemoStatsToggle()
+        {
+            // F1: toggle stats overlay
+            if (_uiStatsRenderer != null)
+            {
+                if (_kb.IsKeyDown(Keys.F1) && !_prevKeyboard.IsKeyDown(Keys.F1))
+                    _uiStatsRenderer.Enabled = !_uiStatsRenderer.Enabled;
+            }
         }
 
         protected override void Draw(GameTime gameTime)
