@@ -1679,53 +1679,6 @@ public void TestOnceFlag()
 
 ---
 
-## Exercises for Students
-
-### Exercise 1: Basic Implementation
-Implement a simple string-based event system without looking at the examples. It should support Subscribe, Unsubscribe, and Publish.
-
-### Exercise 2: Type Safety
-Convert your string-based system to use generic types for type safety.
-
-### Exercise 3: Priority
-Add priority support to your event system. Handlers with lower priority values should execute first.
-
-### Exercise 4: One-Shot
-Add support for one-shot subscriptions that automatically unsubscribe after the first invocation.
-
-### Exercise 5: Filters
-Implement conditional event delivery using filter predicates. Only handlers whose filter returns true should receive the event.
-
-### Exercise 6: Disposal Pattern
-Refactor your Subscribe method to return an IDisposable subscription token for clean unsubscription.
-
-### Exercise 7: Practical Application
-Build a simple RPG combat system using your event system with events like:
-- `AttackEvent`
-- `DamageEvent`
-- `HealEvent`
-- `DeathEvent`
-- `LevelUpEvent`
-
-### Exercise 8: Performance Analysis
-Profile your event system and identify bottlenecks. Consider:
-- Dictionary lookups
-- List iterations
-- Delegate invocations
-- Lock contention
-
----
-
-## Further Reading
-
-- **Design Patterns:** "Gang of Four" Observer Pattern
-- **C# Events:** Microsoft's event documentation
-- **Delegates:** Understanding multicast delegates
-- **Memory Management:** IDisposable pattern and using statements
-- **Game Architecture:** Component-based design and event-driven systems
-
----
-
 ## 11. Appendix A: Common Pitfalls
 
 ### Pitfall 1: Circular Event Dependencies
