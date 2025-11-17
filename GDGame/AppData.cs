@@ -1,10 +1,17 @@
-﻿namespace GDGame
+﻿using Microsoft.Xna.Framework;
+
+namespace GDGame
 {
     /// <summary>
     /// Centralised, game-specific configuration and asset keys.
     /// </summary>
     public static class AppData
     {
+        #region Physics
+        public static readonly Vector3 GRAVITY = new Vector3(0, -9.81f, 0);
+
+        #endregion
+
         #region Asset Paths
 
         public static readonly string CONTENT_ROOT = "Content";

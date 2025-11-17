@@ -1,9 +1,9 @@
 {
   "version": 1,
   "meta": {
-    "author": "NMCG", 
+    "author": "NMCG",
     "asset": "Game assets - Level 1 - Forbidden Planet"
-    },
+  },
   "fonts": [
     {
       "name": "perf_stats_font",
@@ -16,12 +16,7 @@
     {
       "name": "menufont",
       "contentPath": "assets/fonts/menufont"
-    },
-    {
-      "name": "dummyfont",
-      "contentPath": "assets/fonts/dummyfont"
     }
-
   ],
   "textures": [
     {
@@ -87,7 +82,7 @@
     },
     {
       "name": "controlsmenu_monkey",
-      "contentPath": "assets/textures/ui/backgrounds/controlsmenu_monkey",
+      "contentPath": "assets/textures/ui/backgrounds/controlsmenu_monkey"
     }
   ],
   "models": [
@@ -106,6 +101,33 @@
     {
       "name": "teapot_lowpoly",
       "contentPath": "assets/models/teapot_lowpoly"
+    },
+    {
+      "name": "plane",
+      "contentPath": "assets/models/plane"
     }
+  ],
+  "sounds": [
+    {
+      "name": "explosion1",
+      "contentPath": "assets/sounds/Explosion 1"
+    },
+    {
+      "name": "hand_gun1",
+      "contentPath": "assets/sounds/Hand Gun 1"
+    },
+    {
+      "name": "laser_gun_salve",
+      "contentPath": "assets/sounds/Laser Gun Salve"
+    },
+    {
+      "name": "secret_door",
+      "contentPath": "assets/sounds/Secret door"
+    }
+  ],
+  "effects": [ {
+    "name": "ui_test_effect",
+    "contentPath": "assets/effects/ui/ui_test_effect"
+  }
   ]
 }

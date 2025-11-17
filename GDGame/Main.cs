@@ -18,10 +18,14 @@ using GDEngine.Core.Timing;
 using GDEngine.Core.Utilities;
 using GDGame.Demos.Controllers;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Security.AccessControl;
+using Color = Microsoft.Xna.Framework.Color;
 
 namespace GDGame
 {
@@ -32,22 +36,23 @@ namespace GDGame
         private ContentDictionary<Texture2D> _textureDictionary;
         private ContentDictionary<Model> _modelDictionary;
         private ContentDictionary<SpriteFont> _fontDictionary;
+        private ContentDictionary<SoundEffect> _soundFXDictionary;
+        private ContentDictionary<Effect> _effectsDictionary;
         private Scene _scene;
         private Camera _camera;
         private bool _disposed = false;
+        private OrchestrationSystem _orchestrationSystem;
+        private Material _matBasicUnlit, _matBasicLit, _matAlphaCutout, _matBasicUnlitGround;
         #endregion
 
-        #region Demo Fields (remove in your game)
+        #region Demo Fields (remove in the game)
         private AnimationCurve3D _animationPositionCurve, _animationRotationCurve;
-        private Material _matBasicUnlit, _matBasicLit, _matAlphaCutout;
         private AnimationCurve _animationCurve;
         private GameObject _cameraGO;
         private UIStatsRenderer _uiStatsRenderer;
-        private KeyboardState _prevKeyboard;
         private int _dummyHealth;
-        private OrchestrationSystem _orchestrationSystem;
-        private Material _matBasicUnlitGround;
-        private KeyboardState _kb;
+        private KeyboardState _newKBState, _oldKBState;
+        private int _damageAmount;
         #endregion
 
         #region Core Methods (Common to all games)     
@@ -91,28 +96,26 @@ namespace GDGame
             InitializeCameras();
 
             // Setup world
-            int scale = 500;
+            int scale = 100;
             InitializeSkyParent();
             InitializeSkyBox(scale);
-            InitializeGround(scale);
+            InitializeCollidableGround(scale);
 
             // Setup player
             InitializePlayer();
-
+      
             #region Demos
             // Camera-demos
             InitializeAnimationCurves();
 
-            // Uncomment to see PiP - otherwise its a little annoying
-            //InitializePIPCamera(new Vector3(-35, 5, 5),
-            //    new Viewport(0,
-            //    0,
-            //    400,
-            //    200),
-            //    -1, 0);
+            // Collidable game object demos
+            DemoCollidablePrimitiveObject(new Vector3(0, 50, 15), Vector3.One * 1);
+            DemoCollidablePrimitiveObject(new Vector3(0, 40, 15), Vector3.One * 1);
+            DemoCollidablePrimitiveObject(new Vector3(0, 30, 15), Vector3.One * 1);
+            DemoCollidableFBXModel(new Vector3(0, 50, 10), Vector3.Zero, new Vector3(2,1.25f,2));
+            DemoCollidableFBXModel(new Vector3(0, 40, 11), Vector3.Zero, new Vector3(2, 1.25f, 2));
+            DemoCollidableFBXModel(new Vector3(0, 25, 12), Vector3.Zero, new Vector3(2, 1.25f, 2));
 
-            // Level-demos
-            DemoTestObject();
             DemoAlphaCutoutFoliage(new Vector3(0, 10 /*note Y=heightscale/2*/, 0), 12, 20);
             DemoLoadFromJSON();
             DemoOrchestration();
@@ -129,6 +132,37 @@ namespace GDGame
             base.Initialize();
         }
 
+        private void DemoCollidableFBXModel(Vector3 position, Vector3 eulerRotationDegrees, Vector3 scale)
+        {
+            var go = new GameObject("test");
+            go.Transform.TranslateTo(position);
+            go.Transform.RotateEulerBy(eulerRotationDegrees * MathHelper.Pi / 180f);
+            go.Transform.ScaleTo(scale);
+
+            var model = _modelDictionary.Get("monkey1");
+            var texture = _textureDictionary.Get("mona lisa");
+            var meshFilter = MeshFilterFactory.CreateFromModel(model, _graphics.GraphicsDevice, 0, 0);
+            go.AddComponent(meshFilter);
+
+            var meshRenderer = go.AddComponent<MeshRenderer>();
+
+            meshRenderer.Material = _matBasicLit;
+            meshRenderer.Overrides.MainTexture = texture;
+
+            _scene.Add(go);
+
+
+            // Add box collider (1x1x1 cube)
+            var collider = go.AddComponent<SphereCollider>();
+            collider.Diameter = scale.Length();
+
+            // Add rigidbody (Dynamic so it falls)
+            var rigidBody = go.AddComponent<RigidBody>();
+            rigidBody.BodyType = BodyType.Dynamic;
+            rigidBody.Mass = 1.0f;
+            rigidBody.UseGravity = true;
+        }
+
         private void InitializePlayer()
         {
             GameObject player = InitializeModel(new Vector3(0, 5, 10),
@@ -139,9 +173,8 @@ namespace GDGame
             player.AddComponent(simpleDriveController);
 
             // Listen for damage events on the player
-            player.AddComponent<DamageListener>();
+            player.AddComponent<DamageEventListener>();
         }
-
 
         private void InitializePIPCamera(Vector3 position,
       Viewport viewport, int depth, int index = 0)
@@ -199,13 +232,16 @@ namespace GDGame
             // Set preferred resolution
             ScreenResolution.SetResolution(_graphics, resolution);
 
-            // Center on primary display (set to index of your preferred monitor)
+            // Center on primary display (set to index of the preferred monitor)
             WindowUtility.CenterOnMonitor(this, 1);
         }
 
         private void InitializeMouse()
         {
             Mouse.SetPosition(_graphics.PreferredBackBufferWidth / 2, _graphics.PreferredBackBufferHeight / 2);
+
+            // Set old state at start so its not null for comparison with new state in Update
+            _oldKBState = Keyboard.GetState();
         }
 
         private void InitializeContext()
@@ -225,7 +261,9 @@ namespace GDGame
             _textureDictionary = new ContentDictionary<Texture2D>();
             _modelDictionary = new ContentDictionary<Model>();
             _fontDictionary = new ContentDictionary<SpriteFont>();
-
+            _soundFXDictionary = new ContentDictionary<SoundEffect>();
+            _effectsDictionary = new ContentDictionary<Effect>();
+            //TODO - Add dictionary loading for other assets - song, other?
 
             var manifests = JSONSerializationUtility.LoadData<AssetManifest>(Content, relativeFilePathAndName); // single or array
             if (manifests.Count > 0)
@@ -235,7 +273,9 @@ namespace GDGame
                     _modelDictionary.LoadFromManifest(m.Models, e => e.Name, e => e.ContentPath, overwrite: true);
                     _textureDictionary.LoadFromManifest(m.Textures, e => e.Name, e => e.ContentPath, overwrite: true);
                     _fontDictionary.LoadFromManifest(m.Fonts, e => e.Name, e => e.ContentPath, overwrite: true);
-                    //TODO - Add dictionary loading for other assets - song, soundeffect, other?
+                    _soundFXDictionary.LoadFromManifest(m.Sounds, e => e.Name, e => e.ContentPath, overwrite: true);
+                    _effectsDictionary.LoadFromManifest(m.Effects, e => e.Name, e => e.ContentPath, overwrite: true);
+                    //TODO - Add dictionary loading for other assets - song, other?
                 }
             }
         }
@@ -287,7 +327,7 @@ namespace GDGame
                 .WithRaster(new RasterizerState { CullMode = CullMode.None });
 
             // Clamp avoids edge bleeding from transparent borders.
-            // (Use LinearWrap if your foliage textures tile.)
+            // (Use LinearWrap if the foliage textures tile.)
             _matAlphaCutout.SamplerState = SamplerState.LinearClamp;
 
             #endregion
@@ -301,9 +341,40 @@ namespace GDGame
 
         private void InitializeSystems()
         {
+            InitializePhysicsSystem();
+            InitializePhysicsDebugSystem(true);
             InitializeEventSystem();  //propagate events
             InitializeInputSystem();  //input
             InitializeCameraAndRenderSystems(); //update cameras, draw renderable game objects, draw ui and menu
+            InitializeAudioSystem();
+        }
+
+        private void InitializeAudioSystem()
+        {
+            //throw new NotImplementedException();
+
+        }
+
+        private void InitializePhysicsDebugSystem(bool isEnabled)
+        {
+            var physicsDebugRenderer = _scene.AddSystem(new PhysicsDebugRenderer());
+
+            // Toggle debug rendering on/off
+            physicsDebugRenderer.Enabled = isEnabled; // or false to hide
+
+            // Optional: Customize colors
+            physicsDebugRenderer.StaticColor = Color.Green;      // Immovable objects
+            physicsDebugRenderer.KinematicColor = Color.Blue;    // Animated objects
+            physicsDebugRenderer.DynamicColor = Color.Yellow;    // Physics-driven objects
+            physicsDebugRenderer.TriggerColor = Color.Red;       // Trigger volumes
+
+        }
+
+        private void InitializePhysicsSystem()
+        {
+            // 1. add physics
+            var physicsSystem = _scene.AddSystem(new PhysicsSystem());
+            physicsSystem.Gravity = AppData.GRAVITY;
         }
 
         private void InitializeEventSystem()
@@ -347,7 +418,7 @@ namespace GDGame
         private void InitializeCameras()
         {
 
-                       #region Third-person camera
+            #region Third-person camera
             _cameraGO = new GameObject(AppData.CAMERA_NAME_THIRD_PERSON);
             _camera = _cameraGO.AddComponent<Camera>();
 
@@ -381,7 +452,7 @@ namespace GDGame
 
             // Set the active camera by finding and getting its camera component
             //BUG - FIXED
-            var theCamera = _scene.Find(go => go.Name.Equals(AppData.CAMERA_NAME_THIRD_PERSON)).GetComponent<Camera>();
+            var theCamera = _scene.Find(go => go.Name.Equals(AppData.CAMERA_NAME_FIRST_PERSON)).GetComponent<Camera>();
             ////Obviously, since we have _camera we could also just use the line below
             _scene.SetActiveCamera(theCamera);
         }
@@ -488,14 +559,14 @@ namespace GDGame
 
         }
 
-        private void InitializeGround(int scale = 500)
+        private void InitializeCollidableGround(int scale = 500)
         {
             GameObject gameObject = null;
             MeshFilter meshFilter = null;
             MeshRenderer meshRenderer = null;
 
             gameObject = new GameObject("ground");
-            //meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
+            meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
 
             meshFilter = MeshFilterFactory.CreateQuadGridTexturedUnlit(_graphics.GraphicsDevice,
                  1,
@@ -505,24 +576,36 @@ namespace GDGame
                  20,
                  20);
 
+
             gameObject.Transform.ScaleBy(new Vector3(scale, scale, 1));
             gameObject.Transform.RotateEulerBy(new Vector3(MathHelper.ToRadians(-90), 0, 0), true);
+            gameObject.Transform.TranslateTo(new Vector3(0, -0.5f, 0));
 
             gameObject.AddComponent(meshFilter);
             meshRenderer = gameObject.AddComponent<MeshRenderer>();
             meshRenderer.Material = _matBasicUnlitGround;
             meshRenderer.Overrides.MainTexture = _textureDictionary.Get("ground_grass");
 
+            // Add a box collider matching the ground size
+            var collider = gameObject.AddComponent<BoxCollider>();
+            collider.Size = new Vector3(scale, scale, 0.025f);
+            collider.Center = new Vector3(0, 0, -0.0125f);
+
+            // Add rigidbody as Static (immovable)
+            var rigidBody = gameObject.AddComponent<RigidBody>();
+            rigidBody.BodyType = BodyType.Static;
+            gameObject.IsStatic = true; 
+
             _scene.Add(gameObject);
         }
 
         private void InitializeUI()
         {
-            InitializeStatsRenderer();
-            InitializeMouseReticleRenderer();
+            InitializeUIStatsRenderer();
+            InitializeUIReticleRenderer();
         }
 
-        private void InitializeStatsRenderer()
+        private void InitializeUIStatsRenderer()
         {
             // Create a GO to host the UI
             var uiGO = new GameObject("Stats Overlay");
@@ -537,9 +620,9 @@ namespace GDGame
             _uiStatsRenderer.Font = _fontDictionary.Get("perf_stats_font");
 
             _uiStatsRenderer.ScreenCorner = ScreenCorner.TopRight;
-            _uiStatsRenderer.Margin = new Vector2(10f, 10f);
+            _uiStatsRenderer.Margin = new Vector2(20f, 20f);
 
-            // Optional: add your own debug lines (same pattern you used before)
+            // Optional: add the own debug lines (same pattern you used before)
             _uiStatsRenderer.LinesProvider = () =>
             {
                 var camera = _scene.ActiveCamera;
@@ -561,7 +644,7 @@ namespace GDGame
             _scene.Add(uiGO);
         }
 
-        private void InitializeMouseReticleRenderer()
+        private void InitializeUIReticleRenderer()
         {
             var uiGO = new GameObject("HUD");
 
@@ -622,24 +705,26 @@ namespace GDGame
             Vector3 eulerRotationDegrees, Vector3 scale,
             string textureName, string modelName, string objectName)
         {
-            var go = new GameObject(objectName);
-            go.Transform.TranslateTo(position);
-            go.Transform.RotateEulerBy(eulerRotationDegrees * MathHelper.Pi / 180f);
-            go.Transform.ScaleTo(scale);
+            GameObject gameObject = null;
+
+            gameObject = new GameObject(objectName);
+            gameObject.Transform.TranslateTo(position);
+            gameObject.Transform.RotateEulerBy(eulerRotationDegrees * MathHelper.Pi / 180f);
+            gameObject.Transform.ScaleTo(scale);
 
             var model = _modelDictionary.Get(modelName);
             var texture = _textureDictionary.Get(textureName);
             var meshFilter = MeshFilterFactory.CreateFromModel(model, _graphics.GraphicsDevice, 0, 0);
-            go.AddComponent(meshFilter);
+            gameObject.AddComponent(meshFilter);
 
-            var meshRenderer = go.AddComponent<MeshRenderer>();
+            var meshRenderer = gameObject.AddComponent<MeshRenderer>();
 
             meshRenderer.Material = _matBasicLit;
             meshRenderer.Overrides.MainTexture = texture;
 
-            _scene.Add(go);
+            _scene.Add(gameObject);
 
-            return go;
+            return gameObject;
         }
         protected override void Update(GameTime gameTime)
         {
@@ -652,107 +737,15 @@ namespace GDGame
             //update Scene
             _scene.Update(Time.DeltaTimeSecs);
 
-            DemoStuff();
+          
             #endregion
 
             #region Demo
             _dummyHealth++;
+            DemoStuff();
             #endregion
 
             base.Update(gameTime);
-        }
-
-        private void DemoStuff()
-        {
-            _kb = Keyboard.GetState();
-            DemoStatsToggle();
-            DemoEventPublish();
-            DemoCameraSwitch();
-            _prevKeyboard = _kb;
-        }
-
-        private void DemoCameraSwitch()
-        {
-            var cameraSystem = _scene.GetSystem<CameraSystem>();
-            if (cameraSystem == null)
-            {
-                return;
-            }
-
-            var cameras = cameraSystem.Cameras;
-            if (cameras == null || cameras.Count == 0)
-            {
-                return;
-            }
-
-            bool prevPressed = _kb.IsKeyDown(Keys.F2) && !_prevKeyboard.IsKeyDown(Keys.F2);
-            bool nextPressed = _kb.IsKeyDown(Keys.F3) && !_prevKeyboard.IsKeyDown(Keys.F3);
-
-            if (!prevPressed && !nextPressed)
-            {
-                return;
-            }
-
-            var active = _scene.ActiveCamera;
-            int index = 0;
-
-            if (active != null)
-            {
-                for (int i = 0; i < cameras.Count; i++)
-                {
-                    if (ReferenceEquals(cameras[i], active))
-                    {
-                        index = i;
-                        break;
-                    }
-                }
-            }
-
-            if (nextPressed)
-            {
-                index++;
-                if (index >= cameras.Count)
-                {
-                    index = 0;
-                }
-            }
-            else if (prevPressed)
-            {
-                index--;
-                if (index < 0)
-                {
-                    index = cameras.Count - 1;
-                }
-            }
-
-            _scene.ActiveCamera = cameras[index];
-        }
-
-
-        private void DemoEventPublish()
-        {
-            // F2: publish a test DamageEvent
-            if (_kb.IsKeyDown(Keys.F5) && !_prevKeyboard.IsKeyDown(Keys.F5))
-            {
-                // Simple “debug” damage example
-                var cameraPos = _cameraGO.Transform.Position;
-                var hitPos = cameraPos + _cameraGO.Transform.Forward * 5f;
-
-                var damageEvent = new DamageEvent(10, DamageEvent.DamageType.Strength,
-                    "DebugGun", AppData.PLAYER_NAME, hitPos, false);
-
-                EngineContext.Instance.Events.Post(damageEvent);
-            }
-        }
-
-        private void DemoStatsToggle()
-        {
-            // F1: toggle stats overlay
-            if (_uiStatsRenderer != null)
-            {
-                if (_kb.IsKeyDown(Keys.F1) && !_prevKeyboard.IsKeyDown(Keys.F1))
-                    _uiStatsRenderer.Enabled = !_uiStatsRenderer.Enabled;
-            }
         }
 
         protected override void Draw(GameTime gameTime)
@@ -834,7 +827,109 @@ namespace GDGame
 
         #endregion    }
 
-        #region Demo Methods (remove in your game)
+        #region Demo Methods (remove in the game)
+
+        private void DemoStuff()
+        {
+            _newKBState = Keyboard.GetState();
+            DemoStatsToggle();
+            DemoEventPublish();
+            DemoCameraSwitch();
+            DemoToggleFullscreen();
+            _oldKBState = _newKBState;
+        }
+
+        private void DemoToggleFullscreen()
+        {
+            bool togglePressed = _newKBState.IsKeyDown(Keys.F5) && !_oldKBState.IsKeyDown(Keys.F5);
+            if (togglePressed)
+                _graphics.ToggleFullScreen();
+        }
+
+        private void DemoCameraSwitch()
+        {
+            var cameraSystem = _scene.GetSystem<CameraSystem>();
+            if (cameraSystem == null)
+            {
+                return;
+            }
+
+            var cameras = cameraSystem.Cameras;
+            if (cameras == null || cameras.Count == 0)
+            {
+                return;
+            }
+
+            bool prevPressed = _newKBState.IsKeyDown(Keys.F2) && !_oldKBState.IsKeyDown(Keys.F2);
+            bool nextPressed = _newKBState.IsKeyDown(Keys.F3) && !_oldKBState.IsKeyDown(Keys.F3);
+
+            if (!prevPressed && !nextPressed)
+            {
+                return;
+            }
+
+            var active = _scene.ActiveCamera;
+            int index = 0;
+
+            if (active != null)
+            {
+                for (int i = 0; i < cameras.Count; i++)
+                {
+                    if (ReferenceEquals(cameras[i], active))
+                    {
+                        index = i;
+                        break;
+                    }
+                }
+            }
+
+            if (nextPressed)
+            {
+                index++;
+                if (index >= cameras.Count)
+                {
+                    index = 0;
+                }
+            }
+            else if (prevPressed)
+            {
+                index--;
+                if (index < 0)
+                {
+                    index = cameras.Count - 1;
+                }
+            }
+
+            _scene.ActiveCamera = cameras[index];
+        }
+
+        private void DemoEventPublish()
+        {
+            // F2: publish a test DamageEvent
+            if (_newKBState.IsKeyDown(Keys.F6) && !_oldKBState.IsKeyDown(Keys.F6))
+            {
+                // Simple “debug” damage example
+                var cameraPos = _cameraGO.Transform.Position;
+                var hitPos = cameraPos + _cameraGO.Transform.Forward * 5f;
+                _damageAmount++;
+
+                var damageEvent = new DamageEvent(_damageAmount, DamageEvent.DamageType.Strength,
+                    "DebugGun", AppData.PLAYER_NAME, hitPos, false);
+
+                EngineContext.Instance.Events.Post(damageEvent);
+            }
+        }
+
+        private void DemoStatsToggle()
+        {
+            // F1: toggle stats overlay
+            if (_uiStatsRenderer != null)
+            {
+                if (_newKBState.IsKeyDown(Keys.F1) && !_oldKBState.IsKeyDown(Keys.F1))
+                    _uiStatsRenderer.Enabled = !_uiStatsRenderer.Enabled;
+            }
+        }
+
         private void DemoOrchestration()
         {
             if (_orchestrationSystem == null)
@@ -874,16 +969,15 @@ namespace GDGame
                 InitializeModel(d.Position, d.RotationDegrees, d.Scale, d.TextureName, d.ModelName, d.ObjectName);
         }
 
-        private void DemoTestObject()
+        private void DemoCollidablePrimitiveObject(Vector3 position, Vector3 scale)
         {
             GameObject gameObject = null;
             MeshFilter meshFilter = null;
             MeshRenderer meshRenderer = null;
 
             gameObject = new GameObject("test crate textured cube");
-
-            gameObject.Transform.TranslateTo(new Vector3(0, 5, 0));
-            gameObject.Transform.ScaleTo(Vector3.One * 8);
+            gameObject.Transform.TranslateTo(position);
+            gameObject.Transform.ScaleTo(scale);
 
             meshFilter = MeshFilterFactory.CreateCubeTexturedLit(_graphics.GraphicsDevice);
             gameObject.AddComponent(meshFilter);
@@ -893,6 +987,17 @@ namespace GDGame
             meshRenderer.Overrides.MainTexture = _textureDictionary.Get("crate1");
 
             _scene.Add(gameObject);
+
+            // Add box collider (1x1x1 cube)
+            var collider = gameObject.AddComponent<BoxCollider>();
+            collider.Size = scale;
+            collider.Center = new Vector3(0, 0, 0);
+
+            // Add rigidbody (Dynamic so it falls)
+            var rigidBody = gameObject.AddComponent<RigidBody>();
+            rigidBody.BodyType = BodyType.Dynamic;
+            rigidBody.Mass = 1.0f;
+            rigidBody.UseGravity = true;
 
             //#region Demo - Curve and Input
             //var posRotController = new PositionRotationController
@@ -914,7 +1019,7 @@ namespace GDGame
         {
             var go = new GameObject("tree");
 
-            // A unit quad facing +Z (your factory already supplies lit quad with UVs)
+            // A unit quad facing +Z (the factory already supplies lit quad with UVs)
             var mf = MeshFilterFactory.CreateQuadTexturedLit(GraphicsDevice);
             go.AddComponent(mf);
 
@@ -929,7 +1034,7 @@ namespace GDGame
             treeRenderer.Overrides.SetInt("ReferenceAlpha", 128);
             treeRenderer.Overrides.Alpha = 1f; // overall alpha multiplier (kept at 1 for cutout)
 
-            // Scale the quad so it looks like a tree (aspect from your PNG)
+            // Scale the quad so it looks like a tree (aspect from the PNG)
             go.Transform.ScaleTo(new Vector3(width, height, 1f));
 
             go.Transform.TranslateTo(position);

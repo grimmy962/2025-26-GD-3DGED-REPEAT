@@ -1,7 +1,10 @@
-﻿using GDEngine.Core.Entities;
+﻿using GDEngine.Core.Collections;
+using GDEngine.Core.Entities;
 using GDEngine.Core.Events;
+using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Media;
 
 namespace GDEngine.Core.Services
 {
@@ -28,8 +31,8 @@ namespace GDEngine.Core.Services
         public GraphicsDevice GraphicsDevice { get; }
         public ContentManager Content { get; }
         public SpriteBatch SpriteBatch { get; }
-
         public EventBus Events { get; }
+        public ContentDictionary<SoundEffect> SoundEffectDictionary { get; }
 
         public static EngineContext? Instance
         {
@@ -78,8 +81,9 @@ namespace GDEngine.Core.Services
                 // Dispose managed resources
                 SpriteBatch?.Dispose();
                 Content?.Dispose();
+                SoundEffectDictionary?.Dispose();
+                Events?.Dispose();
                 // Note: GraphicsDevice is typically owned by the Game class, so we don't dispose it here
-                // If EventBus becomes IDisposable in future, dispose it here.
             }
 
             _disposed = true;

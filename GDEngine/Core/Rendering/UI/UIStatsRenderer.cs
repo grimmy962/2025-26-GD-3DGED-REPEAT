@@ -147,6 +147,8 @@ namespace GDEngine.Core.Debug
             float maxWidth = _headerTemplateWidth;
 
             _extra = null;
+            int extraLineCount = 0;
+
             if (_linesProvider != null)
             {
                 _extra = new List<string>();
@@ -157,13 +159,19 @@ namespace GDEngine.Core.Debug
                     if (width > maxWidth)
                         maxWidth = width;
                 }
-
-                linesCount += _extra.Count;
+                extraLineCount = _extra.Count;
             }
 
-            _gapAfterHeader = _extra != null && _extra.Count > 0 ? 5f : 0f;
+            // Calculate gap separately from line count
+            _gapAfterHeader = extraLineCount > 0 ? 10f : 0f;
 
-            float totalHeight = _texturePadding.Y * 2f + _font.LineSpacing * linesCount + _gapAfterHeader;
+            // Total height = padding + header + gap + extras + padding
+            float totalHeight = _texturePadding.Y * 2f +              // Top padding
+                               _font.LineSpacing +                     // Header line
+                               _gapAfterHeader +                       // Gap
+                               (_font.LineSpacing * extraLineCount);   // Extra lines
+                                                                       // (bottom padding already in first term)
+
             float totalWidth = _texturePadding.X * 2f + maxWidth;
 
             // Work out where the panel should sit in the window
@@ -173,10 +181,10 @@ namespace GDEngine.Core.Debug
             _anchor = panelTopLeft + _texturePadding;
 
             _backRect = new Rectangle(
-                (int)System.MathF.Floor(panelTopLeft.X),
-                (int)System.MathF.Floor(panelTopLeft.Y),
-                (int)System.MathF.Ceiling(totalWidth),
-                (int)System.MathF.Ceiling(totalHeight));
+                (int)MathF.Floor(panelTopLeft.X),
+                (int)MathF.Floor(panelTopLeft.Y),
+                (int)MathF.Ceiling(totalWidth),
+                (int)MathF.Ceiling(totalHeight));
         }
 
         public override void Draw(GraphicsDevice device, Camera? camera)

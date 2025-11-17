@@ -55,7 +55,7 @@ namespace GDEngine.Core.Rendering
     {
         #region Static Fields
         protected static readonly Vector2 _shadowNudge = new Vector2(1f, 1f);
-        public const float LAYER_DEPTH_EPSILON = 1E-1f; //0.01f;
+        public const float LAYER_DEPTH_EPSILON = 0.1f; 
         #endregion
 
         #region Fields

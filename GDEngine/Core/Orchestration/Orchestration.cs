@@ -15,6 +15,7 @@ namespace GDEngine.Core.Orchestration
     /// ImpulseSystem, and other systems.
     /// </summary>
     /// <see cref="OrchestrationSystem"/>
+    /// <example>
     public sealed class Orchestrator
     {
         #region Static Fields

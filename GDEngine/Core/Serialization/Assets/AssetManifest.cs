@@ -11,7 +11,9 @@
         private List<AssetEntry> _textures = new();
         private List<AssetEntry> _fonts = new();
         private List<AssetEntry> _sounds = new();
-        private List<AssetEntry> _music = new();
+        private List<AssetEntry> _songs = new();
+        private List<AssetEntry> _effects = new();
+
         //if you want to add more string key/value pairs for an asset then add a List field for that type here and a property.
         #endregion
 
@@ -20,7 +22,8 @@
         public List<AssetEntry> Textures { get => _textures; set => _textures = value ?? new(); }
         public List<AssetEntry> Fonts { get => _fonts; set => _fonts = value ?? new(); }
         public List<AssetEntry> Sounds { get => _sounds; set => _sounds = value ?? new(); }
-        public List<AssetEntry> Music { get => _music; set => _music = value ?? new(); }
+        public List<AssetEntry> Songs { get => _songs; set => _songs = value ?? new(); }
+        public List<AssetEntry> Effects { get => _effects; set => _effects = value; }
         #endregion
     }
 

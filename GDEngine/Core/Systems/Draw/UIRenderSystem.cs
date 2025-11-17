@@ -1,9 +1,13 @@
-﻿using GDEngine.Core.Entities;
+﻿using GDEngine.Core.Components;
+using GDEngine.Core.Entities;
 using GDEngine.Core.Enums;
 using GDEngine.Core.Rendering;
 using GDEngine.Core.Services;
 using GDEngine.Core.Systems.Base;
+using GDEngine.Core.Timing;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using SharpDX.Direct2D1.Effects;
 
 namespace GDEngine.Core.Systems
 {
@@ -18,7 +22,7 @@ namespace GDEngine.Core.Systems
     {
         #region Static Fields
         private static readonly SpriteSortMode _sort = SpriteSortMode.BackToFront;
-        private static readonly RasterizerState _raster = RasterizerState.CullNone;
+        private static readonly RasterizerState _raster = RasterizerState.CullCounterClockwise;
         private static readonly DepthStencilState _depth = DepthStencilState.None;
         private static readonly BlendState _blend = BlendState.AlphaBlend;
         private static readonly SamplerState _sampler = SamplerState.PointClamp;
@@ -32,10 +36,15 @@ namespace GDEngine.Core.Systems
         private readonly List<UIRenderer> _renderers = new List<UIRenderer>(16);
         #endregion
 
+        #region Properties
+
+        #endregion
+
         #region Constructors
         public UIRenderSystem(int order = 10)
             : base(FrameLifecycle.PostRender, order)
         {
+  
         }
         #endregion
 
@@ -71,7 +80,7 @@ namespace GDEngine.Core.Systems
 
         public override void Draw(float deltaTime)
         {
-            _spriteBatch.Begin(_sort, _blend, _sampler, _depth, _raster);
+          _spriteBatch.Begin(_sort, _blend, _sampler, _depth, _raster);
 
             for (int i = 0; i < _renderers.Count; i++)
                 if (_renderers[i].Enabled)

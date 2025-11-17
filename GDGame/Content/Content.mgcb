@@ -13,12 +13,11 @@
 
 #---------------------------------- Content ---------------------------------#
 
-#begin Assets/Fonts/dummyfont.spritefont
-/importer:FontDescriptionImporter
-/processor:FontDescriptionProcessor
-/processorParam:PremultiplyAlpha=True
-/processorParam:TextureFormat=Compressed
-/build:Assets/Fonts/dummyfont.spritefont
+#begin Assets/Effects/UI/ui_test_effect.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:Assets/Effects/UI/ui_test_effect.fx
 
 #begin Assets/Fonts/menufont.spritefont
 /importer:FontDescriptionImporter
@@ -34,13 +33,6 @@
 /processorParam:TextureFormat=Compressed
 /build:Assets/Fonts/perfStats.spritefont
 
-#begin Assets/Fonts/testfont.spritefont
-/importer:FontDescriptionImporter
-/processor:LocalizedFontProcessor
-/processorParam:PremultiplyAlpha=True
-/processorParam:TextureFormat=Compressed
-/build:Assets/Fonts/testfont.spritefont
-
 #begin Assets/Fonts/uiReticleText.spritefont
 /importer:FontDescriptionImporter
 /processor:FontDescriptionProcessor
@@ -48,7 +40,7 @@
 /processorParam:TextureFormat=Compressed
 /build:Assets/Fonts/uiReticleText.spritefont
 
-#begin Assets/Models/cube.FBX
+#begin Assets/Models/cube.fbx
 /importer:FbxImporter
 /processor:ModelProcessor
 /processorParam:ColorKeyColor=0,0,0,0
@@ -65,7 +57,7 @@
 /processorParam:Scale=1
 /processorParam:SwapWindingOrder=False
 /processorParam:TextureFormat=Compressed
-/build:Assets/Models/cube.FBX
+/build:Assets/Models/cube.fbx
 
 #begin Assets/Models/monkey1.fbx
 /importer:FbxImporter
@@ -85,6 +77,25 @@
 /processorParam:SwapWindingOrder=False
 /processorParam:TextureFormat=Compressed
 /build:Assets/Models/monkey1.fbx
+
+#begin Assets/Models/plane.fbx
+/importer:FbxImporter
+/processor:ModelProcessor
+/processorParam:ColorKeyColor=0,0,0,0
+/processorParam:ColorKeyEnabled=True
+/processorParam:DefaultEffect=BasicEffect
+/processorParam:GenerateMipmaps=True
+/processorParam:GenerateTangentFrames=False
+/processorParam:PremultiplyTextureAlpha=True
+/processorParam:PremultiplyVertexColors=True
+/processorParam:ResizeTexturesToPowerOfTwo=False
+/processorParam:RotationX=0
+/processorParam:RotationY=0
+/processorParam:RotationZ=0
+/processorParam:Scale=1
+/processorParam:SwapWindingOrder=False
+/processorParam:TextureFormat=Compressed
+/build:Assets/Models/plane.fbx
 
 #begin Assets/Models/skydome.fbx
 /importer:FbxImporter
@@ -180,6 +191,30 @@
 /processorParam:SwapWindingOrder=False
 /processorParam:TextureFormat=Compressed
 /build:Assets/Models/teapot.FBX
+
+#begin Assets/Sounds/Explosion 1.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Assets/Sounds/Explosion 1.wav
+
+#begin Assets/Sounds/Hand Gun 1.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Assets/Sounds/Hand Gun 1.wav
+
+#begin Assets/Sounds/Laser Gun Salve.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Assets/Sounds/Laser Gun Salve.wav
+
+#begin Assets/Sounds/Secret door.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Assets/Sounds/Secret door.wav
 
 #begin Assets/Textures/Architecture/Walls/backwall.jpg
 /importer:TextureImporter

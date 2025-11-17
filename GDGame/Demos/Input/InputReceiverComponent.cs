@@ -10,7 +10,7 @@ namespace GDGame.Demos
     /// <summary>
     /// Demo receiver that prints axis movements and button presses/releases
     /// from any input device routed through the InputSystem.
-    /// Attach to any GameObject in your scene.
+    /// Attach to any GameObject in the scene.
     /// </summary>
     /// <see cref="InputSystem"/>
     /// <see cref="IInputReceiver"/>

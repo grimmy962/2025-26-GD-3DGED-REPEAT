@@ -5,7 +5,7 @@ using GDEngine.Core.Systems.Base;
 namespace GDEngine.Core.Systems
 {
     /// <summary>
-    /// Main-thread pump for EventBus. Add this system to your Scene
+    /// Main-thread pump for EventBus. Add this system to the Scene
     /// so queued events are flushed once per frame in EarlyUpdate.
     /// </summary>
     /// <see cref="EventBus"/>

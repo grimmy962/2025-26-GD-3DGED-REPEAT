@@ -22,7 +22,7 @@ namespace GDEngine.Core.Rendering
         #endregion
 
         #region Properties
-        public Material Material
+        public Material? Material
         {
             get => _material;
             set => _material = value;

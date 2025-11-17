@@ -63,7 +63,7 @@ namespace GDGame.Demos.Controllers
             // in that case, no visible rotation will occur, which is acceptable and safe.
             _rotationAxisNormalized.Normalize();
 
-            // NO-OP: base.Awake() if your base class needs it; otherwise intentionally omitted.
+            // NO-OP: base.Awake() if the base class needs it; otherwise intentionally omitted.
         }
         #endregion
     }

@@ -92,7 +92,7 @@ namespace GDEngine.Core.Systems
             var deviceCount = _devices.Count;
     
             if (deviceCount == 0)
-                throw new ArgumentException("Ensure you register a device in your game Main class");
+                throw new ArgumentException("Ensure you register a device in the game Main class");
 
             // poll all devices
             for (int i = 0; i < deviceCount; i++)

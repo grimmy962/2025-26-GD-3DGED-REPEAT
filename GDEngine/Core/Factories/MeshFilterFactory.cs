@@ -522,7 +522,7 @@ namespace GDEngine.Core.Factories
                     int i2 = i0 + vx;
                     int i3 = i2 + 1;
 
-                    // Same CW winding as your other quads (left-handed)
+                    // Same CW winding as the other quads (left-handed)
                     indices[t++] = (short)i2; // TL
                     indices[t++] = (short)i1; // BR
                     indices[t++] = (short)i0; // BL
@@ -611,7 +611,7 @@ namespace GDEngine.Core.Factories
                     int i2 = i0 + vx;
                     int i3 = i2 + 1;
 
-                    // Same CW winding as your other quads (left-handed)
+                    // Same CW winding as the other quads (left-handed)
                     indices[t++] = (short)i2; // TL
                     indices[t++] = (short)i1; // BR
                     indices[t++] = (short)i0; // BL
@@ -802,7 +802,7 @@ namespace GDEngine.Core.Factories
         /// MonoGame <see cref="Model"/> and returns a new <see cref="MeshFilter"/>
         /// with standalone GPU buffers (no dependency on the original Model).
         /// </summary>
-        /// <param name="model">An already-loaded Model (e.g., from your dictionary).</param>
+        /// <param name="model">An already-loaded Model (e.g., from the dictionary).</param>
         /// <param name="device">Graphics device for buffer creation.</param>
         /// <param name="meshIndex">Which ModelMesh to use (default 0).</param>
         /// <param name="partIndex">Which ModelMeshPart within that mesh (default 0).</param>
