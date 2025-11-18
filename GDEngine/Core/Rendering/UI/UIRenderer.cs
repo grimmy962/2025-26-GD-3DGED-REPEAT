@@ -47,7 +47,8 @@ namespace GDEngine.Core.Rendering
 
     /// <summary>
     /// Base component for on-screen overlays that draw in PostRender via <see cref="UIRenderSystem"/>.
-    /// Centralizes common UI draw fields so subclasses only supply per-type data (origin, scale, etc.).
+    /// Centralizes common UI draw fields so subclasses only supply per-type data.
+    /// Refactored to include common fields: scale, origin, sourceRect, colors, and graphicsDevice.
     /// </summary>
     /// <see cref="Component"/>
     /// <see cref="UIRenderSystem"/>
@@ -55,17 +56,27 @@ namespace GDEngine.Core.Rendering
     {
         #region Static Fields
         protected static readonly Vector2 _shadowNudge = new Vector2(1f, 1f);
-        public const float LAYER_DEPTH_EPSILON = 0.1f; 
+        public const float LAYER_DEPTH_EPSILON = 0.1f;
         #endregion
 
         #region Fields
         protected SpriteBatch? _spriteBatch;
+        protected GraphicsDevice? _graphicsDevice;
 
+        // Drawing properties
         private float _layerDepth = 0.9f;
         private float _rotationRadians = 0f;
         private SpriteEffects _effects = SpriteEffects.None;
 
+        // Layout - common across multiple child classes
+        protected Vector2 _scale = Vector2.One;
+        protected Vector2 _origin = Vector2.Zero;
+        protected Rectangle? _sourceRect;
         private TextAnchor _anchor = TextAnchor.TopLeft;
+
+        // Colors - common tint and shadow
+        protected Color _color = Color.White;
+        protected Color _shadowColor = new Color(0, 0, 0, 180);
         #endregion
 
         #region Properties
@@ -96,6 +107,51 @@ namespace GDEngine.Core.Rendering
             get { return _anchor; }
             set { _anchor = value; }
         }
+
+        /// <summary>
+        /// Scale of the UI element as a 2D vector (allows non-uniform scaling).
+        /// </summary>
+        public Vector2 Scale
+        {
+            get { return _scale; }
+            set { _scale = value; }
+        }
+
+        /// <summary>
+        /// Origin point for rotation and positioning (in local texture coordinates).
+        /// </summary>
+        public Vector2 Origin
+        {
+            get { return _origin; }
+            set { _origin = value; }
+        }
+
+        /// <summary>
+        /// Optional source rectangle for texture-based rendering (null = full texture).
+        /// </summary>
+        public Rectangle? SourceRectangle
+        {
+            get { return _sourceRect; }
+            set { _sourceRect = value; }
+        }
+
+        /// <summary>
+        /// Primary color/tint for the UI element.
+        /// </summary>
+        public Color Color
+        {
+            get { return _color; }
+            set { _color = value; }
+        }
+
+        /// <summary>
+        /// Shadow color used when drawing drop shadows.
+        /// </summary>
+        public Color ShadowColor
+        {
+            get { return _shadowColor; }
+            set { _shadowColor = value; }
+        }
         #endregion
 
         #region Helper Methods
@@ -113,7 +169,6 @@ namespace GDEngine.Core.Rendering
         /// <summary>
         /// Returns an offset from the top-left of a region of the given size so that
         /// drawing with this offset as the origin will respect the chosen anchor.
-        /// (Same logic that used to live in <see cref="UITextRenderer"/>.)
         /// </summary>
         protected static Vector2 ComputeAnchorOffset(Vector2 size, TextAnchor anchor)
         {
@@ -144,6 +199,80 @@ namespace GDEngine.Core.Rendering
             originFromAnchor = ComputeAnchorOffset(contentSize, _anchor);
             drawPosition = basePosition;
         }
+
+        /// <summary>
+        /// Calculates and sets the origin to the center of a texture or source rectangle.
+        /// Shared logic extracted from UITextureRenderer and UIReticleRenderer.
+        /// </summary>
+        protected void CenterOriginFromTexture(Texture2D? texture, Rectangle? sourceRect)
+        {
+            if (texture == null) return;
+
+            if (sourceRect.HasValue)
+            {
+                var r = sourceRect.Value;
+                _origin = new Vector2(r.Width * 0.5f, r.Height * 0.5f);
+            }
+            else
+            {
+                _origin = new Vector2(texture.Width * 0.5f, texture.Height * 0.5f);
+            }
+        }
+
+        /// <summary>
+        /// Helper to draw text with an optional drop shadow in a single call.
+        /// Reduces code duplication across text-rendering UI elements.
+        /// </summary>
+        protected void DrawStringWithShadow(
+            SpriteFont font,
+            string text,
+            Vector2 position,
+            Color color,
+            float rotation,
+            Vector2 origin,
+            float scale,
+            SpriteEffects effects,
+            float layerDepth,
+            bool enableShadow = true)
+        {
+            if (_spriteBatch == null) return;
+
+            if (enableShadow)
+            {
+                _spriteBatch.DrawString(font, text, position + _shadowNudge, _shadowColor,
+                    rotation, origin, scale, effects, Behind(layerDepth));
+            }
+
+            _spriteBatch.DrawString(font, text, position, color,
+                rotation, origin, scale, effects, layerDepth);
+        }
+
+        /// <summary>
+        /// Helper to draw text with an optional drop shadow using Vector2 scale.
+        /// </summary>
+        protected void DrawStringWithShadow(
+            SpriteFont font,
+            string text,
+            Vector2 position,
+            Color color,
+            float rotation,
+            Vector2 origin,
+            Vector2 scale,
+            SpriteEffects effects,
+            float layerDepth,
+            bool enableShadow = true)
+        {
+            if (_spriteBatch == null) return;
+
+            if (enableShadow)
+            {
+                _spriteBatch.DrawString(font, text, position + _shadowNudge, _shadowColor,
+                    rotation, origin, scale, effects, Behind(layerDepth));
+            }
+
+            _spriteBatch.DrawString(font, text, position, color,
+                rotation, origin, scale, effects, layerDepth);
+        }
         #endregion
 
         #region Constructors
@@ -157,8 +286,9 @@ namespace GDEngine.Core.Rendering
         {
             base.Awake();
 
-            // Cache SpriteBatch from the scene context
+            // Cache SpriteBatch and GraphicsDevice from the scene context
             _spriteBatch = GameObject?.Scene?.Context.SpriteBatch;
+            _graphicsDevice = GameObject?.Scene?.Context.GraphicsDevice;
 
             // Auto-register with the scene's UIRenderSystem so it can be drawn
             var scene = GameObject?.Scene;

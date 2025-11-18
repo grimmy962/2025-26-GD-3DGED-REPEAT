@@ -1,4 +1,6 @@
 ﻿using GDEngine.Core;
+using GDEngine.Core.Audio;
+using GDEngine.Core.Audio.Events;
 using GDEngine.Core.Collections;
 using GDEngine.Core.Components;
 using GDEngine.Core.Debug;
@@ -34,7 +36,7 @@ namespace GDGame
         private ContentDictionary<Texture2D> _textureDictionary;
         private ContentDictionary<Model> _modelDictionary;
         private ContentDictionary<SpriteFont> _fontDictionary;
-        private ContentDictionary<SoundEffect> _soundFXDictionary;
+        private ContentDictionary<SoundEffect> _soundDictionary;
         private ContentDictionary<Effect> _effectsDictionary;
         private Scene _scene;
         private Camera _camera;
@@ -136,7 +138,7 @@ namespace GDGame
 
         private void DemoPlaySoundEffect()
         {
-            _soundEffect = _soundFXDictionary.Get("secret_door");
+            _soundEffect = _soundDictionary.Get("secret_door");
           
         }
 
@@ -272,7 +274,7 @@ namespace GDGame
             _textureDictionary = new ContentDictionary<Texture2D>();
             _modelDictionary = new ContentDictionary<Model>();
             _fontDictionary = new ContentDictionary<SpriteFont>();
-            _soundFXDictionary = new ContentDictionary<SoundEffect>();
+            _soundDictionary = new ContentDictionary<SoundEffect>();
             _effectsDictionary = new ContentDictionary<Effect>();
             //TODO - Add dictionary loading for other assets - song, other?
 
@@ -284,7 +286,7 @@ namespace GDGame
                     _modelDictionary.LoadFromManifest(m.Models, e => e.Name, e => e.ContentPath, overwrite: true);
                     _textureDictionary.LoadFromManifest(m.Textures, e => e.Name, e => e.ContentPath, overwrite: true);
                     _fontDictionary.LoadFromManifest(m.Fonts, e => e.Name, e => e.ContentPath, overwrite: true);
-                    _soundFXDictionary.LoadFromManifest(m.Sounds, e => e.Name, e => e.ContentPath, overwrite: true);
+                    _soundDictionary.LoadFromManifest(m.Sounds, e => e.Name, e => e.ContentPath, overwrite: true);
                     _effectsDictionary.LoadFromManifest(m.Effects, e => e.Name, e => e.ContentPath, overwrite: true);
                     //TODO - Add dictionary loading for other assets - song, other?
                 }
@@ -362,8 +364,7 @@ namespace GDGame
 
         private void InitializeAudioSystem()
         {
-            //throw new NotImplementedException();
-
+            //TODO - Exercise
         }
 
         private void InitializePhysicsDebugSystem(bool isEnabled)
@@ -428,6 +429,9 @@ namespace GDGame
 
         private void InitializeCameras()
         {
+            #region Static birds-eye camera
+            //TODO - add camera
+            #endregion
 
             #region Third-person camera
             _cameraGO = new GameObject(AppData.CAMERA_NAME_THIRD_PERSON);
@@ -663,48 +667,54 @@ namespace GDGame
 
             // Reticle (cursor): always on top
             var reticle = new UIReticleRenderer(reticleAtlas);
+            reticle.Origin = reticleAtlas.GetCenter();
             reticle.SourceRectangle = null;
             reticle.Scale = new Vector2(0.1f, 0.1f);
-            reticle.RotationSpeedDegPerSec = 45;
+            reticle.RotationSpeedDegPerSec = 55;
             reticle.LayerDepth = UILayer.Cursor;
             uiGO.AddComponent(reticle);
 
             // Distance/health lines under the cursor
-            var waypointObject = _scene.Find((go) => go.Name.Equals("test crate textured cube"));
-            var cameraObject = _scene.Find(go => go.Name.Equals("First person camera"));
+            //var waypointObject = _scene.Find((go) => go.Name.Equals("test crate textured cube"));
+            //var cameraObject = _scene.Find(go => go.Name.Equals("First person camera"));
 
-            Func<IEnumerable<string>> linesProvider = () =>
-            {
-                var distToWaypoint = Vector3.Distance(
-                    cameraObject.Transform.Position,
-                    waypointObject.Transform.Position);
-                var hp = _dummyHealth;
-                return new[]
-                {
-                    $"Dist: {distToWaypoint:F2} m",
-                    $"Health:   {hp}"
-                };
-            };
+            ////no first person camera
+            //if (cameraObject != null)
+            //{
 
-            // Text anchored at mouse, slightly below the reticle
-            var text = new UITextRenderer(uiFont);
-            //  text.PositionProvider = () => Mouse.GetState().Position.ToVector2();
+            //    Func<IEnumerable<string>> linesProvider = () =>
+            //    {
+            //        var distToWaypoint = Vector3.Distance(
+            //            cameraObject.Transform.Position,
+            //            waypointObject.Transform.Position);
+            //        var hp = _dummyHealth;
+            //        return new[]
+            //        {
+            //        $"Dist: {distToWaypoint:F2} m",
+            //        $"Health:   {hp}"
+            //        };
+            //    };
 
-            text.PositionProvider = () => new Vector2(_graphics.PreferredBackBufferWidth/2,
-                                                      _graphics.PreferredBackBufferHeight/2);
+            //    // Text anchored at mouse, slightly below the reticle
+            //    var text = new UITextRenderer(uiFont);
+            //    //  text.PositionProvider = () => Mouse.GetState().Position.ToVector2();
 
-            text.Anchor = TextAnchor.Center;
-            text.Offset = new Vector2(0, 50);
-            text.FallbackColor = Color.White;
-            text.DropShadow = true;
-            text.ShadowColor = Color.Black;
+            //    text.PositionProvider = () => new Vector2(_graphics.PreferredBackBufferWidth / 2,
+            //                                              _graphics.PreferredBackBufferHeight / 2);
 
-            // Place HUD text below the cursor in the same pass
-            text.LayerDepth = UILayer.HUD;
+            //    text.Anchor = TextAnchor.Center;
+            //    text.Offset = new Vector2(0, 50);
+            //    text.FallbackColor = Color.White;
+            //    text.DropShadow = true;
+            //    text.ShadowColor = Color.Black;
 
-            text.TextProvider = () => string.Join("\n", linesProvider());
+            //    // Place HUD text below the cursor in the same pass
+            //    text.LayerDepth = UILayer.HUD;
 
-            uiGO.AddComponent(text);
+            //    text.TextProvider = () => string.Join("\n", linesProvider());
+
+            //    uiGO.AddComponent(text);
+            //}
             _scene.Add(uiGO);
 
             // Hide mouse since reticle will take its place
@@ -849,8 +859,15 @@ namespace GDGame
             DemoEventPublish();
             DemoCameraSwitch();
             DemoToggleFullscreen();
+            DemoAudioSystem();
             _oldKBState = _newKBState;
         }
+
+        private void DemoAudioSystem()
+        {
+            //TODO - Exercise
+        }
+
 
         private void DemoToggleFullscreen()
         {

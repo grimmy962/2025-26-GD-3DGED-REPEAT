@@ -6,40 +6,42 @@ namespace GDEngine.Core.Rendering.UI
 {
     /// <summary>
     /// Draws a Texture2D in screen space via centralized batching in <see cref="UIRenderer"/>.
+    /// Refactored to use base class fields for texture, scale, origin, sourceRect, and color.
     /// </summary>
     public class UITextureRenderer : UIRenderer
     {
         #region Fields
         private Texture2D? _texture;
-        private Rectangle? _sourceRect;
         private Vector2 _position;
-        private Vector2 _origin;
-        private Vector2 _scale = Vector2.One;
-        private Color _tint = Color.White;
         #endregion
 
         #region Properties
-        public Texture2D? Texture { get => _texture; set => _texture = value; }
-        public Rectangle? SourceRectangle { get => _sourceRect; set => _sourceRect = value; }
+        public Texture2D? Texture
+        {
+            get => _texture;
+            set => _texture = value;
+        }
+
         public Vector2 Position { get => _position; set => _position = value; }
-        public Vector2 Origin { get => _origin; set => _origin = value; }
-        public Vector2 Scale { get => _scale; set => _scale = value; }
-        public Color Tint { get => _tint; set => _tint = value; }
+
+        /// <summary>
+        /// Tint color for the texture. Accesses base class Color property.
+        /// </summary>
+        public Color Tint
+        {
+            get => Color;
+            set => Color = value;
+        }
         #endregion
 
         #region Methods
+        /// <summary>
+        /// Sets the origin to the center of the texture or source rectangle.
+        /// Now uses base class helper method.
+        /// </summary>
         public void CenterOrigin()
         {
-            if (_texture == null) return;
-            if (_sourceRect.HasValue)
-            {
-                var r = _sourceRect.Value;
-                _origin = new Vector2(r.Width * 0.5f, r.Height * 0.5f);
-            }
-            else
-            {
-                _origin = new Vector2(_texture.Width * 0.5f, _texture.Height * 0.5f);
-            }
+            CenterOriginFromTexture(_texture, _sourceRect);
         }
         #endregion
 
@@ -48,8 +50,16 @@ namespace GDEngine.Core.Rendering.UI
         {
             if (_spriteBatch == null || _texture == null) return;
 
-            _spriteBatch.Draw(_texture, _position, _sourceRect, _tint,
-                RotationRadians, _origin, _scale, Effects, LayerDepth);
+            _spriteBatch.Draw(
+                _texture,
+                _position,
+                _sourceRect,
+                Color,
+                RotationRadians,
+                _origin,
+                _scale,
+                Effects,
+                LayerDepth);
         }
         #endregion
     }

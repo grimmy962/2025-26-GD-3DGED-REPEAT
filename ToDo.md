@@ -91,16 +91,17 @@ This document contains a step-by-step development plan of MonoGame content cover
 - [x] Add other `Camera` controller types (3rd person, rail camera, security).
 - [x] Add `AppData` string constants for use in `Main` (e.g. `"The Player"`).
 - [x] Add anchoring to `UIRenderer` (see stats overlay in `Main::InitializeStatsRenderer`).
-- [ ] Add `OrchestrationSystem` for sequencing game events.
-- [ ] Add support for single or multi `Camera` views in `RenderSystem`.
-- [ ] Add physics engine (`PhysicsSystem` and CDCR).
-- [ ] Add dictionary in `MeshFilterFactory` to reduce `VertexBuffer` and `IndexBuffer` usage on duplicate calls to a method.
-- [ ] Add support for deep and shallow cloning on `GameObject` components.
+- [x] Add support for single or multi `Camera` views in `RenderSystem`.
 
 ## Week 9
+- [x] Add `OrchestrationSystem` for sequencing game events.
+- [ ] Add physics engine (`PhysicsSystem` and CDCR).
+- [x] Add **audio hooks**: `AudioSystem` to support 2D and 3D sound; service access via `EventBus`.
+- [ ] Add `UIMenuSystem`
+- [ ] Add dictionary in `MeshFilterFactory` to reduce `VertexBuffer` and `IndexBuffer` usage on duplicate calls to a method.
+- [ ] Add support for deep and shallow cloning on `GameObject` components.
 - [ ] Add support for opaque/transparent objects.
 - [ ] Split `GameObject` in `Scene` into opaque/transparent, active/inactive, static/dynamic.
-- [ ] Add **audio hooks**: `AudioSystem` to support 2D and 3D sound; service access via `EventBus`.
 - [ ] Add **frustum culling** with `BoundingFrustum` against `MeshFilter.Bounds`.
 - [ ] Add event on resolution change.
 - [ ] Add demos for effects supporting normal maps and environment maps.

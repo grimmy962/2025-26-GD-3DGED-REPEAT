@@ -4,16 +4,16 @@ using GDEngine.Core.Enums;
 using GDEngine.Core.Rendering;
 using GDEngine.Core.Services;
 using GDEngine.Core.Systems.Base;
-using GDEngine.Core.Timing;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using SharpDX.Direct2D1.Effects;
 
 namespace GDEngine.Core.Systems
 {
     /// <summary>
     /// PostRender dispatcher that asks overlay components to draw after the 3D pass.
     /// Assumes RenderingSystem restored the full backbuffer viewport.
+    /// 
+    /// Maintains separate active/inactive lists to eliminate enabled checks in draw loop.
+    /// Inspired by the GameObject partitioning pattern - O(k) draw instead of O(n) with checks.
     /// </summary>
     /// <see cref="Scene"/>
     /// <see cref="UIRenderer"/>
@@ -33,36 +33,78 @@ namespace GDEngine.Core.Systems
         private EngineContext _context = null!;
         private GraphicsDevice _device = null!;
         private SpriteBatch _spriteBatch;
-        private readonly List<UIRenderer> _renderers = new List<UIRenderer>(16);
-        #endregion
 
-        #region Properties
-
+        // OPTIMIZATION: Maintain separate lists for active and all renderers
+        private readonly List<UIRenderer> _allRenderers = new List<UIRenderer>(16);
+        private readonly List<UIRenderer> _activeRenderers = new List<UIRenderer>(16);
+        private bool _needsRebuildActiveList = false;
         #endregion
 
         #region Constructors
         public UIRenderSystem(int order = 10)
             : base(FrameLifecycle.PostRender, order)
         {
-  
         }
         #endregion
 
         #region Methods
+        /// <summary>
+        /// Registers a UIRenderer with this system. Subscribes to enabled changes for list management.
+        /// </summary>
         public void Add(UIRenderer renderer)
         {
             if (renderer == null)
                 throw new ArgumentNullException(nameof(renderer));
-            if (_renderers.Contains(renderer))
+            if (_allRenderers.Contains(renderer))
                 return;
-            _renderers.Add(renderer);
+
+            _allRenderers.Add(renderer);
+
+            // Add to active list if currently enabled
+            if (renderer.Enabled)
+                _activeRenderers.Add(renderer);
+
+            // Subscribe to enabled changes to keep active list in sync
+            renderer.EnabledChanged += OnRendererEnabledChanged;
         }
 
+        /// <summary>
+        /// Unregisters a UIRenderer from this system.
+        /// </summary>
         public void Remove(UIRenderer renderer)
         {
             if (renderer == null)
                 return;
-            _renderers.Remove(renderer);
+
+            _allRenderers.Remove(renderer);
+            _activeRenderers.Remove(renderer);
+            renderer.EnabledChanged -= OnRendererEnabledChanged;
+        }
+
+        /// <summary>
+        /// Handles enabled state changes on renderers. Marks active list for rebuild.
+        /// OPTIMIZATION: Deferred rebuild instead of immediate list manipulation.
+        /// </summary>
+        private void OnRendererEnabledChanged(Component component, bool enabled)
+        {
+            _needsRebuildActiveList = true;
+        }
+
+        /// <summary>
+        /// Rebuilds the active renderers list based on current enabled states.
+        /// Called lazily before draw if needed.
+        /// </summary>
+        private void RebuildActiveList()
+        {
+            _activeRenderers.Clear();
+
+            for (int i = 0; i < _allRenderers.Count; i++)
+            {
+                if (_allRenderers[i].Enabled)
+                    _activeRenderers.Add(_allRenderers[i]);
+            }
+
+            _needsRebuildActiveList = false;
         }
         #endregion
 
@@ -78,13 +120,21 @@ namespace GDEngine.Core.Systems
             _spriteBatch = _context.SpriteBatch;
         }
 
+        /// <summary>
+        /// Draws all active UI renderers without per-element enabled checks.
+        /// OPTIMIZATION: Only iterates active renderers (O(k) instead of O(n) with checks).
+        /// </summary>
         public override void Draw(float deltaTime)
         {
-          _spriteBatch.Begin(_sort, _blend, _sampler, _depth, _raster);
+            // Rebuild active list if any renderer changed enabled state
+            if (_needsRebuildActiveList)
+                RebuildActiveList();
 
-            for (int i = 0; i < _renderers.Count; i++)
-                if (_renderers[i].Enabled)
-                    _renderers[i].Draw(_device, null);
+            _spriteBatch.Begin(_sort, _blend, _sampler, _depth, _raster);
+
+            // Draw only active renderers - no enabled check needed!
+            for (int i = 0; i < _activeRenderers.Count; i++)
+                _activeRenderers[i].Draw(_device, Scene?.ActiveCamera);
 
             _spriteBatch.End();
         }

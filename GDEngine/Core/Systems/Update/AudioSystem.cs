@@ -275,6 +275,9 @@ namespace GDEngine.Core.Systems
         private Scene? _scene;
         private ContentDictionary<SoundEffect>? _sounds;
 
+        private readonly AudioListener _listener = new AudioListener();
+        private readonly AudioEmitter _emitter = new AudioEmitter();
+
         private SoundEffectInstance? _musicCurrent;
         private SoundEffectInstance? _musicNext;
 
@@ -301,9 +304,15 @@ namespace GDEngine.Core.Systems
         #endregion
 
         #region Constructors
-        public AudioSystem(int order = 0)
+        public AudioSystem(ContentDictionary<SoundEffect> sounds)
+          : this(sounds, 0)
+        {
+
+        }
+        public AudioSystem(ContentDictionary<SoundEffect> sounds, int order = 0)
             : base(FrameLifecycle.Update, order)
         {
+            _sounds = sounds;
         }
         #endregion
 
@@ -343,16 +352,32 @@ namespace GDEngine.Core.Systems
                 return;
 
             float v = _mixer.GetEffectiveVolume(AudioMixer.AudioChannel.Sfx, volume);
+            if (v <= 0f)
+                return;
+
             SoundEffectInstance instance = effect.CreateInstance();
             instance.IsLooped = false;
 
-            // TODO: integrate with listener/emitter components for full 3D spatial audio.
-            // This is where you would call instance.Apply3D(listener, emitter).
+            // Configure emitter from the source transform
+            _emitter.Position = emitterTransform.Position;
+            _emitter.Forward = emitterTransform.Forward;
+            _emitter.Up = emitterTransform.Up;
+            _emitter.Velocity = Vector3.Zero;
+
+            // Optional: ensure listener has some sane defaults even if no camera yet
+            // (Update() will overwrite these when an ActiveCamera exists)
+            // _listener.Position, _listener.Forward, _listener.Up already set in Update
+
+            // Apply 3D spatialisation based on listener + emitter
+            instance.Apply3D(_listener, _emitter);
+
+            // Volume still goes through your mixer
             instance.Volume = v;
             instance.Play();
 
             _sfxInstances.Add(instance);
         }
+
 
         public void StopAllSfx()
         {
@@ -456,8 +481,6 @@ namespace GDEngine.Core.Systems
         {
             _scene = Scene;
             _context = _scene != null ? _scene.Context : null;
-            if (_context != null)
-                _sounds = _context.SoundEffectDictionary;
 
             if (_context == null)
                 return;
@@ -466,6 +489,7 @@ namespace GDEngine.Core.Systems
             if (bus == null)
                 return;
 
+            // Subscribe to all relevant events
             _subPlaySfx = bus.On<PlaySfxEvent>()
                 .WithPriorityPreset(EventPriority.Gameplay)
                 .Do(HandlePlaySfx);
@@ -487,8 +511,23 @@ namespace GDEngine.Core.Systems
                 .Do(HandleFadeChannel);
         }
 
+        protected override void OnRemoved()
+        {
+            Dispose();
+        }
         public override void Update(float deltaTime)
         {
+            // Update listener from active camera
+            if (_scene != null && _scene.ActiveCamera != null)
+            {
+                Transform camTransform = _scene.ActiveCamera.Transform;
+
+                _listener.Position = camTransform.Position;
+                _listener.Forward = camTransform.Forward;
+                _listener.Up = camTransform.Up;
+                _listener.Velocity = Vector3.Zero;
+            }
+
             _mixer.Update(deltaTime);
             UpdateMusic(deltaTime);
 
@@ -509,6 +548,7 @@ namespace GDEngine.Core.Systems
                 }
             }
         }
+
         #endregion
 
         #region Housekeeping Methods
@@ -558,15 +598,16 @@ namespace GDEngine.Core.Systems
             if (string.IsNullOrWhiteSpace(clipId))
                 return null;
 
-            if (_context != null)
-            {
-                SoundEffect? s;
-                if (_context.SoundEffectDictionary.TryGet(clipId, out s) && s != null)
-                    return s;
-            }
+            if (_sounds == null)
+                return null;
+
+            SoundEffect? s;
+            if (_sounds.TryGet(clipId, out s) && s != null)
+                return s;
 
             return null;
         }
+
 
         private SoundEffectInstance? CreateMusicInstance(string clipId, bool loop)
         {

@@ -147,7 +147,6 @@ namespace GDEngine.Core.Components
         /// </summary>
         public float AspectRatio
         {
-            get => _aspectRatio;
             set
             {
                 if (_aspectRatio != value)
@@ -273,7 +272,6 @@ namespace GDEngine.Core.Components
         /// </summary>
         public Viewport? Viewport
         {
-            get => _viewport;
             set
             {
                 _viewport = value;
@@ -302,17 +300,54 @@ namespace GDEngine.Core.Components
         }
 
         /// <summary>
-        /// Returns the effective graphics Viewport for this camera (uses PixelViewport if set, else full backbuffer).
+        /// Returns the effective graphics Viewport for this camera.
+        /// If <see cref="Viewport"/> is set, uses that rectangle; otherwise
+        /// returns a full-backbuffer viewport based on the given graphics device.
+        /// </summary>
+
+        /// <summary>
+        /// Returns the effective graphics <see cref="Viewport"/> for this camera.
+        /// If <see cref="Viewport"/> is set, uses that rectangle; otherwise returns
+        /// a full-backbuffer viewport based on the given graphics device.
         /// </summary>
         public Viewport GetViewport(GraphicsDevice graphicsDevice)
         {
-            if (_viewport != null)
+            if (_viewport.HasValue)
             {
                 var r = _viewport.Value;
                 return new Viewport(r.X, r.Y, r.Width, r.Height);
             }
 
-            return graphicsDevice.Viewport;
+            var pp = graphicsDevice.PresentationParameters;
+            return new Viewport(0, 0, pp.BackBufferWidth, pp.BackBufferHeight);
+        }
+
+        /// <summary>
+        /// Returns the effective aspect ratio (width / height) for this camera.
+        /// Uses the per-camera <see cref="Viewport"/> when set; otherwise falls
+        /// back to the configured <see cref="AspectRatio"/>.
+        /// </summary>
+        public float GetAspectRatio()
+        {
+            return CalculateAspectRatio();
+        }
+
+        /// <summary>
+        /// Computes the effective aspect ratio (width / height) for this camera,
+        /// taking into account a per-camera <see cref="Viewport"/> if one is set.
+        /// </summary>
+        private float CalculateAspectRatio()
+        {
+            float aspect = _aspectRatio;
+
+            if (_viewport.HasValue)
+            {
+                var r = _viewport.Value;
+                int h = r.Height <= 0 ? 1 : r.Height;
+                aspect = (float)r.Width / h;
+            }
+
+            return aspect;
         }
 
         private void OnTransformChanged(Transform transform, Transform.ChangeFlags flags)
@@ -335,15 +370,7 @@ namespace GDEngine.Core.Components
 
         private void RecalculateProjection()
         {
-            float aspect = _aspectRatio;
-
-            // If a PiP / per-camera viewport is set, derive aspect from it
-            if (_viewport.HasValue)
-            {
-                var r = _viewport.Value;
-                int h = r.Height <= 0 ? 1 : r.Height;
-                aspect = (float)r.Width / h;
-            }
+            float aspect = CalculateAspectRatio();
 
             if (_projectionType == ProjectionType.Perspective)
             {
@@ -369,6 +396,7 @@ namespace GDEngine.Core.Components
 
             _projectionDirty = false;
         }
+
 
         private void RecalculateViewProjection()
         {

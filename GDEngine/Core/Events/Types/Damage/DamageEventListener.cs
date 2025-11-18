@@ -1,7 +1,6 @@
 ﻿using GDEngine.Core.Components;
 using GDEngine.Core.Entities;
 using GDEngine.Core.Services;
-using GDEngine.Core.Timing;
 
 namespace GDEngine.Core.Events
 {
@@ -9,7 +8,7 @@ namespace GDEngine.Core.Events
     {
         private Scene? _scene;
         private EngineContext? _context;
-        private EventBus _eventBus;
+        private EventBus? _eventBus;
 
         protected override void Awake()
         {

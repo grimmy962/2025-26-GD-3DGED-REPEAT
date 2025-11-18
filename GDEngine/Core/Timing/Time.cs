@@ -1,5 +1,4 @@
 ﻿using Microsoft.Xna.Framework;
-using System;
 
 namespace GDEngine.Core.Timing
 {
@@ -88,27 +87,27 @@ namespace GDEngine.Core.Timing
         /// <summary>
         /// Fired at the fixed physics timestep rate. Use for physics updates and deterministic logic.
         /// </summary>
-        public static event Action OnFixedUpdate;
+        public static event Action? OnFixedUpdate;
 
         /// <summary>
         /// Fired at approximately 10 Hz (every 100ms). Useful for frequent but not frame-by-frame updates like nearby AI.
         /// </summary>
-        public static event Action OnFixedUpdate100ms;
+        public static event Action? OnFixedUpdate100ms;
 
         /// <summary>
         /// Fired at approximately 4 Hz (every 250ms). Useful for moderate frequency updates like UI refresh.
         /// </summary>
-        public static event Action OnFixedUpdate250ms;
+        public static event Action? OnFixedUpdate250ms;
 
         /// <summary>
         /// Fired at approximately 2 Hz (every 500ms). Useful for less frequent updates like distant object LOD.
         /// </summary>
-        public static event Action OnFixedUpdate500ms;
+        public static event Action? OnFixedUpdate500ms;
 
         /// <summary>
         /// Fired at approximately 1 Hz (every 1000ms). Useful for infrequent updates like statistics gathering.
         /// </summary>
-        public static event Action OnFixedUpdate1000ms;
+        public static event Action? OnFixedUpdate1000ms;
 
         #endregion
 

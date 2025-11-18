@@ -5,6 +5,7 @@ using GDEngine.Core.Rendering;
 using GDEngine.Core.Timing;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System.Text;
 
 namespace GDEngine.Core.Debug
 {
@@ -19,7 +20,6 @@ namespace GDEngine.Core.Debug
     {
         #region Fields
         private SpriteFont _font = null!;
-        private GraphicsDevice? _graphicsDevice;
         private Texture2D? _backgroundTexture;
 
         // Layout
@@ -39,11 +39,12 @@ namespace GDEngine.Core.Debug
         private Color _warningColor = Color.Orange;
         private Color _criticalColor = Color.Red;
 
-        // Content
+        // Content - OPTIMIZED: Reuse StringBuilder and List
+        private readonly StringBuilder _headerBuilder = new StringBuilder(100);
         private string _header = string.Empty;
         private System.Func<IEnumerable<string>>? _linesProvider;
-        private List<string>? _extra;
-        private readonly Dictionary<string, float> _lineWidthCache = new Dictionary<string, float>();
+        private readonly List<string> _extra = new List<string>(16);
+        private readonly Dictionary<string, float> _lineWidthCache = new Dictionary<string, float>(32);
 
         // Corner anchoring
         private ScreenCorner _screenCorner = ScreenCorner.TopLeft;
@@ -74,6 +75,12 @@ namespace GDEngine.Core.Debug
         private int _lastGen0Count = 0;
         private int _lastGen1Count = 0;
         private int _lastGen2Count = 0;
+
+        //REFACTOR: Cache last FPS/MS values to avoid rebuilding string when unchanged
+        private float _lastFps = 0f;
+        private float _lastMs = 0f;
+        private float _lastUptime = 0f;
+        private bool _lastPauseState = false;
         #endregion
 
         #region Properties
@@ -240,7 +247,7 @@ namespace GDEngine.Core.Debug
         {
             base.Awake();
 
-            _graphicsDevice = GameObject?.Scene?.Context.GraphicsDevice;
+            // Use base class _graphicsDevice (no need for duplicate field)
             if (_graphicsDevice != null && _backgroundTexture == null)
             {
                 _backgroundTexture = new Texture2D(_graphicsDevice, 1, 1, false, SurfaceFormat.Color);
@@ -281,18 +288,19 @@ namespace GDEngine.Core.Debug
 
             _needsUpdate = false;
 
-            // Clear width cache for new update
-            _lineWidthCache.Clear();
+            // Clear width cache periodically to prevent unbounded growth
+            if (_lineWidthCache.Count > 100)
+                _lineWidthCache.Clear();
 
-            // Build header using Time class properties
-            _header = BuildHeaderString();
+            // Build header using StringBuilder (OPTIMIZATION: avoids string allocations)
+            BuildHeaderString();
             float headerWidth = MeasureAndCacheWidth(_header);
 
             int linesCount = 1;
             float maxWidth = MathF.Max(_headerTemplateWidth, headerWidth);
 
-            // Add built-in stats based on profile
-            _extra = new List<string>();
+            //REFACTOR: Clear and reuse list instead of allocating new one
+            _extra.Clear();
 
             if (ShouldShowDetailedStats())
             {
@@ -350,10 +358,10 @@ namespace GDEngine.Core.Debug
             _anchor = panelTopLeft + _texturePadding;
 
             _backRect = new Rectangle(
-                (int)System.MathF.Floor(panelTopLeft.X),
-                (int)System.MathF.Floor(panelTopLeft.Y),
-                (int)System.MathF.Ceiling(totalWidth),
-                (int)System.MathF.Ceiling(totalHeight));
+                (int)MathF.Floor(panelTopLeft.X),
+                (int)MathF.Floor(panelTopLeft.Y),
+                (int)MathF.Ceiling(totalWidth),
+                (int)MathF.Ceiling(totalHeight));
         }
 
         public override void Draw(GraphicsDevice device, Camera? camera)
@@ -380,20 +388,8 @@ namespace GDEngine.Core.Debug
             // Determine header color based on performance and pause state
             Color headerColor = GetHeaderColor();
 
-            // Header line - shadow
-            _spriteBatch.DrawString(
-                _font,
-                _header,
-                _anchor + _shadowNudge,
-                _shadow,
-                RotationRadians,
-                Vector2.Zero,
-                1f,
-                Effects,
-                backgroundDepth);
-
-            // Header line - main text
-            _spriteBatch.DrawString(
+            // Header line with shadow - use base class helper
+            DrawStringWithShadow(
                 _font,
                 _header,
                 _anchor,
@@ -402,42 +398,28 @@ namespace GDEngine.Core.Debug
                 Vector2.Zero,
                 1f,
                 Effects,
-                LayerDepth);
+                LayerDepth,
+                true);
 
             // Extra lines
             float y = _anchor.Y + _font.LineSpacing + _gapAfterHeader;
-            if (_extra != null)
+            for (int i = 0; i < _extra.Count; i++)
             {
-                for (int i = 0; i < _extra.Count; i++)
-                {
-                    var pos = new Vector2(_anchor.X, y);
+                var pos = new Vector2(_anchor.X, y);
 
-                    // Shadow
-                    _spriteBatch.DrawString(
-                        _font,
-                        _extra[i],
-                        pos + _shadowNudge,
-                        _shadow,
-                        RotationRadians,
-                        Vector2.Zero,
-                        1f,
-                        Effects,
-                        backgroundDepth);
+                DrawStringWithShadow(
+                    _font,
+                    _extra[i],
+                    pos,
+                    _text,
+                    RotationRadians,
+                    Vector2.Zero,
+                    1f,
+                    Effects,
+                    LayerDepth,
+                    true);
 
-                    // Main text
-                    _spriteBatch.DrawString(
-                        _font,
-                        _extra[i],
-                        pos,
-                        _text,
-                        RotationRadians,
-                        Vector2.Zero,
-                        1f,
-                        Effects,
-                        LayerDepth);
-
-                    y += _font.LineSpacing;
-                }
+                y += _font.LineSpacing;
             }
 
             // Draw FPS graph if enabled
@@ -471,7 +453,8 @@ namespace GDEngine.Core.Debug
         #region Methods
 
         /// <summary>
-        /// Measures string width and caches the result to avoid duplicate measurements
+        /// Measures string width and caches the result to avoid duplicate measurements.
+        ///REFACTOR: Implements the previously-declared but unused cache.
         /// </summary>
         private float MeasureAndCacheWidth(string text)
         {
@@ -541,27 +524,60 @@ namespace GDEngine.Core.Debug
         }
 
         /// <summary>
-        /// Builds the header string using Time class properties
+        /// Builds the header string using StringBuilder to avoid allocations.
+        /// MAJOR OPTIMIZATION: Only rebuilds when values change significantly.
         /// </summary>
-        private string BuildHeaderString()
+        private void BuildHeaderString()
         {
             // Use Time class properties directly
             float fps = Time.CurrentFPS;
             float avgFps = Time.AverageFPS;
             float ms = Time.UnscaledDeltaTimeSecs * 1000f;
+            float uptime = (float)Time.RealtimeSinceStartupSecs;
+            bool paused = Time.IsPaused;
 
-            // Add pause indicator if paused
-            string pauseIndicator = Time.IsPaused ? " [PAUSED]" : "";
+            //REFACTOR: Only rebuild if values changed significantly or pause state changed
+            bool needsRebuild =
+                MathF.Abs(fps - _lastFps) > 0.5f ||
+                MathF.Abs(avgFps - _lastMs) > 0.5f ||
+                MathF.Abs(uptime - _lastUptime) > 0.1f ||
+                paused != _lastPauseState;
+
+            if (!needsRebuild && _header.Length > 0)
+                return;
+
+            _lastFps = fps;
+            _lastMs = avgFps;
+            _lastUptime = uptime;
+            _lastPauseState = paused;
+
+            // Clear and rebuild
+            _headerBuilder.Clear();
 
             // Format varies by profile
             if (_profile == DisplayProfile.Minimal)
             {
-                return $"FPS: {avgFps:0.0}{pauseIndicator}";
+                _headerBuilder.Append("FPS: ");
+                _headerBuilder.AppendFormat("{0:0.0}", avgFps);
+                if (paused)
+                    _headerBuilder.Append(" [PAUSED]");
             }
             else
             {
-                return $"FPS: {fps:0.0} (Avg: {avgFps:0.0})  |  Frame: {ms:0.00}ms  |  Uptime: {Time.RealtimeSinceStartupSecs,6:F2}s{pauseIndicator}";
+                _headerBuilder.Append("FPS: ");
+                _headerBuilder.AppendFormat("{0:0.0}", fps);
+                _headerBuilder.Append(" (Avg: ");
+                _headerBuilder.AppendFormat("{0:0.0}", avgFps);
+                _headerBuilder.Append(")  |  Frame: ");
+                _headerBuilder.AppendFormat("{0:0.00}", ms);
+                _headerBuilder.Append("ms  |  Uptime: ");
+                _headerBuilder.AppendFormat("{0,6:F2}", uptime);
+                _headerBuilder.Append("s");
+                if (paused)
+                    _headerBuilder.Append(" [PAUSED]");
             }
+
+            _header = _headerBuilder.ToString();
         }
 
         /// <summary>
@@ -655,7 +671,7 @@ namespace GDEngine.Core.Debug
                 FPSGraphWidth,
                 FPSGraphHeight);
 
-            _spriteBatch.Draw(
+            _spriteBatch?.Draw(
                 _backgroundTexture,
                 graphBounds,
                 null,
@@ -683,7 +699,7 @@ namespace GDEngine.Core.Debug
                     // Color based on FPS thresholds
                     Color barColor = GetColorForFPS(fps);
 
-                    _spriteBatch.Draw(
+                    _spriteBatch?.Draw(
                         _backgroundTexture,
                         bar,
                         null,
@@ -705,7 +721,7 @@ namespace GDEngine.Core.Debug
                     FPSGraphWidth,
                     1);
 
-                _spriteBatch.Draw(
+                _spriteBatch?.Draw(
                     _backgroundTexture,
                     targetLine,
                     null,

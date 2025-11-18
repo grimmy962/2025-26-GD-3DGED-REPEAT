@@ -8,22 +8,28 @@ namespace GDEngine.Core.Rendering.UI
     /// <summary>
     /// Generic UI text renderer that draws a string at a position supplied by a delegate.
     /// Uses centralized batching via <see cref="UIRenderer"/>.
+    /// Optimized to cache non-null delegates and avoid hot-path null checks.
     /// </summary>
     public class UITextRenderer : UIRenderer
     {
         #region Fields
         private SpriteFont _font = null!;
 
-        private Func<string>? _textProvider = () => string.Empty;
-        private Func<Vector2>? _positionProvider = () => Vector2.Zero;
-        private Func<Color>? _colorProvider = null;
+        // Delegate storage (nullable for API)
+        private Func<string>? _textProvider;
+        private Func<Vector2>? _positionProvider;
+        private Func<Color>? _colorProvider;
+
+        // Non-null cached delegates (for performance in hot path)
+        private Func<string> _textProviderNonNull = () => string.Empty;
+        private Func<Vector2> _positionProviderNonNull = () => Vector2.Zero;
 
         private Vector2 _offset = Vector2.Zero;
-        private float _scale = 1f;
+        private float _uniformScale = 1f;
         private bool _dropShadow = true;
         private Color _fallbackColor = Color.White;
-        private Color _shadowColor = new Color(0, 0, 0, 180);
 
+        // Cached computation results
         private string _text = string.Empty;
         private Vector2 _size;
         private Vector2 _originFromAnchor;
@@ -33,48 +39,84 @@ namespace GDEngine.Core.Rendering.UI
 
         #region Properties
         public SpriteFont Font { get => _font; set => _font = value; }
-        public Func<string>? TextProvider { get => _textProvider; set => _textProvider = value ?? (() => string.Empty); }
-        public Func<Vector2>? PositionProvider { get => _positionProvider; set => _positionProvider = value ?? (() => Vector2.Zero); }
+
+        public Func<string>? TextProvider
+        {
+            get => _textProvider;
+            set
+            {
+                _textProvider = value;
+                _textProviderNonNull = value ?? (() => string.Empty);
+            }
+        }
+
+        public Func<Vector2>? PositionProvider
+        {
+            get => _positionProvider;
+            set
+            {
+                _positionProvider = value;
+                _positionProviderNonNull = value ?? (() => Vector2.Zero);
+            }
+        }
+
         public Func<Color>? ColorProvider { get => _colorProvider; set => _colorProvider = value; }
+
         public Vector2 Offset { get => _offset; set => _offset = value; }
-        public float Scale { get => _scale; set => _scale = Math.Max(0.01f, value); }
+
+        /// <summary>
+        /// Uniform scale factor for the text. Uses base class _scale field internally.
+        /// </summary>
+        public float UniformScale
+        {
+            get => _uniformScale;
+            set
+            {
+                _uniformScale = Math.Max(0.01f, value);
+                _scale = new Vector2(_uniformScale, _uniformScale);
+            }
+        }
+
         public bool DropShadow { get => _dropShadow; set => _dropShadow = value; }
+
         public Color FallbackColor { get => _fallbackColor; set => _fallbackColor = value; }
-        public Color ShadowColor { get => _shadowColor; set => _shadowColor = value; }
         #endregion
 
         #region Constructors
-        public UITextRenderer(SpriteFont font) { _font = font; }
+        public UITextRenderer(SpriteFont font)
+        {
+            _font = font;
+        }
 
         public UITextRenderer(SpriteFont font, string text, Vector2 position)
         {
             _font = font;
             _textProvider = () => text ?? string.Empty;
+            _textProviderNonNull = _textProvider;
             _positionProvider = () => position;
+            _positionProviderNonNull = _positionProvider;
         }
 
         public static UITextRenderer FromMouse(SpriteFont font, string text)
         {
-            return new UITextRenderer(font)
-            {
-                _textProvider = () => text ?? string.Empty,
-                _positionProvider = () => Mouse.GetState().Position.ToVector2()
-            };
+            var renderer = new UITextRenderer(font);
+            renderer._textProvider = () => text ?? string.Empty;
+            renderer._textProviderNonNull = renderer._textProvider;
+            renderer._positionProvider = () => Mouse.GetState().Position.ToVector2();
+            renderer._positionProviderNonNull = renderer._positionProvider;
+            return renderer;
         }
-        #endregion
-
-        #region Methods
-
         #endregion
 
         #region Lifecycle Methods
         protected override void LateUpdate(float deltaTime)
         {
-            _text = _textProvider?.Invoke() ?? string.Empty;
+            // Use non-null cached delegates (no null-coalescing in hot path)
+            _text = _textProviderNonNull();
             if (_text.Length == 0) return;
 
-            var basePos = _positionProvider?.Invoke() ?? Vector2.Zero;
-            _size = _font.MeasureString(_text) * _scale;
+            var basePos = _positionProviderNonNull();
+            _size = _font.MeasureString(_text) * _uniformScale;
 
             // Use base helper
             _originFromAnchor = ComputeAnchorOffset(_size, Anchor);
@@ -84,17 +126,22 @@ namespace GDEngine.Core.Rendering.UI
             _resolvedColor = _colorProvider != null ? _colorProvider() : _fallbackColor;
         }
 
-
         public override void Draw(GraphicsDevice device, Camera? camera)
         {
             if (_spriteBatch == null || _font == null || _text.Length == 0) return;
 
-            if (_dropShadow)
-                _spriteBatch.DrawString(_font, _text, _drawPos + _shadowNudge, _shadowColor,
-                    RotationRadians, _originFromAnchor, _scale, Effects, Behind(LayerDepth));
-
-            _spriteBatch.DrawString(_font, _text, _drawPos, _resolvedColor,
-                RotationRadians, _originFromAnchor, _scale, Effects, LayerDepth);
+            // Use base class helper method for consistent shadow rendering
+            DrawStringWithShadow(
+                _font,
+                _text,
+                _drawPos,
+                _resolvedColor,
+                RotationRadians,
+                _originFromAnchor,
+                _uniformScale,
+                Effects,
+                LayerDepth,
+                _dropShadow);
         }
         #endregion
     }

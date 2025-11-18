@@ -1,10 +1,10 @@
 ﻿using GDEngine.Core.Entities;
-using System;
 
 namespace GDEngine.Core.Components
 {
     /// <summary>
     /// Base class for attachable behaviour with a Unity-like lifecycle.
+    /// Enhanced with EnabledChanged event for efficient UI system management.
     /// </summary>
     /// <see cref="GameObject"/>
     /// <see cref="Transform"/>
@@ -15,41 +15,44 @@ namespace GDEngine.Core.Components
         private bool _isAwake;     // true after Awake() has run once
         private bool _isStarted;   // true after Start() has run once
         private bool _isDestroyed; // true after OnDestroy() has run
-        private bool _wasEnabled;  // tracks previous enabled state for OnEnabled/OnDisabled
+
+        private bool _enabled = true;
+        #endregion
+
+        #region Events
+        /// <summary>
+        /// Raised when the Enabled property changes.
+        /// Used by systems (like UIRenderSystem) to maintain efficient active/inactive lists.
+        /// </summary>
+        public event Action<Component, bool>? EnabledChanged;
         #endregion
 
         #region Properties
-        private bool _enabled = true;
-
         /// <summary>
         /// If false, Update/LateUpdate will be skipped for this component.
-        /// Setting this property triggers OnEnabled() or OnDisabled() callbacks.
+        /// Changing this value triggers OnEnabled/OnDisabled callbacks and raises EnabledChanged event.
         /// </summary>
         public bool Enabled
         {
-            get => _enabled;
+            get { return _enabled; }
             set
             {
-                if (_enabled == value || _isDestroyed)
-                    return;
-
-                bool wasEnabled = _enabled;
-                _enabled = value;
-
-                // Only fire callbacks after Awake has run
-                if (_isAwake)
+                if (_enabled != value)
                 {
-                    if (_enabled && !wasEnabled)
-                    {
-                        OnEnabled();
-                    }
-                    else if (!_enabled && wasEnabled)
-                    {
-                        OnDisabled();
-                    }
-                }
+                    _enabled = value;
 
-                _wasEnabled = _enabled;
+                    // Invoke lifecycle callbacks if the component is awake
+                    if (_isAwake && !_isDestroyed)
+                    {
+                        if (_enabled)
+                            OnEnabled();
+                        else
+                            OnDisabled();
+                    }
+
+                    // Notify subscribers (e.g., UIRenderSystem)
+                    EnabledChanged?.Invoke(this, _enabled);
+                }
             }
         }
 
@@ -85,13 +88,10 @@ namespace GDEngine.Core.Components
 
             Awake();
             _isAwake = true;
-            _wasEnabled = _enabled;
 
-            // If the component is enabled at awake time, call OnEnabled
+            // If the component was created enabled, call OnEnabled now that it's awake
             if (_enabled)
-            {
                 OnEnabled();
-            }
         }
 
         /// <summary>
@@ -148,13 +148,14 @@ namespace GDEngine.Core.Components
             if (_isDestroyed)
                 return;
 
-            // Call OnDisabled if component was enabled before destruction
-            if (_enabled && _isAwake)
-            {
+            // Call OnDisabled if component was enabled
+            if (_enabled)
                 OnDisabled();
-            }
 
             OnDestroy();
+
+            // Clear event subscribers
+            EnabledChanged = null;
 
             // Clear references to aid GC and prevent accidental reuse.
             GameObject = null;
@@ -187,24 +188,22 @@ namespace GDEngine.Core.Components
         protected virtual void LateUpdate(float deltaTime) { }
 
         /// <summary>
-        /// Called when the component becomes enabled and active.
-        /// This is called after Awake() if the component starts enabled,
-        /// and whenever Enabled is set from false to true.
+        /// Called when the component's Enabled property changes from false to true.
+        /// Useful for re-registering with systems or resuming operations.
+        /// Only called after Awake() has completed.
         /// </summary>
         protected virtual void OnEnabled() { }
 
         /// <summary>
-        /// Called when the component becomes disabled.
-        /// This is called whenever Enabled is set from true to false,
-        /// and before OnDestroy() if the component was enabled when destroyed.
-        /// Use this to unsubscribe from events or pause behavior.
+        /// Called when the component's Enabled property changes from true to false.
+        /// Useful for unregistering from systems or pausing operations.
+        /// Also called before OnDestroy() if the component was enabled.
         /// </summary>
         protected virtual void OnDisabled() { }
 
         /// <summary>
         /// Called once when the component is being destroyed or the scene is unloading.
         /// Use to release unmanaged resources or unsubscribe from events.
-        /// Note: OnDisabled() is called before this if the component was enabled.
         /// </summary>
         protected virtual void OnDestroy() { }
         #endregion

@@ -47,7 +47,7 @@ namespace GDGame
 
         #endregion
 
-        #region GameObject Names
+        #region GameObjects
 
         public static readonly string SCENE_NAME_OUTDOORS_LEVEL1 =
             "outdoors - level 1";
@@ -66,12 +66,14 @@ namespace GDGame
 
         public static readonly string HUD_NAME = "HUD";
         public static readonly string STATS_OVERLAY_NAME = "Stats Overlay";
+        #endregion
 
-        public static readonly string CAMERA_NAME_RAIL = "Rail camera";
-        public static readonly string CAMERA_NAME_THIRD_PERSON = "Third person camera";
-        public static readonly string CAMERA_NAME_FIRST_PERSON = "First person camera";
-        public static readonly string CAMERA_NAME_PIP = "PIP camera";
-
+        #region Cameras
+        public static readonly string CAMERA_NAME_RAIL = "Rail";
+        public static readonly string CAMERA_NAME_THIRD_PERSON = "Third person";
+        public static readonly string CAMERA_NAME_FIRST_PERSON = "First person";
+        public static readonly string CAMERA_NAME_PIP = "PIP";
+        public static readonly string CAMERA_NAME_STATIC_BIRDS_EYE = "Static birds-eye";
         #endregion
 
         #region UI Text
@@ -107,6 +109,7 @@ namespace GDGame
             "Demo_CrateBounce";
 
         public static readonly string DAMAGE_SOURCE_DEBUG_GUN = "DebugGun";
+
 
         #endregion
     }
