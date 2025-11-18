@@ -644,7 +644,7 @@ namespace GDGame
                     $" - Renderer Count: {_scene.Renderers.Count}",
                     "",
                     $"Camera Stats:",
-                    $" - Camera [name]: {camera.GameObject.Name}",
+                    $" - Camera [Name]: {camera.GameObject.Name}",
                     $" - Camera [Position]: {camera.Transform.Position.ToFixed()}",
                     $" - Camera [Forward]: {camera.Transform.Forward.ToFixed()}"
                 };

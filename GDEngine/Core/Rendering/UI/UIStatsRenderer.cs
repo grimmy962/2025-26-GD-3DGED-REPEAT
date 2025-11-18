@@ -12,10 +12,9 @@ namespace GDEngine.Core.Debug
     /// Enhanced FPS and performance stats overlay that draws in PostRender.
     /// Leverages the enhanced Time class for comprehensive performance monitoring.
     /// Includes memory tracking, FPS graphing, display profiles, and optimized rendering.
-    /// Uses centralized batching via UIRenderer.
+    /// Uses centralized batching via <see cref="UIRenderer"/>.
     /// Renders in a chosen screen corner with a configurable margin.
     /// </summary>
-    /// <see cref="UIRenderer"/>
     public sealed class UIStatsRenderer : UIRenderer
     {
         #region Fields
@@ -448,9 +447,19 @@ namespace GDEngine.Core.Debug
             }
         }
 
+        protected override void OnDisabled()
+        {
+            // Clean up graph texture when disabled
+            if (_graphTexture != null)
+            {
+                _graphTexture.Dispose();
+                _graphTexture = null;
+            }
+        }
+
         protected override void OnDestroy()
         {
-            // Clean up graph texture
+            // Clean up graph texture on destruction
             if (_graphTexture != null)
             {
                 _graphTexture.Dispose();
@@ -803,7 +812,6 @@ namespace GDEngine.Core.Debug
         BottomRight
     }
 }
-
 /*#nullable enable
 using GDEngine.Core.Collections;
 using GDEngine.Core.Components;
