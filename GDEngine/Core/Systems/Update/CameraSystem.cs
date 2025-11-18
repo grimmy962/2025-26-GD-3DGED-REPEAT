@@ -54,6 +54,7 @@ namespace GDEngine.Core.Systems
         #endregion
 
         #region Methods
+ 
         public void Add(Camera camera)
         {
             if (camera == null)

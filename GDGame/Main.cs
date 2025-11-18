@@ -1,11 +1,10 @@
 ﻿using GDEngine.Core;
-using GDEngine.Core.Audio;
-using GDEngine.Core.Audio.Events;
 using GDEngine.Core.Collections;
 using GDEngine.Core.Components;
 using GDEngine.Core.Debug;
 using GDEngine.Core.Entities;
 using GDEngine.Core.Events;
+using GDEngine.Core.Events.Types.Camera;
 using GDEngine.Core.Extensions;
 using GDEngine.Core.Factories;
 using GDEngine.Core.Input.Data;
@@ -97,6 +96,9 @@ namespace GDGame
             // All cameras we want in the game are loaded now and one set as active
             InitializeCameras();
 
+            //game manager, camera changer, FSM, AI
+            InitializeManagers();
+
             // Setup world
             int scale = 500;
             InitializeSkyParent();
@@ -136,10 +138,16 @@ namespace GDGame
             base.Initialize();
         }
 
+        private void InitializeManagers()
+        {
+            var go = new GameObject("Camera Manager");
+            go.AddComponent<CameraChangeEventListener>();
+            _scene.Add(go);
+        }
+
         private void DemoPlaySoundEffect()
         {
-            _soundEffect = _soundDictionary.Get("secret_door");
-          
+            _soundEffect = _soundDictionary.Get("secret_door");      
         }
 
         private void DemoCollidableFBXModel(Vector3 position, Vector3 eulerRotationDegrees, Vector3 scale)
@@ -890,59 +898,15 @@ namespace GDGame
 
         private void DemoCameraSwitch()
         {
-            var cameraSystem = _scene.GetSystem<CameraSystem>();
-            if (cameraSystem == null)
-            {
-                return;
-            }
+            var events = EngineContext.Instance.Events;
 
-            var cameras = cameraSystem.Cameras;
-            if (cameras == null || cameras.Count == 0)
-            {
-                return;
-            }
+            bool isFirst = _newKBState.IsKeyDown(Keys.D1) && !_oldKBState.IsKeyDown(Keys.D1);    
+            if(isFirst)
+                events.Post(new CameraChangeEvent(AppData.CAMERA_NAME_FIRST_PERSON));
 
-            bool prevPressed = _newKBState.IsKeyDown(Keys.F2) && !_oldKBState.IsKeyDown(Keys.F2);
-            bool nextPressed = _newKBState.IsKeyDown(Keys.F3) && !_oldKBState.IsKeyDown(Keys.F3);
-
-            if (!prevPressed && !nextPressed)
-            {
-                return;
-            }
-
-            var active = _scene.ActiveCamera;
-            int index = 0;
-
-            if (active != null)
-            {
-                for (int i = 0; i < cameras.Count; i++)
-                {
-                    if (ReferenceEquals(cameras[i], active))
-                    {
-                        index = i;
-                        break;
-                    }
-                }
-            }
-
-            if (nextPressed)
-            {
-                index++;
-                if (index >= cameras.Count)
-                {
-                    index = 0;
-                }
-            }
-            else if (prevPressed)
-            {
-                index--;
-                if (index < 0)
-                {
-                    index = cameras.Count - 1;
-                }
-            }
-
-            _scene.ActiveCamera = cameras[index];
+            bool isThird = _newKBState.IsKeyDown(Keys.D2) && !_oldKBState.IsKeyDown(Keys.D2);
+            if (isThird)
+                events.Post(new CameraChangeEvent(AppData.CAMERA_NAME_THIRD_PERSON));
         }
 
         private void DemoEventPublish()
