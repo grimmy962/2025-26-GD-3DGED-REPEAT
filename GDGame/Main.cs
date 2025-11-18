@@ -430,6 +430,18 @@ namespace GDGame
         private void InitializeCameras()
         {
             #region Static birds-eye camera
+            _cameraGO = new GameObject(AppData.CAMERA_NAME_STATIC_BIRDS_EYE);
+            _camera = _cameraGO.AddComponent<Camera>();
+            _camera.FieldOfView = MathHelper.ToRadians(80);
+            //ISRoT
+            _cameraGO.Transform.RotateEulerBy(new Vector3(MathHelper.ToRadians(-90), 0, 0));
+            _cameraGO.Transform.TranslateTo(Vector3.UnitY * 50);
+
+           // _cameraGO.AddComponent<MouseYawPitchController>();
+
+            _scene.Add(_cameraGO);
+
+           // _camera.FieldOfView
             //TODO - add camera
             #endregion
 
@@ -466,7 +478,7 @@ namespace GDGame
             #endregion
 
             // Set the active camera by finding and getting its camera component
-            var theCamera = _scene.Find(go => go.Name.Equals(AppData.CAMERA_NAME_FIRST_PERSON)).GetComponent<Camera>();
+            var theCamera = _scene.Find(go => go.Name.Equals(AppData.CAMERA_NAME_STATIC_BIRDS_EYE)).GetComponent<Camera>();
             ////Obviously, since we have _camera we could also just use the line below
             _scene.SetActiveCamera(theCamera);
         }

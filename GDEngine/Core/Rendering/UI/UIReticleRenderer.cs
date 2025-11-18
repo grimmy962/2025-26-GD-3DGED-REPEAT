@@ -112,7 +112,7 @@ namespace GDEngine.Core.Rendering.UI
                 return;
 
             // Use cached mouse position from Update
-            var pos = _viewportCenter + _offset;
+            var pos = _viewportCenter + _offset;  //Mouse.GetState().Position;
 
             _spriteBatch.Draw(
                 _texture,

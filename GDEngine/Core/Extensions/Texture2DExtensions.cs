@@ -7,7 +7,7 @@ namespace GDEngine.Core.Utilities
     /// Extension helpers for <see cref="Texture2D"/>.
     /// </summary>
     /// <see cref="Texture2D"/>
-    public static class Texture2DExtensions
+    public static class Texture2DExtensions  //step 1 - static and <class>Extensions
     {
      
         /// <summary>
@@ -16,7 +16,7 @@ namespace GDEngine.Core.Utilities
         /// </summary>
         /// <param name="texture">The texture instance.</param>
         /// <returns>Centre of the texture in pixels as a <see cref="Vector2"/>.</returns>
-        public static Vector2 GetCenter(this Texture2D texture)
+        public static Vector2 GetCenter(this Texture2D texture) //2 - static method, 3 - use this in 1st param
         {
             if (texture == null)
                 throw new ArgumentNullException(nameof(texture));
