@@ -1,5 +1,7 @@
 ﻿#nullable enable
 using GDEngine.Core.Components;
+using GDEngine.Core.Entities;
+using GDEngine.Core.Events;
 using GDEngine.Core.Timing;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -21,6 +23,7 @@ namespace GDEngine.Core.Rendering.UI
         private Vector2 _offset = Vector2.Zero;
         private float _rotationSpeedDegPerSec = 90f;
         private Color _tint = Color.White;
+        private Scene? _scene;
         #endregion
 
         #region Constructors
@@ -102,6 +105,12 @@ namespace GDEngine.Core.Rendering.UI
         {
             // Advance base RotationRadians so we use the centralized rotation field.
             RotationRadians += MathHelper.ToRadians(_rotationSpeedDegPerSec) * Time.DeltaTimeSecs;
+
+        }
+
+        protected override void Start()
+        {
+            _scene = GameObject.Scene;
         }
 
         public override void Draw(GraphicsDevice device, Camera? camera)
@@ -110,7 +119,7 @@ namespace GDEngine.Core.Rendering.UI
                 return;
 
             var mouse = Mouse.GetState().Position.ToVector2();
-            var pos = mouse + _offset;
+            var pos = mouse + Offset;    
 
             _spriteBatch.Draw(
                 _texture,

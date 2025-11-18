@@ -23,8 +23,6 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Security.AccessControl;
 using Color = Microsoft.Xna.Framework.Color;
 
 namespace GDGame
@@ -53,6 +51,8 @@ namespace GDGame
         private int _dummyHealth;
         private KeyboardState _newKBState, _oldKBState;
         private int _damageAmount;
+        private SoundEffectInstance _soundEffectInstance;
+        private SoundEffect _soundEffect;
         #endregion
 
         #region Core Methods (Common to all games)     
@@ -96,15 +96,17 @@ namespace GDGame
             InitializeCameras();
 
             // Setup world
-            int scale = 100;
+            int scale = 500;
             InitializeSkyParent();
             InitializeSkyBox(scale);
             InitializeCollidableGround(scale);
 
             // Setup player
             InitializePlayer();
-      
+
             #region Demos
+            DemoPlaySoundEffect();
+
             // Camera-demos
             InitializeAnimationCurves();
 
@@ -130,6 +132,12 @@ namespace GDGame
             #endregion
 
             base.Initialize();
+        }
+
+        private void DemoPlaySoundEffect()
+        {
+            _soundEffect = _soundFXDictionary.Get("secret_door");
+          
         }
 
         private void DemoCollidableFBXModel(Vector3 position, Vector3 eulerRotationDegrees, Vector3 scale)
@@ -174,6 +182,9 @@ namespace GDGame
 
             // Listen for damage events on the player
             player.AddComponent<DamageEventListener>();
+
+            // Adds an inventory to the player
+            player.AddComponent<InventoryComponent>();
         }
 
         private void InitializePIPCamera(Vector3 position,
@@ -451,7 +462,6 @@ namespace GDGame
             #endregion
 
             // Set the active camera by finding and getting its camera component
-            //BUG - FIXED
             var theCamera = _scene.Find(go => go.Name.Equals(AppData.CAMERA_NAME_FIRST_PERSON)).GetComponent<Camera>();
             ////Obviously, since we have _camera we could also just use the line below
             _scene.SetActiveCamera(theCamera);
@@ -678,7 +688,11 @@ namespace GDGame
 
             // Text anchored at mouse, slightly below the reticle
             var text = new UITextRenderer(uiFont);
-            text.PositionProvider = () => Mouse.GetState().Position.ToVector2();
+            //  text.PositionProvider = () => Mouse.GetState().Position.ToVector2();
+
+            text.PositionProvider = () => new Vector2(_graphics.PreferredBackBufferWidth/2,
+                                                      _graphics.PreferredBackBufferHeight/2);
+
             text.Anchor = TextAnchor.Center;
             text.Offset = new Vector2(0, 50);
             text.FallbackColor = Color.White;
@@ -736,7 +750,6 @@ namespace GDGame
 
             //update Scene
             _scene.Update(Time.DeltaTimeSecs);
-
           
             #endregion
 
@@ -908,6 +921,10 @@ namespace GDGame
             // F2: publish a test DamageEvent
             if (_newKBState.IsKeyDown(Keys.F6) && !_oldKBState.IsKeyDown(Keys.F6))
             {
+                _soundEffectInstance = _soundEffect.CreateInstance();
+                _soundEffectInstance.Pitch = 0.5f;
+                _soundEffectInstance.Play();
+
                 // Simple “debug” damage example
                 var cameraPos = _cameraGO.Transform.Position;
                 var hitPos = cameraPos + _cameraGO.Transform.Forward * 5f;
@@ -917,6 +934,23 @@ namespace GDGame
                     "DebugGun", AppData.PLAYER_NAME, hitPos, false);
 
                 EngineContext.Instance.Events.Post(damageEvent);
+            }
+
+            // Raise inventory event
+            if(_newKBState.IsKeyDown(Keys.E) && !_oldKBState.IsKeyDown(Keys.E))
+            {
+                var inventoryEvent = new InventoryEvent();
+                inventoryEvent.ItemType = ItemType.Weapon;
+                inventoryEvent.Value = 10;
+                EngineContext.Instance.Events.Publish(inventoryEvent);
+            }
+
+            if (_newKBState.IsKeyDown(Keys.L) && !_oldKBState.IsKeyDown(Keys.L))
+            {
+                var inventoryEvent = new InventoryEvent();
+                inventoryEvent.ItemType = ItemType.Lore;
+                inventoryEvent.Value = 0;
+                EngineContext.Instance.Events.Publish(inventoryEvent);
             }
         }
 

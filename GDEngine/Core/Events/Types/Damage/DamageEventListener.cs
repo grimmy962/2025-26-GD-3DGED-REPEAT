@@ -1,6 +1,7 @@
 ﻿using GDEngine.Core.Components;
 using GDEngine.Core.Entities;
 using GDEngine.Core.Services;
+using GDEngine.Core.Timing;
 
 namespace GDEngine.Core.Events
 {
@@ -28,12 +29,23 @@ namespace GDEngine.Core.Events
             _eventBus = _context.Events;
 
             // Subscribe to DamageEvent via the EventBus
-            _eventBus.Subscribe<DamageEvent>(
-                HandleDamage,
-                0,
-                null,
-                false);
+            //_eventBus.Subscribe<DamageEvent>(
+            //    (e) => System.Diagnostics.Debug.WriteLine(e.Amount),
+            //    0,
+            //    (e) => e.Amount > 5,
+            //    true);
 
+            _eventBus.On<DamageEvent>()
+                .When(e => e.Amount > 0)
+                .Once()
+                .Do((e) =>
+                { 
+                    System.Diagnostics.Debug.WriteLine(e.TargetName);
+                    //play sound
+                    //store to file
+                    //instantiate an enemy
+                   // Time.TimeScale = 0;
+                });
         }
 
         private void HandleDamage(DamageEvent e)
