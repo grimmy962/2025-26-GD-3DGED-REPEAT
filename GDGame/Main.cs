@@ -1,4 +1,6 @@
 ﻿using GDEngine.Core;
+using GDEngine.Core.Audio;
+using GDEngine.Core.Audio.Events;
 using GDEngine.Core.Collections;
 using GDEngine.Core.Components;
 using GDEngine.Core.Debug;
@@ -372,7 +374,7 @@ namespace GDGame
 
         private void InitializeAudioSystem()
         {
-            //TODO - Exercise
+            _scene.Add(new AudioSystem(_soundDictionary));
         }
 
         private void InitializePhysicsDebugSystem(bool isEnabled)
@@ -885,9 +887,46 @@ namespace GDGame
 
         private void DemoAudioSystem()
         {
-            //TODO - Exercise
-        }
+            var events = EngineContext.Instance.Events;
 
+            //TODO - Exercise
+            bool isD3Pressed = _newKBState.IsKeyDown(Keys.D3) && !_oldKBState.IsKeyDown(Keys.D3);
+            if(isD3Pressed)
+            {
+                events.Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Generic_1",
+                    1, false, null));
+            }
+
+            bool isD4Pressed = _newKBState.IsKeyDown(Keys.D4) && !_oldKBState.IsKeyDown(Keys.D4);
+            if (isD4Pressed)
+            {
+                events.Publish(new PlayMusicEvent("secret_door", 1, 8));
+            }
+
+            bool isD5Pressed = _newKBState.IsKeyDown(Keys.D5) && !_oldKBState.IsKeyDown(Keys.D5);
+            if (isD5Pressed)
+            {
+                events.Publish(new StopMusicEvent(4));
+            }
+
+            bool isD6Pressed = _newKBState.IsKeyDown(Keys.D6) && !_oldKBState.IsKeyDown(Keys.D6);
+            if (isD6Pressed)
+            {
+                events.Publish(new FadeChannelEvent(AudioMixer.AudioChannel.Master,
+                    0.1f, 4));
+            }
+
+            bool isD7Pressed = _newKBState.IsKeyDown(Keys.D7) && !_oldKBState.IsKeyDown(Keys.D7);
+            if (isD7Pressed)
+            {
+                //expensive and crude => move to Component::Start()
+                var go = _scene.Find(go => go.Name.Equals(AppData.PLAYER_NAME));
+                Transform emitterTransform = go.Transform;
+
+                events.Publish(new PlaySfxEvent("hand_gun1",
+                    1, true, emitterTransform));
+            }
+        }
 
         private void DemoToggleFullscreen()
         {
@@ -900,13 +939,21 @@ namespace GDGame
         {
             var events = EngineContext.Instance.Events;
 
-            bool isFirst = _newKBState.IsKeyDown(Keys.D1) && !_oldKBState.IsKeyDown(Keys.D1);    
-            if(isFirst)
+            bool isFirst = _newKBState.IsKeyDown(Keys.D1) && !_oldKBState.IsKeyDown(Keys.D1);
+            if (isFirst)
+            {
                 events.Post(new CameraChangeEvent(AppData.CAMERA_NAME_FIRST_PERSON));
+                events.Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Generic_1",
+                  1, false, null));
+            }
 
             bool isThird = _newKBState.IsKeyDown(Keys.D2) && !_oldKBState.IsKeyDown(Keys.D2);
             if (isThird)
+            {
                 events.Post(new CameraChangeEvent(AppData.CAMERA_NAME_THIRD_PERSON));
+                events.Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Mallet_Open_1",
+                1, false, null));
+            }
         }
 
         private void DemoEventPublish()
