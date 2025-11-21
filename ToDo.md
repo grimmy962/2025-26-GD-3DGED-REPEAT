@@ -95,7 +95,7 @@ This document contains a step-by-step development plan of MonoGame content cover
 
 ## Week 9
 - [x] Add `OrchestrationSystem` for sequencing game events.
-- [ ] Add physics engine (`PhysicsSystem` and CDCR).
+- [x] Add physics engine (`PhysicsSystem` and CDCR).
 - [x] Add **audio hooks**: `AudioSystem` to support 2D and 3D sound; service access via `EventBus`.
 - [ ] Add `UIMenuSystem`
 - [ ] Add dictionary in `MeshFilterFactory` to reduce `VertexBuffer` and `IndexBuffer` usage on duplicate calls to a method.
