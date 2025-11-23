@@ -103,7 +103,7 @@ namespace GDGame
             int scale = 100;
             InitializeSkyParent();
             InitializeSkyBox(scale);
-            InitializeCollidableGround(scale);
+            DemoCollidableGround(scale);
 
             // Setup player
             InitializePlayer();
@@ -147,38 +147,6 @@ namespace GDGame
             _scene.Add(go);
         }
 
-        private void DemoCollidableModel(Vector3 position, Vector3 eulerRotationDegrees, Vector3 scale)
-        {
-            var go = new GameObject("test");
-            go.Transform.TranslateTo(position);
-            go.Transform.RotateEulerBy(eulerRotationDegrees * MathHelper.Pi / 180f);
-            go.Transform.ScaleTo(scale);
-
-            var model = _modelDictionary.Get("monkey1");
-            var texture = _textureDictionary.Get("mona lisa");
-            var meshFilter = MeshFilterFactory.CreateFromModel(model, _graphics.GraphicsDevice, 0, 0);
-            go.AddComponent(meshFilter);
-
-            var meshRenderer = go.AddComponent<MeshRenderer>();
-
-            meshRenderer.Material = _matBasicLit;
-            meshRenderer.Overrides.MainTexture = texture;
-
-            _scene.Add(go);
-
-
-            // Add box collider (1x1x1 cube)
-            var collider = go.AddComponent<SphereCollider>();
-            collider.Diameter = scale.Length();
-            collider.IsTrigger = false;
-
-            // Add rigidbody (Dynamic so it falls)
-            var rigidBody = go.AddComponent<RigidBody>();
-            rigidBody.BodyType = BodyType.Dynamic;
-            rigidBody.Mass = 1.0f;
-            rigidBody.UseGravity = true;
-        }
-
         private void InitializePlayer()
         {
             GameObject player = InitializeModel(new Vector3(0, 5, 10),
@@ -194,7 +162,6 @@ namespace GDGame
             // Adds an inventory to the player
             player.AddComponent<InventoryComponent>();
         }
-
         private void InitializePIPCamera(Vector3 position,
       Viewport viewport, int depth, int index = 0)
         {
@@ -536,7 +503,7 @@ namespace GDGame
             //_scene.SetActiveCamera(theCamera);
 
             //replace with new SetActiveCamera that searches by string
-            _scene.SetActiveCamera(AppData.CAMERA_NAME_FIRST_PERSON);
+            _scene.SetActiveCamera(AppData.CAMERA_NAME_STATIC_BIRDS_EYE);
         }
 
         /// <summary>
@@ -641,47 +608,7 @@ namespace GDGame
 
         }
 
-        private void InitializeCollidableGround(int scale = 500)
-        {
-            GameObject gameObject = null;
-            MeshFilter meshFilter = null;
-            MeshRenderer meshRenderer = null;
-
-            gameObject = new GameObject("ground");
-            meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
-
-            meshFilter = MeshFilterFactory.CreateQuadGridTexturedUnlit(_graphics.GraphicsDevice,
-                 1,
-                 1,
-                 1,
-                 1,
-                 20,
-                 20);
-
-
-            gameObject.Transform.ScaleBy(new Vector3(scale, scale, 1));
-            gameObject.Transform.RotateEulerBy(new Vector3(MathHelper.ToRadians(-90), 0, 0), true);
-            gameObject.Transform.TranslateTo(new Vector3(0, -0.5f, 0));
-
-            gameObject.AddComponent(meshFilter);
-            meshRenderer = gameObject.AddComponent<MeshRenderer>();
-            meshRenderer.Material = _matBasicUnlitGround;
-            meshRenderer.Overrides.MainTexture = _textureDictionary.Get("ground_grass");
-
-            // Add a box collider matching the ground size
-            var collider = gameObject.AddComponent<BoxCollider>();
-            collider.Size = new Vector3(scale, scale, 0.025f);
-            collider.Center = new Vector3(0, 0, -0.0125f);
-
-            // Add rigidbody as Static (immovable)
-            var rigidBody = gameObject.AddComponent<RigidBody>();
-            rigidBody.BodyType = BodyType.Static;
-            gameObject.IsStatic = true;
-
-            _scene.Add(gameObject);
-        }
-
-        private void InitializeUI()
+       private void InitializeUI()
         {
             InitializeUIReticleRenderer();
         }
@@ -729,7 +656,6 @@ namespace GDGame
             // Hide mouse since reticle will take its place
             IsMouseVisible = false;
         }
-
 
         /// <summary>
         /// Adds a single-part FBX model into the scene.
@@ -863,6 +789,71 @@ namespace GDGame
         #endregion    }
 
         #region Demo Methods (remove in the game)
+        private void DemoCollidableGround(int scale = 500)
+        {
+            GameObject gameObject = null;
+            MeshFilter meshFilter = null;
+            MeshRenderer meshRenderer = null;
+
+            gameObject = new GameObject("ground");
+            meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
+            meshFilter = MeshFilterFactory.CreateQuadGridTexturedUnlit(_graphics.GraphicsDevice,
+                 1,
+                 1,
+                 1,
+                 1,
+                 20,
+                 20);
+
+            gameObject.Transform.ScaleBy(new Vector3(scale, scale, 1));
+            gameObject.Transform.RotateEulerBy(new Vector3(MathHelper.ToRadians(-90), 0, 0), true);
+            gameObject.Transform.TranslateTo(new Vector3(0, -0.5f, 0));
+
+            gameObject.AddComponent(meshFilter);
+            meshRenderer = gameObject.AddComponent<MeshRenderer>();
+            meshRenderer.Material = _matBasicUnlitGround;
+            meshRenderer.Overrides.MainTexture = _textureDictionary.Get("ground_grass");
+
+            // Add a box collider matching the ground size
+            var collider = gameObject.AddComponent<BoxCollider>();
+            collider.Size = new Vector3(scale, scale, 0.025f);
+            collider.Center = new Vector3(0, 0, -0.0125f);
+
+            // Add rigidbody as Static (immovable)
+            var rigidBody = gameObject.AddComponent<RigidBody>();
+            rigidBody.BodyType = BodyType.Static;
+            gameObject.IsStatic = true;
+
+            _scene.Add(gameObject);
+        }
+
+        private void DemoCollidableModel(Vector3 position, Vector3 eulerRotationDegrees, Vector3 scale)
+        {
+            var go = new GameObject("test");
+            go.Transform.TranslateTo(position);
+            go.Transform.RotateEulerBy(eulerRotationDegrees * MathHelper.Pi / 180f);
+            go.Transform.ScaleTo(scale);
+
+            var model = _modelDictionary.Get("monkey1");
+            var texture = _textureDictionary.Get("mona lisa");
+            var meshFilter = MeshFilterFactory.CreateFromModel(model, _graphics.GraphicsDevice, 0, 0);
+            go.AddComponent(meshFilter);
+
+            var meshRenderer = go.AddComponent<MeshRenderer>();
+            meshRenderer.Material = _matBasicLit;
+            meshRenderer.Overrides.MainTexture = texture;
+            _scene.Add(go);
+
+
+            // Add box collider (1x1x1 cube)
+            var collider = go.AddComponent<SphereCollider>();
+            collider.Diameter = scale.Length();
+
+            // Add rigidbody (Dynamic so it falls)
+            var rigidBody = go.AddComponent<RigidBody>();
+            rigidBody.BodyType = BodyType.Dynamic;
+            rigidBody.Mass = 1.0f;
+        }
 
         private void DemoStuff()
         {
