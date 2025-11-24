@@ -1,13 +1,12 @@
 ﻿using GDEngine.Core;
 using GDEngine.Core.Audio;
-using GDEngine.Core.Audio.Events;
 using GDEngine.Core.Collections;
 using GDEngine.Core.Components;
 using GDEngine.Core.Debug;
 using GDEngine.Core.Entities;
 using GDEngine.Core.Events;
-using GDEngine.Core.Events.Types.Camera;
 using GDEngine.Core.Factories;
+using GDEngine.Core.Impulses;
 using GDEngine.Core.Input.Data;
 using GDEngine.Core.Input.Devices;
 using GDEngine.Core.Orchestration;
@@ -23,6 +22,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System;
 using System.Collections.Generic;
 using Color = Microsoft.Xna.Framework.Color;
 
@@ -65,7 +65,6 @@ namespace GDGame
 
         protected override void Initialize()
         {
-           
             #region Core
 
             // Give the game a name
@@ -100,13 +99,18 @@ namespace GDGame
             InitializeManagers();
 
             // Setup world
-            int scale = 100;
+            int scale = 500;
             InitializeSkyParent();
             InitializeSkyBox(scale);
             DemoCollidableGround(scale);
 
             // Setup player
             InitializePlayer();
+
+            // Setup menu
+            //InitializeMenu();
+
+            #endregion
 
             #region Demos
 
@@ -117,7 +121,7 @@ namespace GDGame
             InitializeCollisionEventListener();
 
             // Collidable game object demos
-            DemoCollidablePrimitive(new Vector3(0, 20, 5.1f), Vector3.One * 6, new Vector3(15,45,45));
+            DemoCollidablePrimitive(new Vector3(0, 20, 5.1f), Vector3.One * 6, new Vector3(15, 45, 45));
             DemoCollidablePrimitive(new Vector3(0, 10, 5.2f), Vector3.One * 1, new Vector3(45, 0, 0));
             DemoCollidablePrimitive(new Vector3(0, 5, 5.3f), Vector3.One * 1, new Vector3(0, 0, 45));
             DemoCollidableModel(new Vector3(0, 50, 10), Vector3.Zero, new Vector3(2, 1.25f, 2));
@@ -129,12 +133,9 @@ namespace GDGame
             DemoOrchestrationSystem();
             #endregion
 
-            // Setup renderers after all game objects added since ui text may use a gameobject as target
+            #region Core
+            // Setup UI renderers after all game objects added since ui text may use a gameobject as target
             InitializeUI();
-
-            // Setup menu
-            //InitializeMenu();
-
             #endregion
 
             base.Initialize();
@@ -143,7 +144,7 @@ namespace GDGame
         private void InitializeManagers()
         {
             var go = new GameObject("Camera Manager");
-            go.AddComponent<CameraChangeEventListener>();
+            go.AddComponent<CameraEventListener>();
             _scene.Add(go);
         }
 
@@ -334,6 +335,12 @@ namespace GDGame
             InitializeCameraAndRenderSystems(); //update cameras, draw renderable game objects, draw ui and menu
             InitializeAudioSystem();
             InitializeOrchestrationSystem(true); //show debugger
+            InitializeImpulseSystem();
+        }
+
+        private void InitializeImpulseSystem()
+        {
+            _scene.Add(new ImpulseSystem(EngineContext.Instance.Impulses));
         }
 
         private void InitializeOrchestrationSystem(bool debugEnabled)
@@ -372,11 +379,6 @@ namespace GDGame
 
                 _scene.Add(debugGO);
             }
-
-
-
-
-
 
         }
 
@@ -483,15 +485,19 @@ namespace GDGame
 
             //camera GO
             cameraGO = new GameObject(AppData.CAMERA_NAME_FIRST_PERSON);
+
             //set position 
             cameraGO.Transform.TranslateTo(position);
+
             //add camera component to the GO
             camera = cameraGO.AddComponent<Camera>();
             camera.FarPlane = 1000;
-            ////feed off whatever screen dimensions you set InitializeGraphics
+
+            //feed off whatever screen dimensions you set InitializeGraphics
             camera.AspectRatio = (float)_graphics.PreferredBackBufferWidth / _graphics.PreferredBackBufferHeight;
             cameraGO.AddComponent<KeyboardWASDController>();
             cameraGO.AddComponent<MouseYawPitchController>();
+            cameraGO.AddComponent<CameraImpulseListener>();
 
             // Add it to the scene
             _scene.Add(cameraGO);
@@ -503,7 +509,7 @@ namespace GDGame
             //_scene.SetActiveCamera(theCamera);
 
             //replace with new SetActiveCamera that searches by string
-            _scene.SetActiveCamera(AppData.CAMERA_NAME_STATIC_BIRDS_EYE);
+            _scene.SetActiveCamera(AppData.CAMERA_NAME_FIRST_PERSON);
         }
 
         /// <summary>
@@ -608,7 +614,7 @@ namespace GDGame
 
         }
 
-       private void InitializeUI()
+        private void InitializeUI()
         {
             InitializeUIReticleRenderer();
         }
@@ -630,12 +636,12 @@ namespace GDGame
             uiReticleGO.AddComponent(reticle);
 
             var textRenderer = uiReticleGO.AddComponent<UITextRenderer>();
-            textRenderer.Font = uiFont;         
+            textRenderer.Font = uiFont;
             textRenderer.Offset = new Vector2(0, 30);  // Position text below reticle
             textRenderer.Color = Color.White;
             textRenderer.PositionProvider = () => _graphics.GraphicsDevice.Viewport.GetCenter();
             textRenderer.Anchor = TextAnchor.Center;
-            
+
             var picker = uiReticleGO.AddComponent<UIPickerInfoRenderer>();
             picker.HitMask = LayerMask.All;
             picker.MaxDistance = 500f;
@@ -863,8 +869,80 @@ namespace GDGame
             DemoToggleFullscreen();
             DemoAudioSystem();
             DemoOrchestrationSystem();
+            DemoImpulsePublish();
             _oldKBState = _newKBState;
         }
+
+        private void DemoImpulsePublish()
+        {
+            var impulses = EngineContext.Instance.Impulses;
+
+            // a simple explosion reaction
+            bool isZPressed = _newKBState.IsKeyDown(Keys.Z) && !_oldKBState.IsKeyDown(Keys.Z);
+            if (isZPressed)
+            {
+                float duration = 0.35f;
+                float amplitude = 0.6f;
+
+                impulses.CreateContinuousSource(
+                    (elapsed, totalDuration) =>
+                    {
+                        // Random 2D screen-space-ish direction
+                        Vector3 dir = MathUtility.RandomShakeXY();
+
+                        // Let Eased3DImpulse use its default easing (e.g. Ease.Linear)
+                        return new Eased3DImpulse(
+                            channel: "camera/impulse",
+                            direction: dir,
+                            amplitude: amplitude,
+                            time: elapsed,
+                            duration: totalDuration);
+                    },
+                    duration,
+                    true);
+            }
+
+            // like a locked door try and fail
+            bool isCPressed = _newKBState.IsKeyDown(Keys.X) && !_oldKBState.IsKeyDown(Keys.X);
+            if (isCPressed)
+            {
+                float duration = 0.2f;
+                float amplitude = 0.1f;
+
+                impulses.CreateContinuousSource(
+                    (elapsed, totalDuration) =>
+                    {
+                        float jitter = 0.05f;  
+
+                        // Small random left/right component
+                        float z = (float)(Random.Shared.NextDouble() * 2.0 - 1.0) * jitter;
+
+                        // Backward in world-space 
+                        Vector3 dir = new Vector3(0, 0, z);
+
+                        return new Eased3DImpulse(
+                            channel: "camera/impulse",
+                            direction: dir,
+                            amplitude: amplitude,
+                            time: elapsed,
+                            duration: totalDuration,
+                            ease: Ease.EaseOutQuad); // snappier than cubic, but still smooth
+                    },
+                    duration,
+                    true);
+            }
+        }
+
+        private static Vector3 RandomShakeDirection()
+        {
+            float x = (float)(Random.Shared.NextDouble() * 2.0 - 1.0);
+            float y = (float)(Random.Shared.NextDouble() * 2.0 - 1.0);
+
+            // Flat screen-space style shake in X/Y
+            return new Vector3(x, y, 0f);
+        }
+
+
 
         private void DemoOrchestrationSystem()
         {
@@ -872,10 +950,10 @@ namespace GDGame
 
             bool isPressed = _newKBState.IsKeyDown(Keys.O) && !_oldKBState.IsKeyDown(Keys.O);
             if (isPressed)
-            {  
+            {
                 orchestrator.Build("my first sequence")
                     .WaitSeconds(2)
-                    .Publish(new CameraChangeEvent(AppData.CAMERA_NAME_FIRST_PERSON))
+                    .Publish(new CameraEvent(AppData.CAMERA_NAME_FIRST_PERSON))
                     .WaitSeconds(2)
                     .Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Generic_1", 1, false, null))
                     .Register();
@@ -949,7 +1027,7 @@ namespace GDGame
             bool isFirst = _newKBState.IsKeyDown(Keys.D1) && !_oldKBState.IsKeyDown(Keys.D1);
             if (isFirst)
             {
-                events.Post(new CameraChangeEvent(AppData.CAMERA_NAME_FIRST_PERSON));
+                events.Post(new CameraEvent(AppData.CAMERA_NAME_FIRST_PERSON));
                 events.Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Generic_1",
                   1, false, null));
             }
@@ -957,7 +1035,7 @@ namespace GDGame
             bool isThird = _newKBState.IsKeyDown(Keys.D2) && !_oldKBState.IsKeyDown(Keys.D2);
             if (isThird)
             {
-                events.Post(new CameraChangeEvent(AppData.CAMERA_NAME_THIRD_PERSON));
+                events.Post(new CameraEvent(AppData.CAMERA_NAME_THIRD_PERSON));
                 events.Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Mallet_Open_1",
                 1, false, null));
             }
@@ -981,7 +1059,7 @@ namespace GDGame
             // Raise inventory event
             if (_newKBState.IsKeyDown(Keys.E) && !_oldKBState.IsKeyDown(Keys.E))
             {
-                var inventoryEvent = new InventoryEvent();
+                var inventoryEvent = new GDEngine.Core.Components.InventoryEvent();
                 inventoryEvent.ItemType = ItemType.Weapon;
                 inventoryEvent.Value = 10;
                 EngineContext.Instance.Events.Publish(inventoryEvent);
@@ -989,10 +1067,16 @@ namespace GDGame
 
             if (_newKBState.IsKeyDown(Keys.L) && !_oldKBState.IsKeyDown(Keys.L))
             {
-                var inventoryEvent = new InventoryEvent();
+                var inventoryEvent = new GDEngine.Core.Components.InventoryEvent();
                 inventoryEvent.ItemType = ItemType.Lore;
                 inventoryEvent.Value = 0;
                 EngineContext.Instance.Events.Publish(inventoryEvent);
+            }
+
+            if (_newKBState.IsKeyDown(Keys.M) && !_oldKBState.IsKeyDown(Keys.M))
+            {
+                // EngineContext.Instance.Messages.Post(new PlayerDamageEvent(45, DamageType.Strength));
+                //EngineContext.Instance.Messages.PublishImmediate(new PlayerDamageEvent(45, DamageType.Strength));
             }
         }
 
@@ -1019,7 +1103,7 @@ namespace GDGame
 
             gameObject = new GameObject("test crate textured cube");
             gameObject.Transform.TranslateTo(position);
-            gameObject.Transform.ScaleTo(scale * 0.5f);  
+            gameObject.Transform.ScaleTo(scale * 0.5f);
             gameObject.Transform.RotateEulerBy(rotateDegrees * MathHelper.Pi / 180f);
 
 
@@ -1098,8 +1182,8 @@ namespace GDGame
             var layerA = evt.LayerA;
             var layerB = evt.LayerB;
 
-            System.Diagnostics.Debug.WriteLine(
-                $"[Collision] {nameA} (Layer {layerA}) <-> {nameB} (Layer {layerB})");
+            //System.Diagnostics.Debug.WriteLine(
+            //    $"[Collision] {nameA} (Layer {layerA}) <-> {nameB} (Layer {layerB})");
         }
 
 

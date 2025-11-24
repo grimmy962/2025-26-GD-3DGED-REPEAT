@@ -344,7 +344,7 @@ namespace GDEngine.Core.Entities
         public void SetActiveCamera(string? targetName)
         {
             var go = Find(go => go.Name.Equals(targetName));
-            var camera = go.GetComponent<Camera>();
+            var camera = go?.GetComponent<Camera>();
             SetActiveCamera(camera);
         }
 

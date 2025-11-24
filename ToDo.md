@@ -97,7 +97,10 @@ This document contains a step-by-step development plan of MonoGame content cover
 - [x] Add `OrchestrationSystem` for sequencing game events.
 - [x] Add physics engine (`PhysicsSystem` and CDCR).
 - [x] Add **audio hooks**: `AudioSystem` to support 2D and 3D sound; service access via `EventBus`.
-- [ ] Add `UIMenuSystem`
+- [ ] Add collidable camera
+- [ ] Add object picking and removal 
+- [ ] Add inventory that listens for object removal
+- [ ] Add `UIMenuSystem` and demo
 - [ ] Add dictionary in `MeshFilterFactory` to reduce `VertexBuffer` and `IndexBuffer` usage on duplicate calls to a method.
 - [ ] Add support for deep and shallow cloning on `GameObject` components.
 - [ ] Add support for opaque/transparent objects.
@@ -107,5 +110,6 @@ This document contains a step-by-step development plan of MonoGame content cover
 - [ ] Add demos for effects supporting normal maps and environment maps.
 
 ## Bugs
+- [ ] On adding/running same orchestration sequence twice
 - [ ] Is `Camera` filtering by `LayerMask`?
 - [ ] Can I add multiple overlay `Camera` sorted by depth?
