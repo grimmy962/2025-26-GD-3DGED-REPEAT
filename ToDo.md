@@ -100,11 +100,11 @@ This document contains a step-by-step development plan of MonoGame content cover
 - [x] Add impulse system for impulse changes to objects over time (e.g. camera shake, audio volume change, light flicker)
 
 ## Week 10
-- [ ] Refactor JSON loader to load game objects and read collider data to set on load
 - [ ] Add collidable camera
+- [ ] Add `UIMenuSystem` and demo
+- [ ] Refactor JSON loader to load game objects and read collider data to set on load
 - [ ] Add object picking and removal 
 - [ ] Add inventory that listens for object removal
-- [ ] Add `UIMenuSystem` and demo
 
 # Week 10/11
 - [ ] Add lighting system with 4 omni, 1 directional (shadow), and PBR material
