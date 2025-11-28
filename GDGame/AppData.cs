@@ -112,8 +112,13 @@ namespace GDGame
             "Demo_CrateBounce";
 
         public static readonly string DAMAGE_SOURCE_DEBUG_GUN = "DebugGun";
-   
 
         #endregion
+
+
+        #region Level
+        public static readonly string LEVEL_1_NAME = "outdoors - level 1"; 
+        #endregion
+
     }
 }

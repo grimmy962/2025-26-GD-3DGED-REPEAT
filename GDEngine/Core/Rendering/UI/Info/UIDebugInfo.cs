@@ -1,5 +1,6 @@
 ﻿#nullable enable
 using GDEngine.Core.Components;
+using GDEngine.Core.Screen;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 

@@ -7,7 +7,9 @@ using GDEngine.Core.Components;
 using GDEngine.Core.Debug;
 using GDEngine.Core.Entities;
 using GDEngine.Core.Events;
+using GDEngine.Core.Events.Types;
 using GDEngine.Core.Factories;
+using GDEngine.Core.Gameplay;
 using GDEngine.Core.Impulses;
 using GDEngine.Core.Input.Data;
 using GDEngine.Core.Input.Devices;
@@ -16,6 +18,7 @@ using GDEngine.Core.Orchestration;
 using GDEngine.Core.Rendering;
 using GDEngine.Core.Rendering.Base;
 using GDEngine.Core.Rendering.UI;
+using GDEngine.Core.Screen;
 using GDEngine.Core.Serialization;
 using GDEngine.Core.Services;
 using GDEngine.Core.Systems;
@@ -39,7 +42,6 @@ namespace GDGame
         private ContentDictionary<SpriteFont> _fontDictionary;
         private ContentDictionary<SoundEffect> _soundDictionary;
         private ContentDictionary<Effect> _effectsDictionary;
-        private Scene _scene;
         private bool _disposed = false;
         private Material _matBasicUnlit, _matBasicLit, _matAlphaCutout, _matBasicUnlitGround;
         #endregion
@@ -57,6 +59,7 @@ namespace GDGame
         private LayerMask _collisionDebugMask = LayerMask.All;
         private UIMenuPanel _mainMenuPanel, _audioMenuPanel;
         private SceneManager _sceneManager;
+        private float _currentHealth = 100;
         #endregion
 
         #region Core Methods (Common to all games)     
@@ -70,54 +73,34 @@ namespace GDGame
         protected override void Initialize()
         {
             #region Core
-
-            // Give the game a name
             Window.Title = "My Amazing Game";
-
-            // Set resolution and centering (by monitor index)
             InitializeGraphics(ScreenResolution.R_HD_16_9_1280x720);
-
-            // Center and hide the mouse!
             InitializeMouse();
-
-            // Shared data across entities
             InitializeContext();
 
-            // Assets from string names in JSON
             var relativeFilePathAndName = "assets/data/asset_manifest.json";
             LoadAssetsFromJSON(relativeFilePathAndName);
-
-            // All effects used in game
             InitializeEffects();
 
             _sceneManager = new SceneManager(this);
             Components.Add(_sceneManager);
-  
-            // Scene to hold game objects
+
+            // Create the scene and register it
             InitializeScene();
 
-            // Camera, UI, Menu, Physics, Rendering etc.
+            // Safe to use _sceneManager.ActiveScene from here on
             InitializeSystems();
-
-            // All cameras we want in the game are loaded now and one set as active
             InitializeCameras();
-
-            //game manager, camera changer, FSM, AI
             InitializeManagers();
 
-            // Setup world
             int scale = 500;
             InitializeSkyParent();
             InitializeSkyBox(scale);
             InitializeCollidableGround(scale);
-
-            // Setup player
             InitializePlayer();
-
             #endregion
 
             #region Demos
-
             #region Animation curves
             // Camera-demos
             InitializeAnimationCurves();
@@ -134,7 +117,6 @@ namespace GDGame
             DemoCollidableModel(new Vector3(0, 50, 10), Vector3.Zero, new Vector3(2, 1.25f, 2));
             DemoCollidableModel(new Vector3(0, 40, 11), Vector3.Zero, new Vector3(2, 1.25f, 2));
             DemoCollidableModel(new Vector3(0, 25, 12), Vector3.Zero, new Vector3(2, 1.25f, 2));
-
             #endregion
 
             #region Alpha effect
@@ -153,7 +135,6 @@ namespace GDGame
             // DemoMenu(); 
             #endregion
 
-
             #endregion
 
             #region Core
@@ -161,12 +142,64 @@ namespace GDGame
             //InitializeUI();
             #endregion
 
-            //set the active scene
-            _sceneManager.activeSceneName = "outdoors - level 1";
+            // Set the active scene
+            _sceneManager.SetActiveScene(AppData.LEVEL_1_NAME);
 
-
+            // Set win/lose conditions
+            SetWinConditions();
 
             base.Initialize();
+        }
+
+        private void SetWinConditions()
+        {
+            var gameStateSystem = _sceneManager.ActiveScene.GetSystem<GameStateSystem>();
+
+            // Value providers (Strategy pattern via delegates)
+            Func<float> healthProvider = () =>
+            {
+                //get the player and access the player's health/speed/other variable
+                return _currentHealth;
+            };
+
+            
+            // Delegate for time
+            Func<float> timeProvider = () =>
+            {
+                return (float)Time.RealtimeSinceStartupSecs;
+            };
+
+            // Lose condition: health < 10 AND time > 60
+            IGameCondition loseCondition =
+                GameConditions.And(
+                    "Lose if low health after 5s",
+                    GameConditions.FloatLessThan("Health < 0", healthProvider, 0),
+                    GameConditions.FloatGreaterThan("Time > 5s", timeProvider, 5)
+                );
+
+            // Configure GameStateSystem (no win condition yet)
+            gameStateSystem.ConfigureConditions(null, loseCondition);
+            gameStateSystem.StateChanged += HandleGameStateChange;
+        }
+
+        private void HandleGameStateChange(GameOutcomeState oldState, GameOutcomeState newState)
+        {
+            System.Diagnostics.Debug.WriteLine($"Old state was {oldState} is and new state is {newState}");
+            
+            if(newState == GameOutcomeState.Lost)
+            {
+                System.Diagnostics.Debug.WriteLine("You lost!");
+                //play sound
+                //reset player
+                //load next level
+                //we decide what losing looks like here!
+                //Exit();
+            }
+            else if (newState == GameOutcomeState.Won)
+            {
+                System.Diagnostics.Debug.WriteLine("You win!");
+            }
+
         }
 
         private void DemoMenu()
@@ -178,8 +211,8 @@ namespace GDGame
 
             //DemoUISlider(_scene);
 
-            DemoMainMenu(_scene);
-            DemoAudioMenu(_scene);
+            DemoMainMenu(_sceneManager.ActiveScene);
+            DemoAudioMenu(_sceneManager.ActiveScene);
             _audioMenuPanel.IsVisible = false;
         }
 
@@ -474,7 +507,7 @@ namespace GDGame
             //inside scene
             var go = new GameObject("Camera Manager");
             go.AddComponent<CameraEventListener>();
-            _scene.Add(go);
+            _sceneManager.ActiveScene.Add(go);
         }
 
         private void InitializeMenuManager()
@@ -489,7 +522,7 @@ namespace GDGame
             SpriteFont uiFont = _fontDictionary.Get("menufont");
 
             // Wire UIManager to the menu scene
-            menuManager.Initialize(_scene, btnTex, trackTex, handleTex, controlsTx, uiFont);
+            menuManager.Initialize(_sceneManager.ActiveScene, btnTex, trackTex, handleTex, controlsTx, uiFont);
 
             // Subscribe to high-level events
             menuManager.PlayRequested += () =>
@@ -548,7 +581,7 @@ namespace GDGame
 
             camera.Viewport = viewport; // new Viewport(0, 0, 400, 300);
 
-            _scene.Add(pipCameraGO);
+            _sceneManager.ActiveScene.Add(pipCameraGO);
         }
 
         private void InitializeAnimationCurves()
@@ -688,10 +721,13 @@ namespace GDGame
         private void InitializeScene()
         {
             // Make a scene that will store all drawn objects and systems for that level
-            _scene = new Scene(EngineContext.Instance, "outdoors - level 1");
+            var scene = new Scene(EngineContext.Instance, "outdoors - level 1");
 
             // Add each new scene into the manager
-            _sceneManager.scenes.Add("outdoors - level 1", _scene);
+            _sceneManager.AddScene(AppData.LEVEL_1_NAME, scene);
+
+            // Set the active scene before anything that uses ActiveScene
+            _sceneManager.SetActiveScene(AppData.LEVEL_1_NAME);
         }
 
         private void InitializeSystems()
@@ -705,16 +741,23 @@ namespace GDGame
             InitializeOrchestrationSystem(false); //show debugger
             InitializeImpulseSystem();    //camera shake, audio duck volumes etc
             InitializeUIEventSystem();
+            InitializeGameStateSystem();   //manage and track game state
+        }
+
+        private void InitializeGameStateSystem()
+        {
+            // Add game state system
+            _sceneManager.ActiveScene.AddSystem(new GameStateSystem());
         }
 
         private void InitializeUIEventSystem()
         {
-            _scene.AddSystem(new UIEventSystem());
+            _sceneManager.ActiveScene.AddSystem(new UIEventSystem());
         }
 
         private void InitializeImpulseSystem()
         {
-            _scene.Add(new ImpulseSystem(EngineContext.Instance.Impulses));
+            _sceneManager.ActiveScene.Add(new ImpulseSystem(EngineContext.Instance.Impulses));
         }
 
         private void InitializeOrchestrationSystem(bool debugEnabled)
@@ -726,7 +769,7 @@ namespace GDGame
                 options.LocalScale = 1;
                 options.Paused = false;
             });
-            _scene.Add(orchestrationSystem);
+            _sceneManager.ActiveScene.Add(orchestrationSystem);
 
             // Debugger
             if (debugEnabled)
@@ -750,20 +793,19 @@ namespace GDGame
 
                 debugRenderer.Providers.Add(perfProvider);
 
-
-                _scene.Add(debugGO);
+                _sceneManager.ActiveScene.Add(debugGO);
             }
 
         }
 
         private void InitializeAudioSystem()
         {
-            _scene.Add(new AudioSystem(_soundDictionary));
+            _sceneManager.ActiveScene.Add(new AudioSystem(_soundDictionary));
         }
 
         private void InitializePhysicsDebugSystem(bool isEnabled)
         {
-            var physicsDebugRenderer = _scene.AddSystem(new PhysicsDebugRenderer());
+            var physicsDebugRenderer = _sceneManager.ActiveScene.AddSystem(new PhysicsDebugRenderer());
 
             // Toggle debug rendering on/off
             physicsDebugRenderer.Enabled = isEnabled; // or false to hide
@@ -779,28 +821,28 @@ namespace GDGame
         private void InitializePhysicsSystem()
         {
             // 1. add physics
-            var physicsSystem = _scene.AddSystem(new PhysicsSystem());
+            var physicsSystem = _sceneManager.ActiveScene.AddSystem(new PhysicsSystem());
             physicsSystem.Gravity = AppData.GRAVITY;
         }
 
         private void InitializeEventSystem()
         {
-            _scene.Add(new EventSystem(EngineContext.Instance.Events));
+            _sceneManager.ActiveScene.Add(new EventSystem(EngineContext.Instance.Events));
         }
 
         private void InitializeCameraAndRenderSystems()
         {
             //manages camera
             var cameraSystem = new CameraSystem(_graphics.GraphicsDevice, -100);
-            _scene.Add(cameraSystem);
+            _sceneManager.ActiveScene.Add(cameraSystem);
 
             //3d
             var renderSystem = new RenderSystem(-100);
-            _scene.Add(renderSystem);
+            _sceneManager.ActiveScene.Add(renderSystem);
 
             //2d
             var uiRenderSystem = new UIRenderSystem(-100);
-            _scene.Add(uiRenderSystem); // draws in PostRender after RenderingSystem (order = -100)
+            _sceneManager.ActiveScene.Add(uiRenderSystem); // draws in PostRender after RenderingSystem (order = -100)
         }
 
         private void InitializeInputSystem()
@@ -816,12 +858,12 @@ namespace GDGame
             // Create the input system 
             var inputSystem = new InputSystem();
 
-            //register all the devices, you dont have to, but its for the demo
+            // Register all the devices, you don't have to, but its for the demo
             inputSystem.Add(new GDKeyboardInput(bindings));
             inputSystem.Add(new GDMouseInput(bindings));
             inputSystem.Add(new GDGamepadInput(PlayerIndex.One, "Gamepad P1"));
 
-            _scene.Add(inputSystem);
+            _sceneManager.ActiveScene.Add(inputSystem);
         }
 
         private void InitializeCameras()
@@ -838,7 +880,7 @@ namespace GDGame
 
             // _cameraGO.AddComponent<MouseYawPitchController>();
 
-            _scene.Add(cameraGO);
+            _sceneManager.ActiveScene.Add(cameraGO);
 
             // _camera.FieldOfView
             //TODO - add camera
@@ -854,7 +896,7 @@ namespace GDGame
             thirdPersonController.FollowDistance = 50;
             thirdPersonController.RotationDamping = 20;
             cameraGO.AddComponent(thirdPersonController);
-            _scene.Add(cameraGO);
+            _sceneManager.ActiveScene.Add(cameraGO);
             #endregion
 
             #region First-person camera
@@ -894,7 +936,7 @@ namespace GDGame
             //interComp.HitMask = LayerMask.Interactables;
 
             // Add it to the scene
-            _scene.Add(cameraGO);
+            _sceneManager.ActiveScene.Add(cameraGO);
             #endregion
 
             // Set the active camera by finding and getting its camera component
@@ -903,7 +945,7 @@ namespace GDGame
             //_scene.SetActiveCamera(theCamera);
 
             //replace with new SetActiveCamera that searches by string
-            _scene.SetActiveCamera(AppData.CAMERA_NAME_FIRST_PERSON);
+            _sceneManager.ActiveScene.SetActiveCamera(AppData.CAMERA_NAME_FIRST_PERSON);
         }
 
         /// <summary>
@@ -919,7 +961,7 @@ namespace GDGame
 
             // Dramatised fast drift at 2 deg/sec. 
             rot._rotationSpeedInRadiansPerSecond = MathHelper.ToRadians(2f);
-            _scene.Add(_skyParent);
+            _sceneManager.ActiveScene.Add(_skyParent);
         }
 
         private void InitializeSkyBox(int scale = 500)
@@ -929,7 +971,7 @@ namespace GDGame
             MeshRenderer meshRenderer = null;
 
             // Find the sky parent object to attach sky to so sky rotates
-            GameObject skyParent = _scene.Find((GameObject go) => go.Name.Equals("SkyParent"));
+            GameObject skyParent = _sceneManager.ActiveScene.Find((GameObject go) => go.Name.Equals("SkyParent"));
 
             // back
             gameObject = new GameObject("back");
@@ -940,7 +982,7 @@ namespace GDGame
             meshRenderer = gameObject.AddComponent<MeshRenderer>();
             meshRenderer.Material = _matBasicUnlit;
             meshRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_back");
-            _scene.Add(gameObject);
+            _sceneManager.ActiveScene.Add(gameObject);
 
             //set parent to allow rotation
             gameObject.Transform.SetParent(skyParent.Transform);
@@ -955,7 +997,7 @@ namespace GDGame
             meshRenderer = gameObject.AddComponent<MeshRenderer>();
             meshRenderer.Material = _matBasicUnlit;
             meshRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_left");
-            _scene.Add(gameObject);
+            _sceneManager.ActiveScene.Add(gameObject);
 
             //set parent to allow rotation
             gameObject.Transform.SetParent(skyParent.Transform);
@@ -971,7 +1013,7 @@ namespace GDGame
             meshRenderer = gameObject.AddComponent<MeshRenderer>();
             meshRenderer.Material = _matBasicUnlit;
             meshRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_right");
-            _scene.Add(gameObject);
+            _sceneManager.ActiveScene.Add(gameObject);
 
             //set parent to allow rotation
             gameObject.Transform.SetParent(skyParent.Transform);
@@ -986,7 +1028,7 @@ namespace GDGame
             meshRenderer = gameObject.AddComponent<MeshRenderer>();
             meshRenderer.Material = _matBasicUnlit;
             meshRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_front");
-            _scene.Add(gameObject);
+            _sceneManager.ActiveScene.Add(gameObject);
 
             //set parent to allow rotation
             gameObject.Transform.SetParent(skyParent.Transform);
@@ -1001,7 +1043,7 @@ namespace GDGame
             meshRenderer = gameObject.AddComponent<MeshRenderer>();
             meshRenderer.Material = _matBasicUnlit;
             meshRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_sky");
-            _scene.Add(gameObject);
+            _sceneManager.ActiveScene.Add(gameObject);
 
             //set parent to allow rotation
             gameObject.Transform.SetParent(skyParent.Transform);
@@ -1051,7 +1093,7 @@ namespace GDGame
             //    return $"{go.Name}  d={hit.Distance:F1}";
             //};
 
-            _scene.Add(uiReticleGO);
+            _sceneManager.ActiveScene.Add(uiReticleGO);
 
             // Hide mouse since reticle will take its place
             IsMouseVisible = false;
@@ -1083,7 +1125,7 @@ namespace GDGame
             meshRenderer.Material = _matBasicLit;
             meshRenderer.Overrides.MainTexture = texture;
 
-            _scene.Add(gameObject);
+            _sceneManager.ActiveScene.Add(gameObject);
 
             return gameObject;
         }
@@ -1126,12 +1168,7 @@ namespace GDGame
             {
                 System.Diagnostics.Debug.WriteLine("Disposing Main...");
 
-                // 1. Dispose Scene (which will cascade to GameObjects and Components)
-                System.Diagnostics.Debug.WriteLine("Disposing Scene");
-                _scene?.Dispose();
-                _scene = null;
-
-                // 2. Dispose Materials (which may own Effects)
+                // 1. Dispose Materials (which may own Effects)
                 System.Diagnostics.Debug.WriteLine("Disposing Materials");
                 _matBasicUnlit?.Dispose();
                 _matBasicUnlit = null;
@@ -1142,11 +1179,11 @@ namespace GDGame
                 _matAlphaCutout?.Dispose();
                 _matAlphaCutout = null;
 
-                // 3. Clear cached MeshFilters in factory registry
+                // 2. Clear cached MeshFilters in factory registry
                 System.Diagnostics.Debug.WriteLine("Clearing MeshFilter Registry");
                 MeshFilterFactory.ClearRegistry();
 
-                // 4. Dispose content dictionaries (now they implement IDisposable!)
+                // 3. Dispose content dictionaries (now they implement IDisposable!)
                 System.Diagnostics.Debug.WriteLine("Disposing Content Dictionaries");
                 _textureDictionary?.Dispose();
                 _textureDictionary = null;
@@ -1157,17 +1194,17 @@ namespace GDGame
                 _fontDictionary?.Dispose();
                 _fontDictionary = null;
 
-                // 5. Dispose EngineContext (which owns SpriteBatch and Content)
+                // 4. Dispose EngineContext (which owns SpriteBatch and Content)
                 System.Diagnostics.Debug.WriteLine("Disposing EngineContext");
                 EngineContext.Instance?.Dispose();
 
-                // 6. Clear references to help GC
+                // 5. Clear references to help GC
                 System.Diagnostics.Debug.WriteLine("Clearing References");
                 _animationCurve = null;
                 _animationPositionCurve = null;
                 _animationRotationCurve = null;
 
-                // 7. Dispose of collision handlers
+                // 6. Dispose of collision handlers
                 if (_collisionSubscription != null)
                 {
                     _collisionSubscription.Dispose();
@@ -1221,7 +1258,7 @@ namespace GDGame
             rigidBody.BodyType = BodyType.Static;
             gameObject.IsStatic = true;
 
-            _scene.Add(gameObject);
+            _sceneManager.ActiveScene.Add(gameObject);
         }
 
         private void DemoCollidableModel(Vector3 position, Vector3 eulerRotationDegrees, Vector3 scale)
@@ -1241,8 +1278,7 @@ namespace GDGame
             var meshRenderer = go.AddComponent<MeshRenderer>();
             meshRenderer.Material = _matBasicLit;
             meshRenderer.Overrides.MainTexture = texture;
-            _scene.Add(go);
-
+            _sceneManager.ActiveScene.Add(go);
 
             // Add box collider (1x1x1 cube)
             var collider = go.AddComponent<SphereCollider>();
@@ -1264,6 +1300,10 @@ namespace GDGame
             DemoOrchestrationSystem();
             DemoImpulsePublish();
             _oldKBState = _newKBState;
+
+
+            //a demo relating to GameStateSystem
+            _currentHealth--;
         }
 
         private void DemoImpulsePublish()
@@ -1337,7 +1377,7 @@ namespace GDGame
 
         private void DemoOrchestrationSystem()
         {
-            var orchestrator = _scene.GetSystem<OrchestrationSystem>().Orchestrator;
+            var orchestrator = _sceneManager.ActiveScene.GetSystem<OrchestrationSystem>().Orchestrator;
 
             bool isPressed = _newKBState.IsKeyDown(Keys.O) && !_oldKBState.IsKeyDown(Keys.O);
             if (isPressed)
@@ -1349,7 +1389,7 @@ namespace GDGame
                     .Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Generic_1", 1, false, null))
                     .Register();
 
-                orchestrator.Start("my first sequence", _scene, EngineContext.Instance);
+                orchestrator.Start("my first sequence", _sceneManager.ActiveScene, EngineContext.Instance);
             }
 
             bool isIPressed = _newKBState.IsKeyDown(Keys.I) && !_oldKBState.IsKeyDown(Keys.I);
@@ -1396,7 +1436,7 @@ namespace GDGame
             if (isD7Pressed)
             {
                 //expensive and crude => move to Component::Start()
-                var go = _scene.Find(go => go.Name.Equals(AppData.PLAYER_NAME));
+                var go = _sceneManager.ActiveScene.Find(go => go.Name.Equals(AppData.PLAYER_NAME));
                 Transform emitterTransform = go.Transform;
 
                 events.Publish(new PlaySfxEvent("hand_gun1",
@@ -1513,7 +1553,7 @@ namespace GDGame
             rb.Mass = 1.0f;
             rb.BodyType = BodyType.Dynamic;
 
-            _scene.Add(gameObject);
+            _sceneManager.ActiveScene.Add(gameObject);
         }
 
         private void DemoAlphaCutoutFoliage(Vector3 position, float width, float height)
@@ -1540,7 +1580,7 @@ namespace GDGame
 
             go.Transform.TranslateTo(position);
 
-            _scene.Add(go);
+            _sceneManager.ActiveScene.Add(go);
         }
 
         /// <summary>
