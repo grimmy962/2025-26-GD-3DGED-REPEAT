@@ -56,6 +56,7 @@ namespace GDGame
         // LayerMask used to filter which collisions we care about in debug
         private LayerMask _collisionDebugMask = LayerMask.All;
         private UIMenuPanel _mainMenuPanel, _audioMenuPanel;
+        private SceneManager _sceneManager;
         #endregion
 
         #region Core Methods (Common to all games)     
@@ -89,6 +90,9 @@ namespace GDGame
             // All effects used in game
             InitializeEffects();
 
+            _sceneManager = new SceneManager(this);
+            Components.Add(_sceneManager);
+  
             // Scene to hold game objects
             InitializeScene();
 
@@ -146,7 +150,7 @@ namespace GDGame
             #endregion
 
             #region Menu
-            DemoMenu(); 
+            // DemoMenu(); 
             #endregion
 
 
@@ -157,6 +161,11 @@ namespace GDGame
             //InitializeUI();
             #endregion
 
+            //set the active scene
+            _sceneManager.activeSceneName = "outdoors - level 1";
+
+
+
             base.Initialize();
         }
 
@@ -165,13 +174,13 @@ namespace GDGame
             // Define a size for the button on screen
             Vector2 buttonSize = new Vector2(200f, 64f);
             Vector2 buttonPosition = new Vector2(100f, 100f); // top-left in UI space
-            DemoUIButton(_scene, "Click me", buttonPosition, buttonSize);
+            //DemoUIButton(_scene, "Click me", buttonPosition, buttonSize);
 
             //DemoUISlider(_scene);
 
-            //DemoMainMenu(_scene);
-            //DemoAudioMenu(_scene);
-            //_audioMenuPanel.IsVisible = false;
+            DemoMainMenu(_scene);
+            DemoAudioMenu(_scene);
+            _audioMenuPanel.IsVisible = false;
         }
 
         private void DemoMainMenu(Scene scene)
@@ -320,10 +329,10 @@ namespace GDGame
             slider.TargetGraphic = trackGraphic;
             slider.Position = sliderPosition;
             slider.Size = sliderSize;
-            slider.MinValue = 0;
+            slider.MinValue = 1;
             slider.MaxValue = 10;
-            slider.WholeNumbers = true;
-            slider.Value = 5;  // start in middle
+            slider.WholeNumbers = false;
+            slider.Value = 1;  // start in middle
 
             // Handle is treated as a child GameObject
             GameObject handleObject = new GameObject("SliderHandle");
@@ -363,10 +372,12 @@ namespace GDGame
             valueLabel.Offset = Vector2.Zero;
 
             // Subscribe to slider changes for logging/demo
-            slider.ValueChanged += v =>
-            {
-                System.Diagnostics.Debug.WriteLine($"Slider value changed: {v:0}");
-            };
+            slider.ValueChanged += UpdateSliderValue;
+        }
+
+        private void UpdateSliderValue(float value)
+        {
+            System.Diagnostics.Debug.WriteLine(value);
         }
 
         private void DemoUIButton(Scene scene, string buttonText, Vector2 buttonPosition, Vector2 buttonSize)
@@ -384,14 +395,14 @@ namespace GDGame
             buttonGraphic.Texture = buttonTexture;
             buttonGraphic.Position = buttonPosition;
             buttonGraphic.Size = buttonSize;
-            buttonGraphic.Tint = Color.White;
+            buttonGraphic.Tint = Color.Red;
             buttonGraphic.LayerDepth = UILayer.Menu;           // background layer for the button
 
             // UIButton built on UISelectable
             UIButton button = buttonObject.AddComponent<UIButton>();
             button.TargetGraphic = buttonGraphic;
-            button.AutoSizeFromTargetGraphic = false;         
-            button.Position = buttonPosition;  
+            button.AutoSizeFromTargetGraphic = false;
+            button.Position = buttonPosition;
             button.Size = buttonSize;
             button.NormalColor = Color.Black;
             button.HighlightedColor = Color.LightGray;
@@ -418,10 +429,7 @@ namespace GDGame
             label.Offset = Vector2.Zero;
 
             // Hook up events for demo
-            button.PointerEntered += () =>
-            {
-                System.Diagnostics.Debug.WriteLine("Button: Pointer entered");
-            };
+            button.PointerEntered += HandlePointEntered;
 
             button.PointerExited += () =>
             {
@@ -444,10 +452,24 @@ namespace GDGame
             };
         }
 
+        private void HandlePointEntered()
+        {
+            //play sound
+            //raise/publish event
+            //orchestration
+            //reset the player
+            //consume the cola ++ health
+            System.Diagnostics.Debug.WriteLine("HandlePointEntered");
+        }
+
         private void InitializeManagers()
         {
             //outside scene
-            //InitializeMenuManager();
+            InitializeMenuManager();
+
+            //InitializeSceneManager();
+
+            //InitializeGameStateManager();
 
             //inside scene
             var go = new GameObject("Camera Manager");
@@ -667,6 +689,9 @@ namespace GDGame
         {
             // Make a scene that will store all drawn objects and systems for that level
             _scene = new Scene(EngineContext.Instance, "outdoors - level 1");
+
+            // Add each new scene into the manager
+            _sceneManager.scenes.Add("outdoors - level 1", _scene);
         }
 
         private void InitializeSystems()
@@ -765,13 +790,16 @@ namespace GDGame
 
         private void InitializeCameraAndRenderSystems()
         {
+            //manages camera
             var cameraSystem = new CameraSystem(_graphics.GraphicsDevice, -100);
             _scene.Add(cameraSystem);
 
+            //3d
             var renderSystem = new RenderSystem(-100);
             _scene.Add(renderSystem);
 
-            var uiRenderSystem = new UIRenderSystem(100);
+            //2d
+            var uiRenderSystem = new UIRenderSystem(-100);
             _scene.Add(uiRenderSystem); // draws in PostRender after RenderingSystem (order = -100)
         }
 
@@ -1065,9 +1093,7 @@ namespace GDGame
             #region Core
             Time.Update(gameTime);
 
-            //update Scene
-            _scene.Update(Time.DeltaTimeSecs);
-            #endregion
+              #endregion
 
             #region Demo
             DemoStuff();
@@ -1079,9 +1105,6 @@ namespace GDGame
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Microsoft.Xna.Framework.Color.CornflowerBlue);
-
-            //just as called update, we now have to call draw to call the draw in the renderingsystem
-            _scene.Draw(Time.DeltaTimeSecs);
 
             base.Draw(gameTime);
         }

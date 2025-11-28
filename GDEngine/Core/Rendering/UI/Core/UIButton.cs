@@ -24,7 +24,8 @@ namespace GDEngine.Core.Rendering.UI
         #endregion
 
         #region Properties (events)
-        public event Action Clicked
+        //event = (list of function pointers + flag (1/0)
+        public event Action Clicked       //DoSomething(int x)
         {
             add { _onClick += value; }
             remove { _onClick -= value; }

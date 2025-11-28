@@ -1,5 +1,4 @@
-﻿using System;
-using GDEngine.Core.Components;
+﻿using GDEngine.Core.Components;
 using GDEngine.Core.Systems;
 using Microsoft.Xna.Framework;
 
