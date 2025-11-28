@@ -23,7 +23,6 @@
       "name": "ground_grass",
       "contentPath": "assets/textures/foliage/ground/grass1"
     },
-
     {
       "name": "skybox_back",
       "contentPath": "assets/textures/skybox/back"
@@ -44,7 +43,6 @@
       "name": "skybox_sky",
       "contentPath": "assets/textures/skybox/sky"
     },
-
     {
       "name": "crate1",
       "contentPath": "assets/textures/props/crates/crate1"
@@ -53,7 +51,6 @@
       "name": "tree4",
       "contentPath": "assets/textures/foliage/trees/tree4"
     },
-
     {
       "name": "checkerboard",
       "contentPath": "assets/textures/demo/checkerboard"
@@ -62,7 +59,34 @@
       "name": "mona lisa",
       "contentPath": "assets/textures/demo/mona lisa"
     },
-
+    //UI - BACKGROUND
+    {
+      "name": "white_1x1",
+      "contentPath": "assets/textures/ui/icons/base/white_1x1"
+    },
+    ///UI - SLIDER
+    {
+      "name": "Free Flat Toggle Thumb Centre Icon",
+      "contentPath": "assets/textures/ui/icons/slider/Free Flat Toggle Thumb Centre Icon"
+    },
+    {
+      "name": "Free Flat Hyphen Icon",
+      "contentPath": "assets/textures/ui/icons/slider/Free Flat Hyphen Icon"
+    },
+    ///UI - GRADIENTS
+    {
+      "name": "Free Flat Gradient Vertical (Middle) Icon",
+      "contentPath": "assets/textures/ui/gradients/Free Flat Gradient Vertical (Middle) Icon"
+    },
+    ///UI - BUTTONS
+    {
+      "name": "button_rectangle_10",
+      "contentPath": "assets/textures/ui/icons/buttons/rectangle/button_rectangle_10"
+    },
+    {
+      "name": "controlsmenu_monkey",
+      "contentPath": "assets/textures/ui/backgrounds/controlsmenu_monkey"
+    },
     {
       "name": "mouse_reticle",
       "contentPath": "assets/textures/ui/mouse/reticleClosed"
@@ -71,7 +95,6 @@
       "name": "Crosshair_21",
       "contentPath": "assets/textures/ui/mouse/Crosshair_01"
     },
-
     {
       "name": "mainmenu",
       "contentPath": "assets/textures/ui/backgrounds/mainmenu"

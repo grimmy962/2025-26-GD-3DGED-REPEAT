@@ -100,10 +100,10 @@ This document contains a step-by-step development plan of MonoGame content cover
 - [x] Add impulse system for impulse changes to objects over time (e.g. camera shake, audio volume change, light flicker)
 
 ## Week 10
-- [ ] Add collidable camera
-- [ ] Add `UIMenuSystem` and demo
-- [ ] Refactor JSON loader to load game objects and read collider data to set on load
 - [ ] Add object picking and removal 
+- [ ] Add `UIMenuSystem` and demo
+- [ ] Add collidable camera
+- [ ] Refactor JSON loader to load game objects and read collider data to set on load
 - [ ] Add inventory that listens for object removal
 
 # Week 10/11
@@ -120,3 +120,4 @@ This document contains a step-by-step development plan of MonoGame content cover
 - [ ] On adding/running same orchestration sequence twice
 - [ ] Is `Camera` filtering by `LayerMask`?
 - [ ] Can I add multiple overlay `Camera` sorted by depth?
+- [ ] Is UITexture tint working reliably?

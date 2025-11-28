@@ -1,4 +1,6 @@
-﻿using GDEngine.Core;
+﻿using System;
+using System.Collections.Generic;
+using GDEngine.Core;
 using GDEngine.Core.Audio;
 using GDEngine.Core.Collections;
 using GDEngine.Core.Components;
@@ -9,9 +11,11 @@ using GDEngine.Core.Factories;
 using GDEngine.Core.Impulses;
 using GDEngine.Core.Input.Data;
 using GDEngine.Core.Input.Devices;
+using GDEngine.Core.Managers;
 using GDEngine.Core.Orchestration;
 using GDEngine.Core.Rendering;
 using GDEngine.Core.Rendering.Base;
+using GDEngine.Core.Rendering.UI;
 using GDEngine.Core.Serialization;
 using GDEngine.Core.Services;
 using GDEngine.Core.Systems;
@@ -22,8 +26,6 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using System;
-using System.Collections.Generic;
 using Color = Microsoft.Xna.Framework.Color;
 
 namespace GDGame
@@ -49,10 +51,11 @@ namespace GDGame
         private int _damageAmount;
 
         // Simple debug subscription for collision events
-        private System.IDisposable _collisionSubscription;
+        private IDisposable _collisionSubscription;
 
         // LayerMask used to filter which collisions we care about in debug
         private LayerMask _collisionDebugMask = LayerMask.All;
+        private UIMenuPanel _mainMenuPanel, _audioMenuPanel;
         #endregion
 
         #region Core Methods (Common to all games)     
@@ -102,21 +105,21 @@ namespace GDGame
             int scale = 500;
             InitializeSkyParent();
             InitializeSkyBox(scale);
-            DemoCollidableGround(scale);
+            InitializeCollidableGround(scale);
 
             // Setup player
             InitializePlayer();
-
-            // Setup menu
-            //InitializeMenu();
 
             #endregion
 
             #region Demos
 
+            #region Animation curves
             // Camera-demos
             InitializeAnimationCurves();
+            #endregion
 
+            #region Collidables
             // Demo event listeners on collision
             InitializeCollisionEventListener();
 
@@ -128,24 +131,364 @@ namespace GDGame
             DemoCollidableModel(new Vector3(0, 40, 11), Vector3.Zero, new Vector3(2, 1.25f, 2));
             DemoCollidableModel(new Vector3(0, 25, 12), Vector3.Zero, new Vector3(2, 1.25f, 2));
 
+            #endregion
+
+            #region Alpha effect
             DemoAlphaCutoutFoliage(new Vector3(0, 10 /*note Y=heightscale/2*/, 0), 12, 20);
+            #endregion
+
+            #region Loading GameObjects from JSON
             DemoLoadFromJSON();
+            #endregion
+
+            #region Sequencing using Orchestration
             DemoOrchestrationSystem();
+            #endregion
+
+            #region Menu
+            DemoMenu(); 
+            #endregion
+
+
             #endregion
 
             #region Core
             // Setup UI renderers after all game objects added since ui text may use a gameobject as target
-            InitializeUI();
+            //InitializeUI();
             #endregion
 
             base.Initialize();
         }
 
+        private void DemoMenu()
+        {
+            // Define a size for the button on screen
+            Vector2 buttonSize = new Vector2(200f, 64f);
+            Vector2 buttonPosition = new Vector2(100f, 100f); // top-left in UI space
+            DemoUIButton(_scene, "Click me", buttonPosition, buttonSize);
+
+            //DemoUISlider(_scene);
+
+            //DemoMainMenu(_scene);
+            //DemoAudioMenu(_scene);
+            //_audioMenuPanel.IsVisible = false;
+        }
+
+        private void DemoMainMenu(Scene scene)
+        {
+            // Load shared assets
+            Texture2D buttonTexture = _textureDictionary.Get("button_rectangle_10");
+            SpriteFont menuFont = _fontDictionary.Get("menufont");
+
+            GameObject panelObject = new GameObject("MainMenuPanel");
+            scene.Add(panelObject);
+
+            _mainMenuPanel = panelObject.AddComponent<UIMenuPanel>();
+            _mainMenuPanel.PanelPosition = new Vector2(100f, 100f);
+            _mainMenuPanel.ItemSize = new Vector2(220f, 60f);
+            _mainMenuPanel.VerticalSpacing = 12f;
+
+            // PLAY
+            _mainMenuPanel.AddButton(
+                "Play",
+                buttonTexture,
+                menuFont,
+                () =>
+                {
+                    System.Diagnostics.Debug.WriteLine("Play pressed");
+                    // TODO: start game / change state
+                });
+
+            // OPTIONS
+            _mainMenuPanel.AddButton(
+                "Options",
+                buttonTexture,
+                menuFont,
+                () =>
+                {
+                    System.Diagnostics.Debug.WriteLine("Options pressed");
+                    // TODO: later you might show an options panel here
+                });
+
+            // AUDIO -> show audio panel, hide main
+            _mainMenuPanel.AddButton(
+                "Audio",
+                buttonTexture,
+                menuFont,
+                () =>
+                {
+                    System.Diagnostics.Debug.WriteLine("Audio pressed");
+                    _mainMenuPanel.IsVisible = false;
+                    _audioMenuPanel.IsVisible = true;
+                });
+
+            // EXIT
+            _mainMenuPanel.AddButton(
+                "Exit",
+                buttonTexture,
+                menuFont,
+                () =>
+                {
+                    System.Diagnostics.Debug.WriteLine("Exit pressed");
+                    Exit();
+                });
+        }
+
+        private void DemoAudioMenu(Scene scene)
+        {
+            Texture2D buttonTexture = _textureDictionary.Get("button_rectangle_10");
+            Texture2D sliderTrackTex = _textureDictionary.Get("Free Flat Hyphen Icon");
+            Texture2D sliderHandleTex = _textureDictionary.Get("Free Flat Toggle Thumb Centre Icon");
+            SpriteFont menuFont = _fontDictionary.Get("menufont");
+
+            GameObject panelObject = new GameObject("AudioMenuPanel");
+            scene.Add(panelObject);
+
+            _audioMenuPanel = panelObject.AddComponent<UIMenuPanel>();
+            _audioMenuPanel.PanelPosition = new Vector2(100f, 100f);
+            _audioMenuPanel.ItemSize = new Vector2(320f, 60f);
+            _audioMenuPanel.VerticalSpacing = 16f;
+
+            // Music slider
+            _audioMenuPanel.AddSlider(
+                "Music",
+                sliderTrackTex,
+                sliderHandleTex,
+                menuFont,
+                0f,
+                1f,
+                0.7f,
+                v =>
+                {
+                    System.Diagnostics.Debug.WriteLine($"Music volume: {v:0.00}");
+                    // TODO: hook into AudioSystem
+                });
+
+            // SFX slider
+            _audioMenuPanel.AddSlider(
+                "SFX",
+                sliderTrackTex,
+                sliderHandleTex,
+                menuFont,
+                0f,
+                1f,
+                0.9f,
+                v =>
+                {
+                    System.Diagnostics.Debug.WriteLine($"SFX volume: {v:0.00}");
+                });
+
+            // Back button
+            _audioMenuPanel.AddButton(
+                "Back",
+                buttonTexture,
+                menuFont,
+                () =>
+                {
+                    System.Diagnostics.Debug.WriteLine("Back to main menu");
+                    _audioMenuPanel.IsVisible = false;
+                    _mainMenuPanel.IsVisible = true;
+                });
+        }
+
+
+        private void DemoUISlider(Scene scene)
+        {
+            // Load assets
+            Texture2D trackTexture =_textureDictionary.Get("Free Flat Hyphen Icon");
+            Texture2D handleTexture = _textureDictionary.Get("Free Flat Toggle Thumb Centre Icon");
+            SpriteFont sliderFont = _fontDictionary.Get("menufont");
+
+            // Logical slider size and position
+            Vector2 sliderSize = new Vector2(300f, 20f);
+            Vector2 sliderPosition = new Vector2(100f, 220f); // below the button demo
+
+            // Root GameObject for the slider
+            GameObject sliderObject = new GameObject("DemoSlider");
+            scene.Add(sliderObject);
+
+            // Track background texture
+            UITexture trackGraphic = sliderObject.AddComponent<UITexture>();
+            trackGraphic.Texture = trackTexture;
+            trackGraphic.Position = sliderPosition;
+            trackGraphic.Tint = Color.Red;
+            trackGraphic.Size = sliderSize;
+            trackGraphic.LayerDepth = UILayer.Menu;   // behind handle and text
+
+            // Slider logic
+            UISlider slider = sliderObject.AddComponent<UISlider>();
+            slider.TargetGraphic = trackGraphic;
+            slider.Position = sliderPosition;
+            slider.Size = sliderSize;
+            slider.MinValue = 0;
+            slider.MaxValue = 10;
+            slider.WholeNumbers = true;
+            slider.Value = 5;  // start in middle
+
+            // Handle is treated as a child GameObject
+            GameObject handleObject = new GameObject("SliderHandle");
+            scene.Add(handleObject);
+
+            // Attach handle under slider in the transform hierarchy
+            handleObject.Transform.SetParent(sliderObject.Transform);
+
+            // Slider handle texture
+            UITexture handleGraphic = handleObject.AddComponent<UITexture>();
+            handleGraphic.Texture = handleTexture;
+            handleGraphic.Size = new Vector2(20f, 20f); // logical handle size
+            handleGraphic.Tint = Color.Orange;
+            handleGraphic.LayerDepth = UILayer.MenuFront;
+            slider.HandleGraphic = handleGraphic;
+
+            // Label to display current value above the slider
+            UIText valueLabel = sliderObject.AddComponent<UIText>();
+            valueLabel.Font = sliderFont;
+            valueLabel.FallbackColor = Color.White;
+            valueLabel.DropShadow = true;
+            valueLabel.LayerDepth = UILayer.MenuFront;
+
+            valueLabel.TextProvider = () =>
+            {
+                return $"SFX Volume: {slider.Value:0}";
+            };
+
+            // Position the label centered on the slider, slightly above
+            valueLabel.PositionProvider = () =>
+            {
+                Vector2 center = slider.Position + (slider.Size * 0.5f);
+                return center + new Vector2(0f, -30f);
+            };
+            valueLabel.Anchor = TextAnchor.Center;
+            valueLabel.UniformScale = 1f;
+            valueLabel.Offset = Vector2.Zero;
+
+            // Subscribe to slider changes for logging/demo
+            slider.ValueChanged += v =>
+            {
+                System.Diagnostics.Debug.WriteLine($"Slider value changed: {v:0}");
+            };
+        }
+
+        private void DemoUIButton(Scene scene, string buttonText, Vector2 buttonPosition, Vector2 buttonSize)
+        {
+            // Load a simple button texture and font from your Content pipeline
+            Texture2D buttonTexture = _textureDictionary.Get("button_rectangle_10");
+            SpriteFont buttonFont = _fontDictionary.Get("menufont");
+
+            // Create and add GameObject to the scene
+            GameObject buttonObject = new GameObject("DemoButton");
+            scene.Add(buttonObject);
+
+            // UITexture as the target graphic
+            UITexture buttonGraphic = buttonObject.AddComponent<UITexture>();
+            buttonGraphic.Texture = buttonTexture;
+            buttonGraphic.Position = buttonPosition;
+            buttonGraphic.Size = buttonSize;
+            buttonGraphic.Tint = Color.White;
+            buttonGraphic.LayerDepth = UILayer.Menu;           // background layer for the button
+
+            // UIButton built on UISelectable
+            UIButton button = buttonObject.AddComponent<UIButton>();
+            button.TargetGraphic = buttonGraphic;
+            button.AutoSizeFromTargetGraphic = false;         
+            button.Position = buttonPosition;  
+            button.Size = buttonSize;
+            button.NormalColor = Color.Black;
+            button.HighlightedColor = Color.LightGray;
+            button.PressedColor = Color.Gray;
+            button.DisabledColor = Color.DarkGray;
+
+            // UIText centered on the button (Unity-style "Text" child)
+            UIText label = buttonObject.AddComponent<UIText>();
+            label.Font = buttonFont;
+            label.FallbackColor = Color.White;
+            label.DropShadow = true;
+            label.LayerDepth = UILayer.MenuFront; // in front of the button background
+
+            // Center the label on the button:
+            // - PositionProvider returns the *center* of the button
+            // - Anchor Center means the text will be centered around that point
+            label.TextProvider = () => buttonText;
+            label.PositionProvider = () =>
+            {
+                return button.Position + (button.Size * 0.5f);
+            };
+            label.Anchor = TextAnchor.Center;
+            label.UniformScale = 1;
+            label.Offset = Vector2.Zero;
+
+            // Hook up events for demo
+            button.PointerEntered += () =>
+            {
+                System.Diagnostics.Debug.WriteLine("Button: Pointer entered");
+            };
+
+            button.PointerExited += () =>
+            {
+                System.Diagnostics.Debug.WriteLine("Button: Pointer exited");
+            };
+
+            button.PointerDown += () =>
+            {
+                System.Diagnostics.Debug.WriteLine("Button: Pointer down");
+            };
+
+            button.PointerUp += () =>
+            {
+                System.Diagnostics.Debug.WriteLine("Button: Pointer up");
+            };
+
+            button.Clicked += () =>
+            {
+                System.Diagnostics.Debug.WriteLine("Button: Clicked!");
+            };
+        }
+
         private void InitializeManagers()
         {
+            //outside scene
+            //InitializeMenuManager();
+
+            //inside scene
             var go = new GameObject("Camera Manager");
             go.AddComponent<CameraEventListener>();
             _scene.Add(go);
+        }
+
+        private void InitializeMenuManager()
+        {
+            var menuManager = new MenuManager(this);
+            Components.Add(menuManager);
+
+            Texture2D btnTex = _textureDictionary.Get("button_rectangle_10");
+            Texture2D trackTex = _textureDictionary.Get("Free Flat Hyphen Icon");
+            Texture2D handleTex = _textureDictionary.Get("Free Flat Toggle Thumb Centre Icon");
+            Texture2D controlsTx = _textureDictionary.Get("mona lisa");
+            SpriteFont uiFont = _fontDictionary.Get("menufont");
+
+            // Wire UIManager to the menu scene
+            menuManager.Initialize(_scene, btnTex, trackTex, handleTex, controlsTx, uiFont);
+
+            // Subscribe to high-level events
+            menuManager.PlayRequested += () =>
+            {
+                // Tell your future SceneManager to switch from menuScene to gameplayScene
+            };
+
+            menuManager.ExitRequested += () =>
+            {
+                Exit();
+            };
+
+            menuManager.MusicVolumeChanged += v =>
+            {
+                // Forward to audio manager
+            };
+
+            menuManager.SfxVolumeChanged += v =>
+            {
+                // Forward to audio manager
+            };
         }
 
         private void InitializePlayer()
@@ -330,12 +673,18 @@ namespace GDGame
         {
             InitializePhysicsSystem();
             InitializePhysicsDebugSystem(true);
-            InitializeEventSystem();  //propagate events
+            InitializeEventSystem();  //propagate events  
             InitializeInputSystem();  //input
             InitializeCameraAndRenderSystems(); //update cameras, draw renderable game objects, draw ui and menu
             InitializeAudioSystem();
-            InitializeOrchestrationSystem(true); //show debugger
-            InitializeImpulseSystem();
+            InitializeOrchestrationSystem(false); //show debugger
+            InitializeImpulseSystem();    //camera shake, audio duck volumes etc
+            InitializeUIEventSystem();
+        }
+
+        private void InitializeUIEventSystem()
+        {
+            _scene.AddSystem(new UIEventSystem());
         }
 
         private void InitializeImpulseSystem()
@@ -358,7 +707,7 @@ namespace GDGame
             if (debugEnabled)
             {
                 GameObject debugGO = new GameObject("Perf Stats");
-                var debugRenderer = debugGO.AddComponent<UIDebugRenderer>();
+                var debugRenderer = debugGO.AddComponent<UIDebugInfo>();
 
                 debugRenderer.Font = _fontDictionary.Get("perf_stats_font");
                 debugRenderer.ScreenCorner = ScreenCorner.TopLeft;
@@ -499,6 +848,23 @@ namespace GDGame
             cameraGO.AddComponent<MouseYawPitchController>();
             cameraGO.AddComponent<CameraImpulseListener>();
 
+            //var collider = cameraGO.AddComponent<CapsuleCollider>();
+            //collider.Height = 5f;
+            //collider.Radius = 0.25f;
+
+            //var rb = cameraGO.AddComponent<RigidBody>();
+            //rb.BodyType = BodyType.Dynamic;
+            //rb.Mass = 80f;       // “human-ish”
+            //rb.UseGravity = true;
+            //rb.LinearDamping = 0.0f;      // or a little drag if you prefer
+            //rb.AngularDamping = 0.0f;
+
+            //var physicsWASDController = cameraGO.AddComponent<PhysicsWASDController>();
+            //physicsWASDController.MoveSpeed = 25f;                     // walk speed
+
+            //var interComp = cameraGO.AddComponent<InteractionComponent>();
+            //interComp.HitMask = LayerMask.Interactables;
+
             // Add it to the scene
             _scene.Add(cameraGO);
             #endregion
@@ -627,7 +993,7 @@ namespace GDGame
             var uiFont = _fontDictionary.Get("mouse_reticle_font");
 
             // Reticle (cursor): always on top
-            var reticle = new UIReticleRenderer(reticleAtlas);
+            var reticle = new UIReticle(reticleAtlas);
             reticle.Origin = reticleAtlas.GetCenter();
             reticle.SourceRectangle = null;
             reticle.Scale = new Vector2(0.1f, 0.1f);
@@ -635,27 +1001,27 @@ namespace GDGame
             reticle.LayerDepth = UILayer.Cursor;
             uiReticleGO.AddComponent(reticle);
 
-            var textRenderer = uiReticleGO.AddComponent<UITextRenderer>();
+            var textRenderer = uiReticleGO.AddComponent<UIText>();
             textRenderer.Font = uiFont;
             textRenderer.Offset = new Vector2(0, 30);  // Position text below reticle
             textRenderer.Color = Color.White;
             textRenderer.PositionProvider = () => _graphics.GraphicsDevice.Viewport.GetCenter();
             textRenderer.Anchor = TextAnchor.Center;
 
-            var picker = uiReticleGO.AddComponent<UIPickerInfoRenderer>();
-            picker.HitMask = LayerMask.All;
-            picker.MaxDistance = 500f;
-            picker.HitTriggers = false;
+            //var picker = uiReticleGO.AddComponent<UIPickerInfo>();
+            //picker.HitMask = LayerMask.All;
+            //picker.MaxDistance = 500f;
+            //picker.HitTriggers = false;
 
             // Optional custom formatting:
-            picker.Formatter = hit =>
-            {
-                var go = hit.Body?.GameObject;
-                if (go == null)
-                    return string.Empty;
+            //picker.Formatter = hit =>
+            //{
+            //    var go = hit.Body?.GameObject;
+            //    if (go == null)
+            //        return string.Empty;
 
-                return $"{go.Name}  d={hit.Distance:F1}";
-            };
+            //    return $"{go.Name}  d={hit.Distance:F1}";
+            //};
 
             _scene.Add(uiReticleGO);
 
@@ -676,6 +1042,8 @@ namespace GDGame
             gameObject.Transform.TranslateTo(position);
             gameObject.Transform.RotateEulerBy(eulerRotationDegrees * MathHelper.Pi / 180f);
             gameObject.Transform.ScaleTo(scale);
+
+            // gameObject.Layer = LayerMask.Interactables | LayerMask.NPC;  //100000 | 010000 = 110000
 
             var model = _modelDictionary.Get(modelName);
             var texture = _textureDictionary.Get(textureName);
@@ -795,7 +1163,7 @@ namespace GDGame
         #endregion    }
 
         #region Demo Methods (remove in the game)
-        private void DemoCollidableGround(int scale = 500)
+        private void InitializeCollidableGround(int scale = 500)
         {
             GameObject gameObject = null;
             MeshFilter meshFilter = null;
@@ -839,6 +1207,8 @@ namespace GDGame
             go.Transform.TranslateTo(position);
             go.Transform.RotateEulerBy(eulerRotationDegrees * MathHelper.Pi / 180f);
             go.Transform.ScaleTo(scale);
+
+            go.Layer = LayerMask.Interactables;
 
             var model = _modelDictionary.Get("monkey1");
             var texture = _textureDictionary.Get("mona lisa");
@@ -912,7 +1282,7 @@ namespace GDGame
                 impulses.CreateContinuousSource(
                     (elapsed, totalDuration) =>
                     {
-                        float jitter = 0.05f;  
+                        float jitter = 0.05f;
 
                         // Small random left/right component
                         float z = (float)(Random.Shared.NextDouble() * 2.0 - 1.0) * jitter;
@@ -941,8 +1311,6 @@ namespace GDGame
             // Flat screen-space style shake in X/Y
             return new Vector3(x, y, 0f);
         }
-
-
 
         private void DemoOrchestrationSystem()
         {
