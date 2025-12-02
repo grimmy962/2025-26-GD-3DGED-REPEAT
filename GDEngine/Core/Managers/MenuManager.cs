@@ -171,13 +171,15 @@ namespace GDEngine.Core.Managers
         /// </summary>
         public void ShowMainMenu()
         {
-            if (_mainMenuPanel == null ||
-                _audioMenuPanel == null ||
-                _controlsMenuPanel == null)
+            if (_mainMenuPanel == null || _audioMenuPanel == null || _controlsMenuPanel == null)
                 return;
 
             SetActivePanel(_mainMenuPanel, _audioMenuPanel, _controlsMenuPanel);
+
+            // HUD/reticle should be hidden while menu is up
+            SetReticleVisible(false);
         }
+
 
         /// <summary>
         /// Show the audio menu and hide the other panels.
@@ -190,6 +192,9 @@ namespace GDEngine.Core.Managers
                 return;
 
             SetActivePanel(_audioMenuPanel, _mainMenuPanel, _controlsMenuPanel);
+
+            // Hide reticle while in menu
+            SetReticleVisible(false);
         }
 
         /// <summary>
@@ -203,6 +208,9 @@ namespace GDEngine.Core.Managers
                 return;
 
             SetActivePanel(_controlsMenuPanel, _mainMenuPanel, _audioMenuPanel);
+
+            // Hide reticle while in menu
+            SetReticleVisible(false);
         }
 
         private void TryBuildMenus()
@@ -410,6 +418,9 @@ namespace GDEngine.Core.Managers
 
             if (_controlsMenuPanel != null)
                 _controlsMenuPanel.IsVisible = false;
+
+            // Show reticle for gameplay
+            SetReticleVisible(true);
         }
 
         private void SetActivePanel(UIMenuPanel toShow, UIMenuPanel toHideA, UIMenuPanel toHideB)
@@ -501,6 +512,45 @@ namespace GDEngine.Core.Managers
                 }
             }
         }
+
+        /// <summary>
+        /// Show or hide the HUD reticle and flip OS mouse visibility.
+        /// Assumes the reticle GameObject is named "HUD" (created in Main.InitializeUIReticleRenderer).
+        /// </summary>
+        private void SetReticleVisible(bool visible)
+        {
+            if (_menuScene == null)
+                return;
+
+            // Find the HUD game object created in Main.InitializeUIReticleRenderer
+            var hud = _menuScene.Find(go => go.Name == "HUD");
+            if (hud == null)
+                return;
+
+            // Disable/enable specific UI components on the HUD so the reticle stops drawing and picking.
+            var reticle = hud.GetComponent<UIReticle>();
+            if (reticle != null)
+                reticle.Enabled = visible;
+
+            var text = hud.GetComponent<UIText>();
+            if (text != null)
+                text.Enabled = visible;
+
+            var picker = hud.GetComponent<UIPickerInfo>();
+            if (picker != null)
+                picker.Enabled = visible;
+
+            // If there are other UI renderers on the HUD you want toggled, either GetComponents<UIRenderer>()
+            // and toggle them, or add explicit toggles above.
+            var otherUIRenderers = hud.GetComponents<UIRenderer>();
+            for (int i = 0; i < otherUIRenderers.Count; i++)
+                otherUIRenderers[i].Enabled = visible;
+
+            // Toggle OS mouse cursor — show mouse when menus visible, hide when playing.
+            // Menu visible => reticle hidden => show OS mouse (so Game.IsMouseVisible = !visible)
+            Game.IsMouseVisible = !visible;
+        }
+
         #endregion
 
         #region Housekeeping Methods
