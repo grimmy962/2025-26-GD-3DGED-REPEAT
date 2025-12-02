@@ -190,7 +190,7 @@ namespace GDEngine.Core.Rendering.UI
             // Label
             UIText label = go.AddComponent<UIText>();
             label.Font = font;
-            label.FallbackColor = textColor ?? Color.Black;
+            label.FallbackColor = textColor ?? Color.White;
             label.DropShadow = true;
             label.LayerDepth = UILayer.MenuFront;
 
@@ -273,7 +273,7 @@ namespace GDEngine.Core.Rendering.UI
             // Label, to the left, vertically centered
             UIText label = sliderRoot.AddComponent<UIText>();
             label.Font = font;
-            label.FallbackColor = textColor ?? Color.Black;
+            label.FallbackColor = textColor ?? Color.White;
             label.DropShadow = true;
             label.LayerDepth = UILayer.MenuFront;
 

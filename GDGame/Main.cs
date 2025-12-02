@@ -7,7 +7,6 @@ using GDEngine.Core.Components;
 using GDEngine.Core.Debug;
 using GDEngine.Core.Entities;
 using GDEngine.Core.Events;
-using GDEngine.Core.Events.Types;
 using GDEngine.Core.Factories;
 using GDEngine.Core.Gameplay;
 using GDEngine.Core.Impulses;
@@ -60,6 +59,7 @@ namespace GDGame
         private UIMenuPanel _mainMenuPanel, _audioMenuPanel;
         private SceneManager _sceneManager;
         private float _currentHealth = 100;
+        private MenuManager _menuManager;
         #endregion
 
         #region Core Methods (Common to all games)     
@@ -74,7 +74,7 @@ namespace GDGame
         {
             #region Core
             Window.Title = "My Amazing Game";
-            InitializeGraphics(ScreenResolution.R_HD_16_9_1280x720);
+            InitializeGraphics(ScreenResolution.R_WXGA_16_10_1280x800);
             InitializeMouse();
             InitializeContext();
 
@@ -82,8 +82,8 @@ namespace GDGame
             LoadAssetsFromJSON(relativeFilePathAndName);
             InitializeEffects();
 
-            _sceneManager = new SceneManager(this);
-            Components.Add(_sceneManager);
+            // Game component that exists outside scene to manage and swap scenes
+            InitializeSceneManager();
 
             // Create the scene and register it
             InitializeScene();
@@ -91,7 +91,7 @@ namespace GDGame
             // Safe to use _sceneManager.ActiveScene from here on
             InitializeSystems();
             InitializeCameras();
-            InitializeManagers();
+            InitializeCameraManagers();
 
             int scale = 500;
             InitializeSkyParent();
@@ -101,6 +101,7 @@ namespace GDGame
             #endregion
 
             #region Demos
+
             #region Animation curves
             // Camera-demos
             InitializeAnimationCurves();
@@ -131,15 +132,14 @@ namespace GDGame
             DemoOrchestrationSystem();
             #endregion
 
-            #region Menu
+            #region Menu & UI
             // DemoMenu(); 
-            #endregion
-
-            #endregion
-
-            #region Core
-            // Setup UI renderers after all game objects added since ui text may use a gameobject as target
             //InitializeUI();
+
+            // Main menu
+            InitializeMenuManager();
+            #endregion
+
             #endregion
 
             // Set the active scene
@@ -148,9 +148,796 @@ namespace GDGame
             // Set win/lose conditions
             SetWinConditions();
 
+            // Set pause and show menu
+            SetPauseShowMenu();
+
             base.Initialize();
         }
 
+        private void SetPauseShowMenu()
+        {
+            // Give scenemanager the events reference so that it can publish the pause event
+            _sceneManager.EventBus = EngineContext.Instance.Events;
+            // Set paused and publish pause event
+            _sceneManager.Paused = true;
+
+            // Put all components that should be paused to sleep
+            EngineContext.Instance.Events.Subscribe<GamePauseChangedEvent>(e =>
+            {
+                bool paused = e.IsPaused;
+
+                _sceneManager.ActiveScene.GetSystem<PhysicsSystem>()?.SetPaused(paused);
+                _sceneManager.ActiveScene.GetSystem<PhysicsDebugSystem>()?.SetPaused(paused);
+                _sceneManager.ActiveScene.GetSystem<GameStateSystem>()?.SetPaused(paused);
+            });
+        }
+
+        private void InitializeSceneManager()
+        {
+            _sceneManager = new SceneManager(this);
+            Components.Add(_sceneManager);
+        }
+
+        private void InitializeCameraManagers()
+        {
+            //inside scene
+            var go = new GameObject("Camera Manager");
+            go.AddComponent<CameraEventListener>();
+            _sceneManager.ActiveScene.Add(go);
+        }
+
+        private void InitializeMenuManager()
+        {
+            _menuManager = new MenuManager(this, _sceneManager);
+            Components.Add(_menuManager);
+
+            Texture2D btnTex = _textureDictionary.Get("button_rectangle_10");
+            Texture2D trackTex = _textureDictionary.Get("Free Flat Hyphen Icon");
+            Texture2D handleTex = _textureDictionary.Get("Free Flat Toggle Thumb Centre Icon");
+            Texture2D controlsTx = _textureDictionary.Get("mona lisa");
+            SpriteFont uiFont = _fontDictionary.Get("menufont");
+
+            // Wire UIManager to the menu scene
+            _menuManager.Initialize(_sceneManager.ActiveScene, btnTex, trackTex, handleTex, controlsTx, uiFont,
+                _textureDictionary.Get("mainmenu_monkey"),
+                 _textureDictionary.Get("controlsmenu_monkey"),
+                  _textureDictionary.Get("controlsmenu_monkey"));
+
+            // Subscribe to high-level events
+            _menuManager.PlayRequested += () =>
+            {
+                _sceneManager.Paused = false;
+                _menuManager.HideMenus();
+
+                //fade out menu sound
+            };
+
+            _menuManager.ExitRequested += () =>
+            {
+                Exit();
+            };
+
+            _menuManager.MusicVolumeChanged += v =>
+            {
+                // Forward to audio manager
+                System.Diagnostics.Debug.WriteLine("MusicVolumeChanged");
+
+                //raise event to set sound
+            };
+
+            _menuManager.SfxVolumeChanged += v =>
+            {
+                // Forward to audio manager
+                System.Diagnostics.Debug.WriteLine("SfxVolumeChanged");
+
+                //raise event to set sound
+            };
+        }
+
+        private void InitializePlayer()
+        {
+            GameObject player = InitializeModel(new Vector3(0, 5, 10),
+                new Vector3(0, 0, 0),
+                2 * Vector3.One, "crate1", "monkey1", AppData.PLAYER_NAME);
+
+            var simpleDriveController = new SimpleDriveController();
+            player.AddComponent(simpleDriveController);
+
+            // Listen for damage events on the player
+            player.AddComponent<DamageEventListener>();
+
+            // Adds an inventory to the player
+            player.AddComponent<InventoryComponent>();
+        }
+        private void InitializePIPCamera(Vector3 position,
+      Viewport viewport, int depth, int index = 0)
+        {
+            var pipCameraGO = new GameObject("PIP camera");
+            pipCameraGO.Transform.TranslateTo(position);
+            pipCameraGO.Transform.RotateEulerBy(new Vector3(0, MathHelper.ToRadians(-90), 0));
+
+            //if (index == 0)
+            //{
+            //    pipCameraGO.AddComponent<KeyboardWASDController>();
+            //    pipCameraGO.AddComponent<MouseYawPitchController>();
+            //}
+
+            var camera = pipCameraGO.AddComponent<Camera>();
+            camera.StackRole = Camera.StackType.Overlay;
+            camera.ClearFlags = Camera.ClearFlagsType.DepthOnly;
+            camera.Depth = depth; //-100
+
+            camera.Viewport = viewport; // new Viewport(0, 0, 400, 300);
+
+            _sceneManager.ActiveScene.Add(pipCameraGO);
+        }
+
+        private void InitializeAnimationCurves()
+        {
+            //1D animation curve demo (e.g. scale, audio volume, lerp factor for color, etc)
+            _animationCurve = new AnimationCurve(CurveLoopType.Cycle);
+            _animationCurve.AddKey(0f, 10);
+            _animationCurve.AddKey(2f, 11); //up
+            _animationCurve.AddKey(0f, 12); //down
+            _animationCurve.AddKey(8f, 13); //up further
+            _animationCurve.AddKey(0f, 13.5f); //down
+
+            //3D animation curve demo
+            _animationPositionCurve = new AnimationCurve3D(CurveLoopType.Oscillate);
+            _animationPositionCurve.AddKey(new Vector3(0, 4, 0), 0);
+            _animationPositionCurve.AddKey(new Vector3(5, 8, 2), 1);
+            _animationPositionCurve.AddKey(new Vector3(10, 12, 4), 2);
+            _animationPositionCurve.AddKey(new Vector3(0, 4, 0), 3);
+
+            // Absolute yaw/pitch/roll angles (radians) over time
+            _animationRotationCurve = new AnimationCurve3D(CurveLoopType.Oscillate);
+            _animationRotationCurve.AddKey(new Vector3(0, 0, 0), 0);              // yaw, pitch, roll
+            _animationRotationCurve.AddKey(new Vector3(0, MathHelper.PiOver2, 0), 1);
+            _animationRotationCurve.AddKey(new Vector3(0, MathHelper.Pi, 0), 2);
+            _animationRotationCurve.AddKey(new Vector3(0, 0, 0), 3);
+        }
+
+        private void InitializeGraphics(Integer2 resolution)
+        {
+            // Enable per-monitor DPI awareness so the window/UI scales crisply on multi-monitor setups with different DPIs (avoids blurriness when moving between screens).
+            System.Windows.Forms.Application.SetHighDpiMode(System.Windows.Forms.HighDpiMode.PerMonitorV2);
+
+            // Set preferred resolution
+            ScreenResolution.SetResolution(_graphics, resolution);
+
+            // Center on primary display (set to index of the preferred monitor)
+            WindowUtility.CenterOnMonitor(this, 1);
+        }
+
+        private void InitializeMouse()
+        {
+            Mouse.SetPosition(_graphics.PreferredBackBufferWidth / 2, _graphics.PreferredBackBufferHeight / 2);
+
+            // Set old state at start so its not null for comparison with new state in Update
+            _oldKBState = Keyboard.GetState();
+        }
+
+        private void InitializeContext()
+        {
+            EngineContext.Initialize(GraphicsDevice, Content);
+        }
+
+        /// <summary>
+        /// New asset loading from JSON using AssetEntry and ContentDictionary::LoadFromManifest
+        /// </summary>
+        /// <param name="relativeFilePathAndName"></param>
+        /// <see cref="AssetEntry"/>
+        /// <see cref="ContentDictionary{T}"/>
+        private void LoadAssetsFromJSON(string relativeFilePathAndName)
+        {
+            // Make dictionaries to store assets
+            _textureDictionary = new ContentDictionary<Texture2D>();
+            _modelDictionary = new ContentDictionary<Model>();
+            _fontDictionary = new ContentDictionary<SpriteFont>();
+            _soundDictionary = new ContentDictionary<SoundEffect>();
+            _effectsDictionary = new ContentDictionary<Effect>();
+            //TODO - Add dictionary loading for other assets - song, other?
+
+            var manifests = JSONSerializationUtility.LoadData<AssetManifest>(Content, relativeFilePathAndName); // single or array
+            if (manifests.Count > 0)
+            {
+                foreach (var m in manifests)
+                {
+                    _modelDictionary.LoadFromManifest(m.Models, e => e.Name, e => e.ContentPath, overwrite: true);
+                    _textureDictionary.LoadFromManifest(m.Textures, e => e.Name, e => e.ContentPath, overwrite: true);
+                    _fontDictionary.LoadFromManifest(m.Fonts, e => e.Name, e => e.ContentPath, overwrite: true);
+                    _soundDictionary.LoadFromManifest(m.Sounds, e => e.Name, e => e.ContentPath, overwrite: true);
+                    _effectsDictionary.LoadFromManifest(m.Effects, e => e.Name, e => e.ContentPath, overwrite: true);
+                    //TODO - Add dictionary loading for other assets - song, other?
+                }
+            }
+        }
+
+        private void InitializeEffects()
+        {
+            #region Unlit Textured BasicEffect 
+            var unlitBasicEffect = new BasicEffect(_graphics.GraphicsDevice)
+            {
+                TextureEnabled = true,
+                LightingEnabled = false,
+                VertexColorEnabled = false
+            };
+   
+            _matBasicUnlit = new Material(unlitBasicEffect);
+            _matBasicUnlit.StateBlock = RenderStates.Opaque3D();      // depth on, cull CCW
+            _matBasicUnlit.SamplerState = SamplerState.LinearClamp;   // helps avoid texture seams on sky
+
+            //ground texture where UVs above [0,0]-[1,1]
+            _matBasicUnlitGround = new Material(unlitBasicEffect.Clone());
+            _matBasicUnlitGround.StateBlock = RenderStates.Opaque3D();      // depth on, cull CCW
+            _matBasicUnlitGround.SamplerState = SamplerState.AnisotropicWrap;   // wrap texture based on UV values
+
+            #endregion
+
+            #region Lit Textured BasicEffect 
+            var litBasicEffect = new BasicEffect(_graphics.GraphicsDevice)
+            {
+                TextureEnabled = true,
+                LightingEnabled = true,
+                PreferPerPixelLighting = true,
+                VertexColorEnabled = false
+            };
+            litBasicEffect.EnableDefaultLighting();
+            //litBasicEffect.AmbientLightColor = Color.Red.ToVector3();
+            //litBasicEffect.EmissiveColor = Color.Green.ToVector3();
+            //litBasicEffect.FogEnabled = true;
+            //litBasicEffect.FogColor = Color.LightGray.ToVector3();
+            //litBasicEffect.FogStart = 1;
+            //litBasicEffect.FogEnd = 100;
+            //litBasicEffect.SpecularPower = 8;  //int, power of 2, 1, 2, 4, 8
+            //litBasicEffect.SpecularColor = Color.Yellow.ToVector3();
+            _matBasicLit = new Material(litBasicEffect);  
+            _matBasicLit.StateBlock = RenderStates.Opaque3D();
+
+            #endregion
+
+            #region Alpha-test for foliage/billboards
+            var alphaFx = new AlphaTestEffect(GraphicsDevice)
+            {
+                VertexColorEnabled = false
+            };
+            _matAlphaCutout = new Material(alphaFx);
+
+            // Depth test/write on; no blending (cutout happens in the effect). 
+            // Make it two-sided so the quad is visible from both sides.
+            _matAlphaCutout.StateBlock = RenderStates.Cutout3D()
+                .WithRaster(new RasterizerState { CullMode = CullMode.None });
+
+            // Clamp avoids edge bleeding from transparent borders.
+            // (Use LinearWrap if the foliage textures tile.)
+            _matAlphaCutout.SamplerState = SamplerState.LinearClamp;
+
+            #endregion
+        }
+
+        private void InitializeScene()
+        {
+            // Make a scene that will store all drawn objects and systems for that level
+            var scene = new Scene(EngineContext.Instance, "outdoors - level 1");
+
+            // Add each new scene into the manager
+            _sceneManager.AddScene(AppData.LEVEL_1_NAME, scene);
+
+            // Set the active scene before anything that uses ActiveScene
+            _sceneManager.SetActiveScene(AppData.LEVEL_1_NAME);
+        }
+
+        private void InitializeSystems()
+        {
+            InitializePhysicsSystem();
+            InitializePhysicsDebugSystem(false);
+            InitializeEventSystem();  //propagate events  
+            InitializeInputSystem();  //input
+            InitializeCameraAndRenderSystems(); //update cameras, draw renderable game objects, draw ui and menu
+            InitializeAudioSystem();
+            InitializeOrchestrationSystem(false); //show debugger
+            InitializeImpulseSystem();    //camera shake, audio duck volumes etc
+            InitializeUIEventSystem();
+            InitializeGameStateSystem();   //manage and track game state
+          //  InitializeNavMeshSystem();
+        }
+
+        private void InitializeNavMeshSystem()
+        {
+            var scene = _sceneManager.ActiveScene;
+
+            // Core navmesh system (implements INavigationService)
+            var navMeshSystem = scene.AddSystem(new NavMeshSystem());
+
+            // Debug overlay (F2 toggle)
+            scene.Add(new NavMeshDebugSystem());
+        }
+
+        private void InitializeGameStateSystem()
+        {
+            // Add game state system
+            _sceneManager.ActiveScene.AddSystem(new GameStateSystem());
+        }
+
+        private void InitializeUIEventSystem()
+        {
+            _sceneManager.ActiveScene.AddSystem(new UIEventSystem());
+        }
+
+        private void InitializeImpulseSystem()
+        {
+            _sceneManager.ActiveScene.Add(new ImpulseSystem(EngineContext.Instance.Impulses));
+        }
+
+        private void InitializeOrchestrationSystem(bool debugEnabled)
+        {
+            var orchestrationSystem = new OrchestrationSystem();
+            orchestrationSystem.Configure(options =>
+            {
+                options.Time = Orchestrator.OrchestrationTime.Unscaled;
+                options.LocalScale = 1;
+                options.Paused = false;
+            });
+            _sceneManager.ActiveScene.Add(orchestrationSystem);
+
+            // Debugger
+            if (debugEnabled)
+            {
+                GameObject debugGO = new GameObject("Perf Stats");
+                var debugRenderer = debugGO.AddComponent<UIDebugInfo>();
+
+                debugRenderer.Font = _fontDictionary.Get("perf_stats_font");
+                debugRenderer.ScreenCorner = ScreenCorner.TopLeft;
+                debugRenderer.Margin = new Vector2(10f, 10f);
+
+                // Register orchestration as a debug provider
+                if (orchestrationSystem != null)
+                    debugRenderer.Providers.Add(orchestrationSystem);
+
+                var perfProvider = new PerformanceDebugInfoProvider
+                {
+                    Profile = DisplayProfile.Profiling,
+                    ShowMemoryStats = true
+                };
+
+                debugRenderer.Providers.Add(perfProvider);
+
+                _sceneManager.ActiveScene.Add(debugGO);
+            }
+
+        }
+
+        private void InitializeAudioSystem()
+        {
+            _sceneManager.ActiveScene.Add(new AudioSystem(_soundDictionary));
+        }
+
+        private void InitializePhysicsDebugSystem(bool isEnabled)
+        {
+            if (isEnabled)
+            {
+                var physicsDebugRenderer = _sceneManager.ActiveScene.AddSystem(new PhysicsDebugSystem());
+
+                // Toggle debug rendering on/off
+                physicsDebugRenderer.Enabled = isEnabled; // or false to hide
+
+                // Optional: Customize colors
+                physicsDebugRenderer.StaticColor = Color.Green;      // Immovable objects
+                physicsDebugRenderer.KinematicColor = Color.Blue;    // Animated objects
+                physicsDebugRenderer.DynamicColor = Color.Yellow;    // Physics-driven objects
+                physicsDebugRenderer.TriggerColor = Color.Red;       // Trigger volumes
+            }
+
+        }
+
+        private void InitializePhysicsSystem()
+        {
+            // 1. add physics
+            var physicsSystem = _sceneManager.ActiveScene.AddSystem(new PhysicsSystem());
+            physicsSystem.Gravity = AppData.GRAVITY;
+        }
+
+        private void InitializeEventSystem()
+        {
+            _sceneManager.ActiveScene.Add(new EventSystem(EngineContext.Instance.Events));
+        }
+
+        private void InitializeCameraAndRenderSystems()
+        {
+            //manages camera
+            var cameraSystem = new CameraSystem(_graphics.GraphicsDevice, -100);
+            _sceneManager.ActiveScene.Add(cameraSystem);
+
+            //3d
+            var renderSystem = new RenderSystem(-100);
+            _sceneManager.ActiveScene.Add(renderSystem);
+
+            //2d
+            var uiRenderSystem = new UIRenderSystem(-100);
+            _sceneManager.ActiveScene.Add(uiRenderSystem); // draws in PostRender after RenderingSystem (order = -100)
+        }
+
+        private void InitializeInputSystem()
+        {
+            //set mouse, keyboard binding keys (e.g. WASD)
+            var bindings = InputBindings.Default;
+            // optional tuning
+            bindings.MouseSensitivity = 0.12f;  // mouse look scale
+            bindings.DebounceMs = 60;           // key/mouse debounce in ms
+            bindings.EnableKeyRepeat = true;    // hold-to-repeat
+            bindings.KeyRepeatMs = 300;         // repeat rate in ms
+
+            // Create the input system 
+            var inputSystem = new InputSystem();
+
+            // Register all the devices, you don't have to, but its for the demo
+            inputSystem.Add(new GDKeyboardInput(bindings));
+            inputSystem.Add(new GDMouseInput(bindings));
+            inputSystem.Add(new GDGamepadInput(PlayerIndex.One, "Gamepad P1"));
+
+            _sceneManager.ActiveScene.Add(inputSystem);
+        }
+
+        private void InitializeCameras()
+        {
+            Scene scene = _sceneManager.ActiveScene;
+
+            GameObject cameraGO = null;
+            Camera camera = null;
+            #region Static birds-eye camera
+            cameraGO = new GameObject(AppData.CAMERA_NAME_STATIC_BIRDS_EYE);
+            camera = cameraGO.AddComponent<Camera>();
+            camera.FieldOfView = MathHelper.ToRadians(80);
+            //ISRoT
+            cameraGO.Transform.RotateEulerBy(new Vector3(MathHelper.ToRadians(-90), 0, 0));
+            cameraGO.Transform.TranslateTo(Vector3.UnitY * 50);
+
+            // _cameraGO.AddComponent<MouseYawPitchController>();
+
+            scene.Add(cameraGO);
+
+            // _camera.FieldOfView
+            //TODO - add camera
+            #endregion
+
+            #region Third-person camera
+            cameraGO = new GameObject(AppData.CAMERA_NAME_THIRD_PERSON);
+            camera = cameraGO.AddComponent<Camera>();
+
+            var thirdPersonController = new ThirdPersonController();
+            thirdPersonController.TargetName = AppData.PLAYER_NAME;
+            thirdPersonController.ShoulderOffset = 0;
+            thirdPersonController.FollowDistance = 50;
+            thirdPersonController.RotationDamping = 20;
+            cameraGO.AddComponent(thirdPersonController);
+            scene.Add(cameraGO);
+            #endregion
+
+            #region First-person camera
+            var position = new Vector3(0, 5, 25);
+
+            //camera GO
+            cameraGO = new GameObject(AppData.CAMERA_NAME_FIRST_PERSON);
+
+            //set position 
+            cameraGO.Transform.TranslateTo(position);
+
+            //add camera component to the GO
+            camera = cameraGO.AddComponent<Camera>();
+            camera.FarPlane = 1000;
+
+            //feed off whatever screen dimensions you set InitializeGraphics
+            camera.AspectRatio = (float)_graphics.PreferredBackBufferWidth / _graphics.PreferredBackBufferHeight;
+            cameraGO.AddComponent<KeyboardWASDController>();
+            cameraGO.AddComponent<MouseYawPitchController>();
+            cameraGO.AddComponent<CameraImpulseListener>();
+
+            //var collider = cameraGO.AddComponent<CapsuleCollider>();
+            //collider.Height = 5f;
+            //collider.Radius = 0.25f;
+
+            //var rb = cameraGO.AddComponent<RigidBody>();
+            //rb.BodyType = BodyType.Dynamic;
+            //rb.Mass = 80f;       // “human-ish”
+            //rb.UseGravity = true;
+            //rb.LinearDamping = 0.0f;      // or a little drag if you prefer
+            //rb.AngularDamping = 0.0f;
+
+            //var physicsWASDController = cameraGO.AddComponent<PhysicsWASDController>();
+            //physicsWASDController.MoveSpeed = 25f;                     // walk speed
+
+            //var interComp = cameraGO.AddComponent<InteractionComponent>();
+            //interComp.HitMask = LayerMask.Interactables;
+
+            // Add it to the scene
+            scene.Add(cameraGO);
+            #endregion
+
+            // Set the active camera by finding and getting its camera component
+            // var theCamera = _scene.Find(go => go.Name.Equals(AppData.CAMERA_NAME_STATIC_BIRDS_EYE)).GetComponent<Camera>();
+            ////Obviously, since we have _camera we could also just use the line below
+            //_scene.SetActiveCamera(theCamera);
+
+            //replace with new SetActiveCamera that searches by string
+            scene.SetActiveCamera(AppData.CAMERA_NAME_FIRST_PERSON);
+        }
+
+        /// <summary>
+        /// Add parent root at origin to rotate the sky
+        /// </summary>
+        private void InitializeSkyParent()
+        {
+            var _skyParent = new GameObject("SkyParent");
+            var rot = _skyParent.AddComponent<RotationController>();
+
+            // Turntable spin around local +Y
+            rot._rotationAxisNormalized = Vector3.Up;
+
+            // Dramatised fast drift at 2 deg/sec. 
+            rot._rotationSpeedInRadiansPerSecond = MathHelper.ToRadians(2f);
+            _sceneManager.ActiveScene.Add(_skyParent);
+        }
+
+        private void InitializeSkyBox(int scale = 500)
+        {
+            Scene scene = _sceneManager.ActiveScene;
+            GameObject gameObject = null;
+            MeshFilter meshFilter = null;
+            MeshRenderer meshRenderer = null;
+
+            // Find the sky parent object to attach sky to so sky rotates
+            GameObject skyParent = scene.Find((GameObject go) => go.Name.Equals("SkyParent"));
+
+            // back
+            gameObject = new GameObject("back");
+            gameObject.Transform.ScaleTo(new Vector3(scale, scale, 1));
+            gameObject.Transform.TranslateTo(new Vector3(0, 0, -scale / 2));
+            meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
+            gameObject.AddComponent(meshFilter);
+            meshRenderer = gameObject.AddComponent<MeshRenderer>();
+            meshRenderer.Material = _matBasicUnlit;
+            meshRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_back");
+            scene.Add(gameObject);
+
+            //set parent to allow rotation
+            gameObject.Transform.SetParent(skyParent.Transform);
+
+            // left
+            gameObject = new GameObject("left");
+            gameObject.Transform.ScaleTo(new Vector3(scale, scale, 1));
+            gameObject.Transform.RotateEulerBy(new Vector3(0, MathHelper.ToRadians(90), 0), true);
+            gameObject.Transform.TranslateTo(new Vector3(-scale / 2, 0, 0));
+            meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
+            gameObject.AddComponent(meshFilter);
+            meshRenderer = gameObject.AddComponent<MeshRenderer>();
+            meshRenderer.Material = _matBasicUnlit;
+            meshRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_left");
+            scene.Add(gameObject);
+
+            //set parent to allow rotation
+            gameObject.Transform.SetParent(skyParent.Transform);
+
+
+            // right
+            gameObject = new GameObject("right");
+            gameObject.Transform.ScaleTo(new Vector3(scale, scale, 1));
+            gameObject.Transform.RotateEulerBy(new Vector3(0, MathHelper.ToRadians(-90), 0), true);
+            gameObject.Transform.TranslateTo(new Vector3(scale / 2, 0, 0));
+            meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
+            gameObject.AddComponent(meshFilter);
+            meshRenderer = gameObject.AddComponent<MeshRenderer>();
+            meshRenderer.Material = _matBasicUnlit;
+            meshRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_right");
+            scene.Add(gameObject);
+
+            //set parent to allow rotation
+            gameObject.Transform.SetParent(skyParent.Transform);
+
+            // front
+            gameObject = new GameObject("front");
+            gameObject.Transform.ScaleTo(new Vector3(scale, scale, 1));
+            gameObject.Transform.RotateEulerBy(new Vector3(0, MathHelper.ToRadians(180), 0), true);
+            gameObject.Transform.TranslateTo(new Vector3(0, 0, scale / 2));
+            meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
+            gameObject.AddComponent(meshFilter);
+            meshRenderer = gameObject.AddComponent<MeshRenderer>();
+            meshRenderer.Material = _matBasicUnlit;
+            meshRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_front");
+            scene.Add(gameObject);
+
+            //set parent to allow rotation
+            gameObject.Transform.SetParent(skyParent.Transform);
+
+            // sky (top)
+            gameObject = new GameObject("sky");
+            gameObject.Transform.ScaleTo(new Vector3(scale, scale, 1));
+            gameObject.Transform.RotateEulerBy(new Vector3(MathHelper.ToRadians(90), 0, MathHelper.ToRadians(90)), true);
+            gameObject.Transform.TranslateTo(new Vector3(0, scale / 2, 0));
+            meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
+            gameObject.AddComponent(meshFilter);
+            meshRenderer = gameObject.AddComponent<MeshRenderer>();
+            meshRenderer.Material = _matBasicUnlit;
+            meshRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_sky");
+            scene.Add(gameObject);
+
+            //set parent to allow rotation
+            gameObject.Transform.SetParent(skyParent.Transform);
+
+        }
+
+        private void InitializeUI()
+        {
+            InitializeUIReticleRenderer();
+        }
+
+        private void InitializeUIReticleRenderer()
+        {
+            var uiReticleGO = new GameObject("HUD");
+
+            var reticleAtlas = _textureDictionary.Get("Crosshair_21");
+            var uiFont = _fontDictionary.Get("mouse_reticle_font");
+
+            // Reticle (cursor): always on top
+            var reticle = new UIReticle(reticleAtlas);
+            reticle.Origin = reticleAtlas.GetCenter();
+            reticle.SourceRectangle = null;
+            reticle.Scale = new Vector2(0.1f, 0.1f);
+            reticle.RotationSpeedDegPerSec = 55;
+            reticle.LayerDepth = UILayer.Cursor;
+            uiReticleGO.AddComponent(reticle);
+
+            var textRenderer = uiReticleGO.AddComponent<UIText>();
+            textRenderer.Font = uiFont;
+            textRenderer.Offset = new Vector2(0, 30);  // Position text below reticle
+            textRenderer.Color = Color.White;
+            textRenderer.PositionProvider = () => _graphics.GraphicsDevice.Viewport.GetCenter();
+            textRenderer.Anchor = TextAnchor.Center;
+
+            var picker = uiReticleGO.AddComponent<UIPickerInfo>();
+            picker.HitMask = LayerMask.All;
+            picker.MaxDistance = 500f;
+            picker.HitTriggers = false;
+
+            // Optional custom formatting
+            picker.Formatter = hit =>
+            {
+                var go = hit.Body?.GameObject;
+                if (go == null)
+                    return string.Empty;
+
+                return $"{go.Name}  d={hit.Distance:F1}";
+            };
+
+            _sceneManager.ActiveScene.Add(uiReticleGO);
+
+            // Hide mouse since reticle will take its place
+            IsMouseVisible = false;
+        }
+
+        /// <summary>
+        /// Adds a single-part FBX model into the scene.
+        /// </summary>
+        private GameObject InitializeModel(Vector3 position,
+            Vector3 eulerRotationDegrees, Vector3 scale,
+            string textureName, string modelName, string objectName)
+        {
+            GameObject gameObject = null;
+
+            gameObject = new GameObject(objectName);
+            gameObject.Transform.TranslateTo(position);
+            gameObject.Transform.RotateEulerBy(eulerRotationDegrees * MathHelper.Pi / 180f);
+            gameObject.Transform.ScaleTo(scale);
+
+            // gameObject.Layer = LayerMask.Interactables | LayerMask.NPC;  //100000 | 010000 = 110000
+
+            var model = _modelDictionary.Get(modelName);
+            var texture = _textureDictionary.Get(textureName);
+            var meshFilter = MeshFilterFactory.CreateFromModel(model, _graphics.GraphicsDevice, 0, 0);
+            gameObject.AddComponent(meshFilter);
+
+            var meshRenderer = gameObject.AddComponent<MeshRenderer>();
+
+            meshRenderer.Material = _matBasicLit;
+            meshRenderer.Overrides.MainTexture = texture;
+
+            _sceneManager.ActiveScene.Add(gameObject);
+
+            return gameObject;
+        }
+        protected override void Update(GameTime gameTime)
+        {
+            //call time update
+            #region Core
+            Time.Update(gameTime);
+            #endregion
+
+            #region Demo
+            DemoStuff();
+            #endregion
+
+            base.Update(gameTime);
+        }
+
+        protected override void Draw(GameTime gameTime)
+        {
+            GraphicsDevice.Clear(Microsoft.Xna.Framework.Color.CornflowerBlue);
+
+            base.Draw(gameTime);
+        }
+
+        /// <summary>
+        /// Override Dispose to clean up engine resources.
+        /// MonoGame's Game class already implements IDisposable, so we override its Dispose method.
+        /// </summary>
+        /// <param name="disposing">True if called from Dispose(), false if called from finalizer.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (_disposed)
+            {
+                base.Dispose(disposing);
+                return;
+            }
+
+            if (disposing)
+            {
+                System.Diagnostics.Debug.WriteLine("Disposing Main...");
+
+                // 1. Dispose Materials (which may own Effects)
+                System.Diagnostics.Debug.WriteLine("Disposing Materials");
+                _matBasicUnlit?.Dispose();
+                _matBasicUnlit = null;
+
+                _matBasicLit?.Dispose();
+                _matBasicLit = null;
+
+                _matAlphaCutout?.Dispose();
+                _matAlphaCutout = null;
+
+                // 2. Clear cached MeshFilters in factory registry
+                System.Diagnostics.Debug.WriteLine("Clearing MeshFilter Registry");
+                MeshFilterFactory.ClearRegistry();
+
+                // 3. Dispose content dictionaries (now they implement IDisposable!)
+                System.Diagnostics.Debug.WriteLine("Disposing Content Dictionaries");
+                _textureDictionary?.Dispose();
+                _textureDictionary = null;
+
+                _modelDictionary?.Dispose();
+                _modelDictionary = null;
+
+                _fontDictionary?.Dispose();
+                _fontDictionary = null;
+
+                // 4. Dispose EngineContext (which owns SpriteBatch and Content)
+                System.Diagnostics.Debug.WriteLine("Disposing EngineContext");
+                EngineContext.Instance?.Dispose();
+
+                // 5. Clear references to help GC
+                System.Diagnostics.Debug.WriteLine("Clearing References");
+                _animationCurve = null;
+                _animationPositionCurve = null;
+                _animationRotationCurve = null;
+
+                // 6. Dispose of collision handlers
+                if (_collisionSubscription != null)
+                {
+                    _collisionSubscription.Dispose();
+                    _collisionSubscription = null;
+                }
+
+                System.Diagnostics.Debug.WriteLine("Main disposal complete");
+            }
+
+            _disposed = true;
+
+            // Always call base.Dispose
+            base.Dispose(disposing);
+        }
+
+        #endregion
+
+        #region Demo Methods (remove in the game)
+        #region Demo - Game State
         private void SetWinConditions()
         {
             var gameStateSystem = _sceneManager.ActiveScene.GetSystem<GameStateSystem>();
@@ -162,7 +949,6 @@ namespace GDGame
                 return _currentHealth;
             };
 
-            
             // Delegate for time
             Func<float> timeProvider = () =>
             {
@@ -171,22 +957,34 @@ namespace GDGame
 
             // Lose condition: health < 10 AND time > 60
             IGameCondition loseCondition =
-                GameConditions.And(
-                    "Lose if low health after 5s",
-                    GameConditions.FloatLessThan("Health < 0", healthProvider, 0),
-                    GameConditions.FloatGreaterThan("Time > 5s", timeProvider, 5)
-                );
+                GameConditions.FromPredicate("all enemies visited", checkEnemiesVisited);
+
+            IGameCondition winCondition =
+            GameConditions.FromPredicate("reached gate", checkReachedGate);
 
             // Configure GameStateSystem (no win condition yet)
-            gameStateSystem.ConfigureConditions(null, loseCondition);
+            gameStateSystem.ConfigureConditions(winCondition, loseCondition);
             gameStateSystem.StateChanged += HandleGameStateChange;
+        }
+
+        private bool checkReachedGate()
+        {
+            // we could pause the game on a win
+            //Time.TimeScale = 0;
+            return false;
+        }
+
+        private bool checkEnemiesVisited()
+        {
+            //get inventory and eval using boolean if all enemies visited;
+            return false;
         }
 
         private void HandleGameStateChange(GameOutcomeState oldState, GameOutcomeState newState)
         {
-            System.Diagnostics.Debug.WriteLine($"Old state was {oldState} is and new state is {newState}");
-            
-            if(newState == GameOutcomeState.Lost)
+            System.Diagnostics.Debug.WriteLine($"Old state was {oldState} and new state is {newState}");
+
+            if (newState == GameOutcomeState.Lost)
             {
                 System.Diagnostics.Debug.WriteLine("You lost!");
                 //play sound
@@ -201,7 +999,8 @@ namespace GDGame
             }
 
         }
-
+        #endregion
+        #region Demo - Menu
         private void DemoMenu()
         {
             // Define a size for the button on screen
@@ -337,7 +1136,7 @@ namespace GDGame
         private void DemoUISlider(Scene scene)
         {
             // Load assets
-            Texture2D trackTexture =_textureDictionary.Get("Free Flat Hyphen Icon");
+            Texture2D trackTexture = _textureDictionary.Get("Free Flat Hyphen Icon");
             Texture2D handleTexture = _textureDictionary.Get("Free Flat Toggle Thumb Centre Icon");
             SpriteFont sliderFont = _fontDictionary.Get("menufont");
 
@@ -494,735 +1293,8 @@ namespace GDGame
             //consume the cola ++ health
             System.Diagnostics.Debug.WriteLine("HandlePointEntered");
         }
+        #endregion
 
-        private void InitializeManagers()
-        {
-            //outside scene
-            InitializeMenuManager();
-
-            //InitializeSceneManager();
-
-            //InitializeGameStateManager();
-
-            //inside scene
-            var go = new GameObject("Camera Manager");
-            go.AddComponent<CameraEventListener>();
-            _sceneManager.ActiveScene.Add(go);
-        }
-
-        private void InitializeMenuManager()
-        {
-            var menuManager = new MenuManager(this);
-            Components.Add(menuManager);
-
-            Texture2D btnTex = _textureDictionary.Get("button_rectangle_10");
-            Texture2D trackTex = _textureDictionary.Get("Free Flat Hyphen Icon");
-            Texture2D handleTex = _textureDictionary.Get("Free Flat Toggle Thumb Centre Icon");
-            Texture2D controlsTx = _textureDictionary.Get("mona lisa");
-            SpriteFont uiFont = _fontDictionary.Get("menufont");
-
-            // Wire UIManager to the menu scene
-            menuManager.Initialize(_sceneManager.ActiveScene, btnTex, trackTex, handleTex, controlsTx, uiFont);
-
-            // Subscribe to high-level events
-            menuManager.PlayRequested += () =>
-            {
-                // Tell your future SceneManager to switch from menuScene to gameplayScene
-            };
-
-            menuManager.ExitRequested += () =>
-            {
-                Exit();
-            };
-
-            menuManager.MusicVolumeChanged += v =>
-            {
-                // Forward to audio manager
-            };
-
-            menuManager.SfxVolumeChanged += v =>
-            {
-                // Forward to audio manager
-            };
-        }
-
-        private void InitializePlayer()
-        {
-            GameObject player = InitializeModel(new Vector3(0, 5, 10),
-                new Vector3(0, 0, 0),
-                2 * Vector3.One, "crate1", "monkey1", AppData.PLAYER_NAME);
-
-            var simpleDriveController = new SimpleDriveController();
-            player.AddComponent(simpleDriveController);
-
-            // Listen for damage events on the player
-            player.AddComponent<DamageEventListener>();
-
-            // Adds an inventory to the player
-            player.AddComponent<InventoryComponent>();
-        }
-        private void InitializePIPCamera(Vector3 position,
-      Viewport viewport, int depth, int index = 0)
-        {
-            var pipCameraGO = new GameObject("PIP camera");
-            pipCameraGO.Transform.TranslateTo(position);
-            pipCameraGO.Transform.RotateEulerBy(new Vector3(0, MathHelper.ToRadians(-90), 0));
-
-            //if (index == 0)
-            //{
-            //    pipCameraGO.AddComponent<KeyboardWASDController>();
-            //    pipCameraGO.AddComponent<MouseYawPitchController>();
-            //}
-
-            var camera = pipCameraGO.AddComponent<Camera>();
-            camera.StackRole = Camera.StackType.Overlay;
-            camera.ClearFlags = Camera.ClearFlagsType.DepthOnly;
-            camera.Depth = depth; //-100
-
-            camera.Viewport = viewport; // new Viewport(0, 0, 400, 300);
-
-            _sceneManager.ActiveScene.Add(pipCameraGO);
-        }
-
-        private void InitializeAnimationCurves()
-        {
-            //1D animation curve demo (e.g. scale, audio volume, lerp factor for color, etc)
-            _animationCurve = new AnimationCurve(CurveLoopType.Cycle);
-            _animationCurve.AddKey(0f, 10);
-            _animationCurve.AddKey(2f, 11); //up
-            _animationCurve.AddKey(0f, 12); //down
-            _animationCurve.AddKey(8f, 13); //up further
-            _animationCurve.AddKey(0f, 13.5f); //down
-
-            //3D animation curve demo
-            _animationPositionCurve = new AnimationCurve3D(CurveLoopType.Oscillate);
-            _animationPositionCurve.AddKey(new Vector3(0, 4, 0), 0);
-            _animationPositionCurve.AddKey(new Vector3(5, 8, 2), 1);
-            _animationPositionCurve.AddKey(new Vector3(10, 12, 4), 2);
-            _animationPositionCurve.AddKey(new Vector3(0, 4, 0), 3);
-
-            // Absolute yaw/pitch/roll angles (radians) over time
-            _animationRotationCurve = new AnimationCurve3D(CurveLoopType.Oscillate);
-            _animationRotationCurve.AddKey(new Vector3(0, 0, 0), 0);              // yaw, pitch, roll
-            _animationRotationCurve.AddKey(new Vector3(0, MathHelper.PiOver2, 0), 1);
-            _animationRotationCurve.AddKey(new Vector3(0, MathHelper.Pi, 0), 2);
-            _animationRotationCurve.AddKey(new Vector3(0, 0, 0), 3);
-        }
-
-        private void InitializeGraphics(Integer2 resolution)
-        {
-            // Enable per-monitor DPI awareness so the window/UI scales crisply on multi-monitor setups with different DPIs (avoids blurriness when moving between screens).
-            System.Windows.Forms.Application.SetHighDpiMode(System.Windows.Forms.HighDpiMode.PerMonitorV2);
-
-            // Set preferred resolution
-            ScreenResolution.SetResolution(_graphics, resolution);
-
-            // Center on primary display (set to index of the preferred monitor)
-            WindowUtility.CenterOnMonitor(this, 1);
-        }
-
-        private void InitializeMouse()
-        {
-            Mouse.SetPosition(_graphics.PreferredBackBufferWidth / 2, _graphics.PreferredBackBufferHeight / 2);
-
-            // Set old state at start so its not null for comparison with new state in Update
-            _oldKBState = Keyboard.GetState();
-        }
-
-        private void InitializeContext()
-        {
-            EngineContext.Initialize(GraphicsDevice, Content);
-        }
-
-        /// <summary>
-        /// New asset loading from JSON using AssetEntry and ContentDictionary::LoadFromManifest
-        /// </summary>
-        /// <param name="relativeFilePathAndName"></param>
-        /// <see cref="AssetEntry"/>
-        /// <see cref="ContentDictionary{T}"/>
-        private void LoadAssetsFromJSON(string relativeFilePathAndName)
-        {
-            // Make dictionaries to store assets
-            _textureDictionary = new ContentDictionary<Texture2D>();
-            _modelDictionary = new ContentDictionary<Model>();
-            _fontDictionary = new ContentDictionary<SpriteFont>();
-            _soundDictionary = new ContentDictionary<SoundEffect>();
-            _effectsDictionary = new ContentDictionary<Effect>();
-            //TODO - Add dictionary loading for other assets - song, other?
-
-            var manifests = JSONSerializationUtility.LoadData<AssetManifest>(Content, relativeFilePathAndName); // single or array
-            if (manifests.Count > 0)
-            {
-                foreach (var m in manifests)
-                {
-                    _modelDictionary.LoadFromManifest(m.Models, e => e.Name, e => e.ContentPath, overwrite: true);
-                    _textureDictionary.LoadFromManifest(m.Textures, e => e.Name, e => e.ContentPath, overwrite: true);
-                    _fontDictionary.LoadFromManifest(m.Fonts, e => e.Name, e => e.ContentPath, overwrite: true);
-                    _soundDictionary.LoadFromManifest(m.Sounds, e => e.Name, e => e.ContentPath, overwrite: true);
-                    _effectsDictionary.LoadFromManifest(m.Effects, e => e.Name, e => e.ContentPath, overwrite: true);
-                    //TODO - Add dictionary loading for other assets - song, other?
-                }
-            }
-        }
-
-        private void InitializeEffects()
-        {
-            #region Unlit Textured BasicEffect 
-            var unlitBasicEffect = new BasicEffect(_graphics.GraphicsDevice)
-            {
-                TextureEnabled = true,
-                LightingEnabled = false,
-                VertexColorEnabled = false
-            };
-
-            _matBasicUnlit = new Material(unlitBasicEffect);
-            _matBasicUnlit.StateBlock = RenderStates.Opaque3D();      // depth on, cull CCW
-            _matBasicUnlit.SamplerState = SamplerState.LinearClamp;   // helps avoid texture seams on sky
-
-            //ground texture where UVs above [0,0]-[1,1]
-            _matBasicUnlitGround = new Material(unlitBasicEffect.Clone());
-            _matBasicUnlitGround.StateBlock = RenderStates.Opaque3D();      // depth on, cull CCW
-            _matBasicUnlitGround.SamplerState = SamplerState.AnisotropicWrap;   // wrap texture based on UV values
-
-            #endregion
-
-            #region Lit Textured BasicEffect 
-            var litBasicEffect = new BasicEffect(_graphics.GraphicsDevice)
-            {
-                TextureEnabled = true,
-                LightingEnabled = true,
-                PreferPerPixelLighting = true,
-                VertexColorEnabled = false
-            };
-            litBasicEffect.EnableDefaultLighting();
-            _matBasicLit = new Material(litBasicEffect);
-            _matBasicLit.StateBlock = RenderStates.Opaque3D();
-            #endregion
-
-            #region Alpha-test for foliage/billboards
-            var alphaFx = new AlphaTestEffect(GraphicsDevice)
-            {
-                VertexColorEnabled = false
-            };
-            _matAlphaCutout = new Material(alphaFx);
-
-            // Depth test/write on; no blending (cutout happens in the effect). 
-            // Make it two-sided so the quad is visible from both sides.
-            _matAlphaCutout.StateBlock = RenderStates.Cutout3D()
-                .WithRaster(new RasterizerState { CullMode = CullMode.None });
-
-            // Clamp avoids edge bleeding from transparent borders.
-            // (Use LinearWrap if the foliage textures tile.)
-            _matAlphaCutout.SamplerState = SamplerState.LinearClamp;
-
-            #endregion
-        }
-
-        private void InitializeScene()
-        {
-            // Make a scene that will store all drawn objects and systems for that level
-            var scene = new Scene(EngineContext.Instance, "outdoors - level 1");
-
-            // Add each new scene into the manager
-            _sceneManager.AddScene(AppData.LEVEL_1_NAME, scene);
-
-            // Set the active scene before anything that uses ActiveScene
-            _sceneManager.SetActiveScene(AppData.LEVEL_1_NAME);
-        }
-
-        private void InitializeSystems()
-        {
-            InitializePhysicsSystem();
-            InitializePhysicsDebugSystem(true);
-            InitializeEventSystem();  //propagate events  
-            InitializeInputSystem();  //input
-            InitializeCameraAndRenderSystems(); //update cameras, draw renderable game objects, draw ui and menu
-            InitializeAudioSystem();
-            InitializeOrchestrationSystem(false); //show debugger
-            InitializeImpulseSystem();    //camera shake, audio duck volumes etc
-            InitializeUIEventSystem();
-            InitializeGameStateSystem();   //manage and track game state
-        }
-
-        private void InitializeGameStateSystem()
-        {
-            // Add game state system
-            _sceneManager.ActiveScene.AddSystem(new GameStateSystem());
-        }
-
-        private void InitializeUIEventSystem()
-        {
-            _sceneManager.ActiveScene.AddSystem(new UIEventSystem());
-        }
-
-        private void InitializeImpulseSystem()
-        {
-            _sceneManager.ActiveScene.Add(new ImpulseSystem(EngineContext.Instance.Impulses));
-        }
-
-        private void InitializeOrchestrationSystem(bool debugEnabled)
-        {
-            var orchestrationSystem = new OrchestrationSystem();
-            orchestrationSystem.Configure(options =>
-            {
-                options.Time = Orchestrator.OrchestrationTime.Unscaled;
-                options.LocalScale = 1;
-                options.Paused = false;
-            });
-            _sceneManager.ActiveScene.Add(orchestrationSystem);
-
-            // Debugger
-            if (debugEnabled)
-            {
-                GameObject debugGO = new GameObject("Perf Stats");
-                var debugRenderer = debugGO.AddComponent<UIDebugInfo>();
-
-                debugRenderer.Font = _fontDictionary.Get("perf_stats_font");
-                debugRenderer.ScreenCorner = ScreenCorner.TopLeft;
-                debugRenderer.Margin = new Vector2(10f, 10f);
-
-                // Register orchestration as a debug provider
-                if (orchestrationSystem != null)
-                    debugRenderer.Providers.Add(orchestrationSystem);
-
-                var perfProvider = new PerformanceDebugInfoProvider
-                {
-                    Profile = DisplayProfile.Profiling,
-                    ShowMemoryStats = true
-                };
-
-                debugRenderer.Providers.Add(perfProvider);
-
-                _sceneManager.ActiveScene.Add(debugGO);
-            }
-
-        }
-
-        private void InitializeAudioSystem()
-        {
-            _sceneManager.ActiveScene.Add(new AudioSystem(_soundDictionary));
-        }
-
-        private void InitializePhysicsDebugSystem(bool isEnabled)
-        {
-            var physicsDebugRenderer = _sceneManager.ActiveScene.AddSystem(new PhysicsDebugRenderer());
-
-            // Toggle debug rendering on/off
-            physicsDebugRenderer.Enabled = isEnabled; // or false to hide
-
-            // Optional: Customize colors
-            physicsDebugRenderer.StaticColor = Color.Green;      // Immovable objects
-            physicsDebugRenderer.KinematicColor = Color.Blue;    // Animated objects
-            physicsDebugRenderer.DynamicColor = Color.Yellow;    // Physics-driven objects
-            physicsDebugRenderer.TriggerColor = Color.Red;       // Trigger volumes
-
-        }
-
-        private void InitializePhysicsSystem()
-        {
-            // 1. add physics
-            var physicsSystem = _sceneManager.ActiveScene.AddSystem(new PhysicsSystem());
-            physicsSystem.Gravity = AppData.GRAVITY;
-        }
-
-        private void InitializeEventSystem()
-        {
-            _sceneManager.ActiveScene.Add(new EventSystem(EngineContext.Instance.Events));
-        }
-
-        private void InitializeCameraAndRenderSystems()
-        {
-            //manages camera
-            var cameraSystem = new CameraSystem(_graphics.GraphicsDevice, -100);
-            _sceneManager.ActiveScene.Add(cameraSystem);
-
-            //3d
-            var renderSystem = new RenderSystem(-100);
-            _sceneManager.ActiveScene.Add(renderSystem);
-
-            //2d
-            var uiRenderSystem = new UIRenderSystem(-100);
-            _sceneManager.ActiveScene.Add(uiRenderSystem); // draws in PostRender after RenderingSystem (order = -100)
-        }
-
-        private void InitializeInputSystem()
-        {
-            //set mouse, keyboard binding keys (e.g. WASD)
-            var bindings = InputBindings.Default;
-            // optional tuning
-            bindings.MouseSensitivity = 0.12f;  // mouse look scale
-            bindings.DebounceMs = 60;           // key/mouse debounce in ms
-            bindings.EnableKeyRepeat = true;    // hold-to-repeat
-            bindings.KeyRepeatMs = 300;         // repeat rate in ms
-
-            // Create the input system 
-            var inputSystem = new InputSystem();
-
-            // Register all the devices, you don't have to, but its for the demo
-            inputSystem.Add(new GDKeyboardInput(bindings));
-            inputSystem.Add(new GDMouseInput(bindings));
-            inputSystem.Add(new GDGamepadInput(PlayerIndex.One, "Gamepad P1"));
-
-            _sceneManager.ActiveScene.Add(inputSystem);
-        }
-
-        private void InitializeCameras()
-        {
-            GameObject cameraGO = null;
-            Camera camera = null;
-            #region Static birds-eye camera
-            cameraGO = new GameObject(AppData.CAMERA_NAME_STATIC_BIRDS_EYE);
-            camera = cameraGO.AddComponent<Camera>();
-            camera.FieldOfView = MathHelper.ToRadians(80);
-            //ISRoT
-            cameraGO.Transform.RotateEulerBy(new Vector3(MathHelper.ToRadians(-90), 0, 0));
-            cameraGO.Transform.TranslateTo(Vector3.UnitY * 50);
-
-            // _cameraGO.AddComponent<MouseYawPitchController>();
-
-            _sceneManager.ActiveScene.Add(cameraGO);
-
-            // _camera.FieldOfView
-            //TODO - add camera
-            #endregion
-
-            #region Third-person camera
-            cameraGO = new GameObject(AppData.CAMERA_NAME_THIRD_PERSON);
-            camera = cameraGO.AddComponent<Camera>();
-
-            var thirdPersonController = new ThirdPersonController();
-            thirdPersonController.TargetName = AppData.PLAYER_NAME;
-            thirdPersonController.ShoulderOffset = 0;
-            thirdPersonController.FollowDistance = 50;
-            thirdPersonController.RotationDamping = 20;
-            cameraGO.AddComponent(thirdPersonController);
-            _sceneManager.ActiveScene.Add(cameraGO);
-            #endregion
-
-            #region First-person camera
-            var position = new Vector3(0, 5, 25);
-
-            //camera GO
-            cameraGO = new GameObject(AppData.CAMERA_NAME_FIRST_PERSON);
-
-            //set position 
-            cameraGO.Transform.TranslateTo(position);
-
-            //add camera component to the GO
-            camera = cameraGO.AddComponent<Camera>();
-            camera.FarPlane = 1000;
-
-            //feed off whatever screen dimensions you set InitializeGraphics
-            camera.AspectRatio = (float)_graphics.PreferredBackBufferWidth / _graphics.PreferredBackBufferHeight;
-            cameraGO.AddComponent<KeyboardWASDController>();
-            cameraGO.AddComponent<MouseYawPitchController>();
-            cameraGO.AddComponent<CameraImpulseListener>();
-
-            //var collider = cameraGO.AddComponent<CapsuleCollider>();
-            //collider.Height = 5f;
-            //collider.Radius = 0.25f;
-
-            //var rb = cameraGO.AddComponent<RigidBody>();
-            //rb.BodyType = BodyType.Dynamic;
-            //rb.Mass = 80f;       // “human-ish”
-            //rb.UseGravity = true;
-            //rb.LinearDamping = 0.0f;      // or a little drag if you prefer
-            //rb.AngularDamping = 0.0f;
-
-            //var physicsWASDController = cameraGO.AddComponent<PhysicsWASDController>();
-            //physicsWASDController.MoveSpeed = 25f;                     // walk speed
-
-            //var interComp = cameraGO.AddComponent<InteractionComponent>();
-            //interComp.HitMask = LayerMask.Interactables;
-
-            // Add it to the scene
-            _sceneManager.ActiveScene.Add(cameraGO);
-            #endregion
-
-            // Set the active camera by finding and getting its camera component
-            // var theCamera = _scene.Find(go => go.Name.Equals(AppData.CAMERA_NAME_STATIC_BIRDS_EYE)).GetComponent<Camera>();
-            ////Obviously, since we have _camera we could also just use the line below
-            //_scene.SetActiveCamera(theCamera);
-
-            //replace with new SetActiveCamera that searches by string
-            _sceneManager.ActiveScene.SetActiveCamera(AppData.CAMERA_NAME_FIRST_PERSON);
-        }
-
-        /// <summary>
-        /// Add parent root at origin to rotate the sky
-        /// </summary>
-        private void InitializeSkyParent()
-        {
-            var _skyParent = new GameObject("SkyParent");
-            var rot = _skyParent.AddComponent<RotationController>();
-
-            // Turntable spin around local +Y
-            rot._rotationAxisNormalized = Vector3.Up;
-
-            // Dramatised fast drift at 2 deg/sec. 
-            rot._rotationSpeedInRadiansPerSecond = MathHelper.ToRadians(2f);
-            _sceneManager.ActiveScene.Add(_skyParent);
-        }
-
-        private void InitializeSkyBox(int scale = 500)
-        {
-            GameObject gameObject = null;
-            MeshFilter meshFilter = null;
-            MeshRenderer meshRenderer = null;
-
-            // Find the sky parent object to attach sky to so sky rotates
-            GameObject skyParent = _sceneManager.ActiveScene.Find((GameObject go) => go.Name.Equals("SkyParent"));
-
-            // back
-            gameObject = new GameObject("back");
-            gameObject.Transform.ScaleTo(new Vector3(scale, scale, 1));
-            gameObject.Transform.TranslateTo(new Vector3(0, 0, -scale / 2));
-            meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
-            gameObject.AddComponent(meshFilter);
-            meshRenderer = gameObject.AddComponent<MeshRenderer>();
-            meshRenderer.Material = _matBasicUnlit;
-            meshRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_back");
-            _sceneManager.ActiveScene.Add(gameObject);
-
-            //set parent to allow rotation
-            gameObject.Transform.SetParent(skyParent.Transform);
-
-            // left
-            gameObject = new GameObject("left");
-            gameObject.Transform.ScaleTo(new Vector3(scale, scale, 1));
-            gameObject.Transform.RotateEulerBy(new Vector3(0, MathHelper.ToRadians(90), 0), true);
-            gameObject.Transform.TranslateTo(new Vector3(-scale / 2, 0, 0));
-            meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
-            gameObject.AddComponent(meshFilter);
-            meshRenderer = gameObject.AddComponent<MeshRenderer>();
-            meshRenderer.Material = _matBasicUnlit;
-            meshRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_left");
-            _sceneManager.ActiveScene.Add(gameObject);
-
-            //set parent to allow rotation
-            gameObject.Transform.SetParent(skyParent.Transform);
-
-
-            // right
-            gameObject = new GameObject("right");
-            gameObject.Transform.ScaleTo(new Vector3(scale, scale, 1));
-            gameObject.Transform.RotateEulerBy(new Vector3(0, MathHelper.ToRadians(-90), 0), true);
-            gameObject.Transform.TranslateTo(new Vector3(scale / 2, 0, 0));
-            meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
-            gameObject.AddComponent(meshFilter);
-            meshRenderer = gameObject.AddComponent<MeshRenderer>();
-            meshRenderer.Material = _matBasicUnlit;
-            meshRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_right");
-            _sceneManager.ActiveScene.Add(gameObject);
-
-            //set parent to allow rotation
-            gameObject.Transform.SetParent(skyParent.Transform);
-
-            // front
-            gameObject = new GameObject("front");
-            gameObject.Transform.ScaleTo(new Vector3(scale, scale, 1));
-            gameObject.Transform.RotateEulerBy(new Vector3(0, MathHelper.ToRadians(180), 0), true);
-            gameObject.Transform.TranslateTo(new Vector3(0, 0, scale / 2));
-            meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
-            gameObject.AddComponent(meshFilter);
-            meshRenderer = gameObject.AddComponent<MeshRenderer>();
-            meshRenderer.Material = _matBasicUnlit;
-            meshRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_front");
-            _sceneManager.ActiveScene.Add(gameObject);
-
-            //set parent to allow rotation
-            gameObject.Transform.SetParent(skyParent.Transform);
-
-            // sky (top)
-            gameObject = new GameObject("sky");
-            gameObject.Transform.ScaleTo(new Vector3(scale, scale, 1));
-            gameObject.Transform.RotateEulerBy(new Vector3(MathHelper.ToRadians(90), 0, MathHelper.ToRadians(90)), true);
-            gameObject.Transform.TranslateTo(new Vector3(0, scale / 2, 0));
-            meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
-            gameObject.AddComponent(meshFilter);
-            meshRenderer = gameObject.AddComponent<MeshRenderer>();
-            meshRenderer.Material = _matBasicUnlit;
-            meshRenderer.Overrides.MainTexture = _textureDictionary.Get("skybox_sky");
-            _sceneManager.ActiveScene.Add(gameObject);
-
-            //set parent to allow rotation
-            gameObject.Transform.SetParent(skyParent.Transform);
-
-        }
-
-        private void InitializeUI()
-        {
-            InitializeUIReticleRenderer();
-        }
-
-        private void InitializeUIReticleRenderer()
-        {
-            var uiReticleGO = new GameObject("HUD");
-
-            var reticleAtlas = _textureDictionary.Get("Crosshair_21");
-            var uiFont = _fontDictionary.Get("mouse_reticle_font");
-
-            // Reticle (cursor): always on top
-            var reticle = new UIReticle(reticleAtlas);
-            reticle.Origin = reticleAtlas.GetCenter();
-            reticle.SourceRectangle = null;
-            reticle.Scale = new Vector2(0.1f, 0.1f);
-            reticle.RotationSpeedDegPerSec = 55;
-            reticle.LayerDepth = UILayer.Cursor;
-            uiReticleGO.AddComponent(reticle);
-
-            var textRenderer = uiReticleGO.AddComponent<UIText>();
-            textRenderer.Font = uiFont;
-            textRenderer.Offset = new Vector2(0, 30);  // Position text below reticle
-            textRenderer.Color = Color.White;
-            textRenderer.PositionProvider = () => _graphics.GraphicsDevice.Viewport.GetCenter();
-            textRenderer.Anchor = TextAnchor.Center;
-
-            //var picker = uiReticleGO.AddComponent<UIPickerInfo>();
-            //picker.HitMask = LayerMask.All;
-            //picker.MaxDistance = 500f;
-            //picker.HitTriggers = false;
-
-            // Optional custom formatting:
-            //picker.Formatter = hit =>
-            //{
-            //    var go = hit.Body?.GameObject;
-            //    if (go == null)
-            //        return string.Empty;
-
-            //    return $"{go.Name}  d={hit.Distance:F1}";
-            //};
-
-            _sceneManager.ActiveScene.Add(uiReticleGO);
-
-            // Hide mouse since reticle will take its place
-            IsMouseVisible = false;
-        }
-
-        /// <summary>
-        /// Adds a single-part FBX model into the scene.
-        /// </summary>
-        private GameObject InitializeModel(Vector3 position,
-            Vector3 eulerRotationDegrees, Vector3 scale,
-            string textureName, string modelName, string objectName)
-        {
-            GameObject gameObject = null;
-
-            gameObject = new GameObject(objectName);
-            gameObject.Transform.TranslateTo(position);
-            gameObject.Transform.RotateEulerBy(eulerRotationDegrees * MathHelper.Pi / 180f);
-            gameObject.Transform.ScaleTo(scale);
-
-            // gameObject.Layer = LayerMask.Interactables | LayerMask.NPC;  //100000 | 010000 = 110000
-
-            var model = _modelDictionary.Get(modelName);
-            var texture = _textureDictionary.Get(textureName);
-            var meshFilter = MeshFilterFactory.CreateFromModel(model, _graphics.GraphicsDevice, 0, 0);
-            gameObject.AddComponent(meshFilter);
-
-            var meshRenderer = gameObject.AddComponent<MeshRenderer>();
-
-            meshRenderer.Material = _matBasicLit;
-            meshRenderer.Overrides.MainTexture = texture;
-
-            _sceneManager.ActiveScene.Add(gameObject);
-
-            return gameObject;
-        }
-        protected override void Update(GameTime gameTime)
-        {
-            //call time update
-            #region Core
-            Time.Update(gameTime);
-
-              #endregion
-
-            #region Demo
-            DemoStuff();
-            #endregion
-
-            base.Update(gameTime);
-        }
-
-        protected override void Draw(GameTime gameTime)
-        {
-            GraphicsDevice.Clear(Microsoft.Xna.Framework.Color.CornflowerBlue);
-
-            base.Draw(gameTime);
-        }
-
-        /// <summary>
-        /// Override Dispose to clean up engine resources.
-        /// MonoGame's Game class already implements IDisposable, so we override its Dispose method.
-        /// </summary>
-        /// <param name="disposing">True if called from Dispose(), false if called from finalizer.</param>
-        protected override void Dispose(bool disposing)
-        {
-            if (_disposed)
-            {
-                base.Dispose(disposing);
-                return;
-            }
-
-            if (disposing)
-            {
-                System.Diagnostics.Debug.WriteLine("Disposing Main...");
-
-                // 1. Dispose Materials (which may own Effects)
-                System.Diagnostics.Debug.WriteLine("Disposing Materials");
-                _matBasicUnlit?.Dispose();
-                _matBasicUnlit = null;
-
-                _matBasicLit?.Dispose();
-                _matBasicLit = null;
-
-                _matAlphaCutout?.Dispose();
-                _matAlphaCutout = null;
-
-                // 2. Clear cached MeshFilters in factory registry
-                System.Diagnostics.Debug.WriteLine("Clearing MeshFilter Registry");
-                MeshFilterFactory.ClearRegistry();
-
-                // 3. Dispose content dictionaries (now they implement IDisposable!)
-                System.Diagnostics.Debug.WriteLine("Disposing Content Dictionaries");
-                _textureDictionary?.Dispose();
-                _textureDictionary = null;
-
-                _modelDictionary?.Dispose();
-                _modelDictionary = null;
-
-                _fontDictionary?.Dispose();
-                _fontDictionary = null;
-
-                // 4. Dispose EngineContext (which owns SpriteBatch and Content)
-                System.Diagnostics.Debug.WriteLine("Disposing EngineContext");
-                EngineContext.Instance?.Dispose();
-
-                // 5. Clear references to help GC
-                System.Diagnostics.Debug.WriteLine("Clearing References");
-                _animationCurve = null;
-                _animationPositionCurve = null;
-                _animationRotationCurve = null;
-
-                // 6. Dispose of collision handlers
-                if (_collisionSubscription != null)
-                {
-                    _collisionSubscription.Dispose();
-                    _collisionSubscription = null;
-                }
-
-                System.Diagnostics.Debug.WriteLine("Main disposal complete");
-            }
-
-            _disposed = true;
-
-            // Always call base.Dispose
-            base.Dispose(disposing);
-        }
-
-        #endregion    }
-
-        #region Demo Methods (remove in the game)
         private void InitializeCollidableGround(int scale = 500)
         {
             GameObject gameObject = null;
@@ -1292,6 +1364,7 @@ namespace GDGame
 
         private void DemoStuff()
         {
+            // Get new state
             _newKBState = Keyboard.GetState();
             DemoEventPublish();
             DemoCameraSwitch();
@@ -1299,11 +1372,11 @@ namespace GDGame
             DemoAudioSystem();
             DemoOrchestrationSystem();
             DemoImpulsePublish();
-            _oldKBState = _newKBState;
-
-
             //a demo relating to GameStateSystem
             _currentHealth--;
+
+            // Store old state (allows us to do was pressed type checks)
+            _oldKBState = _newKBState;
         }
 
         private void DemoImpulsePublish()
@@ -1382,6 +1455,17 @@ namespace GDGame
             bool isPressed = _newKBState.IsKeyDown(Keys.O) && !_oldKBState.IsKeyDown(Keys.O);
             if (isPressed)
             {
+                //orchestrator.Build("my first sequence")
+                //   .Do(() =>
+                //   {
+                //       var textObj = _sceneManager.ActiveScene.Find("init_texture");
+                //       // var textObj = _scene.Find("init_texture");
+                //       textObj.Enabled = false;
+                //   })
+                //   .WaitSeconds(2)
+                //   .Do()
+                //   .Register();
+
                 orchestrator.Build("my first sequence")
                     .WaitSeconds(2)
                     .Publish(new CameraEvent(AppData.CAMERA_NAME_FIRST_PERSON))

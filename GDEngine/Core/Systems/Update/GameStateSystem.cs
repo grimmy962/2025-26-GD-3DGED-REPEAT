@@ -1,14 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using GDEngine.Core.Entities;
+﻿using GDEngine.Core.Entities;
 using GDEngine.Core.Enums;
 using GDEngine.Core.Events;
-using GDEngine.Core.Events.Types;
 using GDEngine.Core.Gameplay;
 using GDEngine.Core.Rendering.UI;
 using GDEngine.Core.Services;
-using GDEngine.Core.Systems.Base;
 
 namespace GDEngine.Core.Systems
 {
@@ -22,7 +17,7 @@ namespace GDEngine.Core.Systems
     /// <see cref="GameStateChangedEvent"/>
     /// <see cref="GameWonEvent"/>
     /// <see cref="GameLostEvent"/>
-    public sealed class GameStateSystem : SystemBase, IShowDebugInfo
+    public sealed class GameStateSystem : PausableSystemBase, IShowDebugInfo
     {
         #region Static Fields
         #endregion
@@ -82,6 +77,9 @@ namespace GDEngine.Core.Systems
             : base(FrameLifecycle.Update, order)
         {
             _state = GameOutcomeState.InProgress;
+
+            // Pause should stop win/lose conditions from ticking but still allow debug overlay to draw if needed.
+            PauseMode = PauseMode.Update;
         }
         #endregion
 
@@ -131,11 +129,13 @@ namespace GDEngine.Core.Systems
             return _state;
         }
 
-        public override void Update(float deltaTime)
+        protected override void OnUpdate(float deltaTime)
         {
             if (!Enabled)
                 return;
 
+
+            // Total overkill because its too often!
             TickLogic();
         }
         #endregion

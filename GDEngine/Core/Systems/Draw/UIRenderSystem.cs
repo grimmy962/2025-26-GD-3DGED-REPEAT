@@ -1,10 +1,8 @@
 ﻿using GDEngine.Core.Components;
 using GDEngine.Core.Entities;
 using GDEngine.Core.Enums;
-using GDEngine.Core.Rendering.UI;
+using GDEngine.Core.Rendering;
 using GDEngine.Core.Services;
-using GDEngine.Core.Systems.Base;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
 namespace GDEngine.Core.Systems

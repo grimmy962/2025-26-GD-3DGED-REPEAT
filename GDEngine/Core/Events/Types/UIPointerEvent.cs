@@ -1,6 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 
-namespace GDEngine.Core.Rendering.UI
+namespace GDEngine.Core.Events
 {
     /// <summary>
     /// Pointer input type used by the UI event system.

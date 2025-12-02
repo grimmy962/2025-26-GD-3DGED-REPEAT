@@ -1,9 +1,9 @@
 ﻿using GDEngine.Core.Entities;
 using GDEngine.Core.Enums;
+using GDEngine.Core.Events;
 using GDEngine.Core.Orchestration;
 using GDEngine.Core.Rendering.UI;
 using GDEngine.Core.Services;
-using GDEngine.Core.Systems.Base;
 
 namespace GDEngine.Core.Systems
 {
@@ -118,6 +118,7 @@ namespace GDEngine.Core.Systems
             {
                 _orchestrator.SetEventPublisher(_context.Events.Publish);
             }
+
         }
 
         public override void Update(float deltaTime)

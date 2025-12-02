@@ -1,5 +1,7 @@
-﻿using System;
+﻿#nullable enable
+using System;
 using GDEngine.Core.Entities;
+using GDEngine.Core.Rendering;
 using GDEngine.Core.Rendering.UI;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -76,13 +78,11 @@ namespace GDGame.Demos.Managers
 
         /// <summary>
         /// Raised when the Music slider value changes (0-1 by default).
-        /// Hook this into your audio mixer / music system.
         /// </summary>
         public event Action<float>? MusicVolumeChanged;
 
         /// <summary>
         /// Raised when the SFX slider value changes (0-1 by default).
-        /// Hook this into your audio mixer / SFX system.
         /// </summary>
         public event Action<float>? SfxVolumeChanged;
         #endregion

@@ -1,4 +1,4 @@
-namespace GDEngine.Core.Events.Types
+namespace GDEngine.Core.Events
 {
     /// <summary>
     /// High-level game outcome state managed by <see cref="GameManager"/>.

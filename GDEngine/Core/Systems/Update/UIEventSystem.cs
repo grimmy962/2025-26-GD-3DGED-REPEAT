@@ -1,8 +1,9 @@
 ﻿using GDEngine.Core.Components;
 using GDEngine.Core.Entities;
 using GDEngine.Core.Enums;
+using GDEngine.Core.Events;
 using GDEngine.Core.Rendering.UI;
-using GDEngine.Core.Systems.Base;
+using GDEngine.Core.Timing;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 
@@ -122,7 +123,7 @@ namespace GDEngine.Core.Systems
             {
                 var selectable = _selectables[i];
 
-                // IMPORTANT: ignore disabled controls and non-interactable ones
+                // Ignore disabled controls and non-interactable ones
                 if (!selectable.Enabled || !selectable.Interactable)
                     continue;
 
@@ -202,7 +203,9 @@ namespace GDEngine.Core.Systems
 
         public override void Update(float deltaTime)
         {
-            if (_needsRebuildActiveList)
+           // System.Diagnostics.Debug.WriteLine($"UIEventSystem::Update at {Time.RealtimeSinceStartupSecs}");
+
+          //  if (_needsRebuildActiveList)
                 RebuildActiveList();
 
             _previousMouseState = _currentMouseState;
