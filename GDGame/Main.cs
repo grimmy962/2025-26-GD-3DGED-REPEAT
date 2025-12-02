@@ -198,7 +198,8 @@ namespace GDGame
             SpriteFont uiFont = _fontDictionary.Get("menufont");
 
             // Wire UIManager to the menu scene
-            _menuManager.Initialize(_sceneManager.ActiveScene, btnTex, trackTex, handleTex, controlsTx, uiFont,
+            _menuManager.Initialize(_sceneManager.ActiveScene, 
+                btnTex, trackTex, handleTex, controlsTx, uiFont,
                 _textureDictionary.Get("mainmenu_monkey"),
                  _textureDictionary.Get("controlsmenu_monkey"),
                   _textureDictionary.Get("controlsmenu_monkey"));
@@ -223,6 +224,7 @@ namespace GDGame
                 System.Diagnostics.Debug.WriteLine("MusicVolumeChanged");
 
                 //raise event to set sound
+               // EngineContext.Instance.Events.Publish(new PlaySfxEvent)
             };
 
             _menuManager.SfxVolumeChanged += v =>
@@ -232,6 +234,8 @@ namespace GDGame
 
                 //raise event to set sound
             };
+
+   
         }
 
         private void InitializePlayer()

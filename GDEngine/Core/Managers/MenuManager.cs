@@ -236,8 +236,8 @@ namespace GDEngine.Core.Managers
             Vector2 viewportSize = new Vector2(backBufferWidth, backBufferHeight);
 
             // Basic layout: top-left-ish anchor + consistent item size
-            Vector2 panelPosition = new Vector2(100f, 100f);
-            Vector2 itemSize = new Vector2(390f, 96f);
+            Vector2 panelPosition = new Vector2((backBufferWidth - 390)/2, 200f);
+            Vector2 itemSize = new Vector2(390, 96f);
             float spacing = 20f;
 
             // Main menu panel
