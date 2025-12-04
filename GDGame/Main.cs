@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using GDEngine.Core;
+﻿using GDEngine.Core;
 using GDEngine.Core.Audio;
 using GDEngine.Core.Collections;
 using GDEngine.Core.Components;
@@ -28,6 +26,8 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System;
+using System.Collections.Generic;
 using Color = Microsoft.Xna.Framework.Color;
 
 namespace GDGame
@@ -43,6 +43,9 @@ namespace GDGame
         private ContentDictionary<Effect> _effectsDictionary;
         private bool _disposed = false;
         private Material _matBasicUnlit, _matBasicLit, _matAlphaCutout, _matBasicUnlitGround;
+
+
+
         #endregion
 
         #region Demo Fields (remove in the game)
@@ -455,18 +458,18 @@ namespace GDGame
 
             #endregion
         }
-
         private void InitializeScene()
         {
-            // Make a scene that will store all drawn objects and systems for that level
-            var scene = new Scene(EngineContext.Instance, "outdoors - level 1");
+            // Create the scene that will store objects and systems
+            _scene = new Scene(EngineContext.Instance, "outdoors - level 1");
 
-            // Add each new scene into the manager
-            _sceneManager.AddScene(AppData.LEVEL_1_NAME, scene);
+            // Register it with the scene manager
+            _sceneManager.AddScene(AppData.LEVEL_1_NAME, _scene);
 
-            // Set the active scene before anything that uses ActiveScene
+            // Now ActiveScene exists, safe for system initialization
             _sceneManager.SetActiveScene(AppData.LEVEL_1_NAME);
         }
+
 
         private void InitializeSystems()
         {
@@ -805,17 +808,121 @@ namespace GDGame
             gameObject.Transform.SetParent(skyParent.Transform);
 
         }
-
         private void InitializeUI()
         {
             InitializeUIReticleRenderer();
+            InitializeUIBackgroundBox();
+            InitializePartyUI(); 
+            InitializeSubtitles();
+        }
+
+        private void InitializeSubtitles()
+        {
+            var ui = _sceneManager.ActiveScene.GetSystem<UIRenderSystem>();
+
+            // ===== Background Box =====
+            var bgGO = new GameObject("SubtitleBackground");
+            var bgSprite = bgGO.AddComponent<UISprite>();
+
+            bgSprite.Texture = _textureDictionary.Get("crate1");
+            bgSprite.Size = new Vector2(800, 120);
+
+            bgSprite.Position = new Vector2(
+                (_graphics.PreferredBackBufferWidth / 2f) - 400f,
+                _graphics.PreferredBackBufferHeight - 150f
+            );
+
+            bgSprite.LayerDepth = UILayer.MenuBack;  // Behind text
+
+            ui.Add(bgSprite);
+            _sceneManager.ActiveScene.Add(bgGO);
+
+            // ===== Text =====
+            var textGO = new GameObject("SubtitleText");
+            var text = textGO.AddComponent<UIText>();
+
+            text.Font = _fontDictionary.Get("Berlin");
+            text.Text = "This is a subtitle test message.";
+            text.Color = Color.White;
+            text.Anchor = TextAnchor.TopLeft;
+
+            text.Position = new Vector2(
+                bgSprite.Position.X + 20f,
+                bgSprite.Position.Y + 20f
+            );
+
+            text.LayerDepth = UILayer.Menu; // In front of bg
+
+            ui.Add(text);
+            _sceneManager.ActiveScene.Add(textGO);
+        }
+
+
+        private void InitializePartyUI()
+        {
+            var uiRender = _sceneManager.ActiveScene.GetSystem<UIRenderSystem>();
+
+            string[] members = { "crate1", "crate1", "crate1" };
+            float size = 64f;
+            float spacing = 10f;
+
+            for (int i = 0; i < members.Length; i++)
+            {
+                var go = new GameObject($"PartyPortrait_{i}");
+                var sprite = go.AddComponent<UIRotatedSprite>();
+
+                sprite.Texture = _textureDictionary.Get(members[i]);
+                sprite.Size = new Vector2(size, size);
+
+                // right side middle  
+                sprite.Position = new Vector2(
+                    _graphics.PreferredBackBufferWidth - (size + 20),
+                    _graphics.PreferredBackBufferHeight / 2 + (i * (size + spacing))
+                );
+
+                // rotate 90 degrees clockwise
+                sprite.Rotation = MathF.PI / 2f;
+
+                uiRender.Add(sprite);
+                _sceneManager.ActiveScene.Add(go);
+            }
+        }
+
+
+        private void InitializeUIBackgroundBox()
+        {
+            var uiRenderSystem = _sceneManager.ActiveScene.GetSystem<UIRenderSystem>();
+
+            // Background Box
+            var backgroundGO = new GameObject("UIBackgroundBox");
+            var backgroundSprite = backgroundGO.AddComponent<UISprite>();
+
+            backgroundSprite.Texture = _textureDictionary.Get("crate1"); // or any existing texture
+            backgroundSprite.Position = new Vector2(10, 10);
+            backgroundSprite.Size = new Vector2(300, 100);
+
+            uiRenderSystem.Add(backgroundSprite);
+            _sceneManager.ActiveScene.Add(backgroundGO);
+
+            // Text Box
+            var textGO = new GameObject("UITextBox");
+            var textComponent = textGO.AddComponent<UIText>();
+
+            textComponent.Font = _fontDictionary.Get("default_font");
+            textComponent.Text = "Hello, welcome to the GDGame engine demo!\nUse WASD to move, mouse to look around.\nHave fun!";
+            textComponent.Position = new Vector2(20, 20);
+            textComponent.Color = Color.White;
+            textComponent.Anchor = TextAnchor.TopLeft;
+
+            uiRenderSystem.Add(textComponent);
+            _sceneManager.ActiveScene.Add(textGO);
         }
 
         private void InitializeUIReticleRenderer()
         {
             var uiReticleGO = new GameObject("HUD");
 
-            var reticleAtlas = _textureDictionary.Get("Crosshair_21");
+            var reticleAtlas = _textureDictionary.Get("crate1");
             var uiFont = _fontDictionary.Get("mouse_reticle_font");
 
             // Reticle (cursor): always on top

@@ -81,6 +81,8 @@ namespace GDEngine.Core.Rendering
         public bool DropShadow { get => _dropShadow; set => _dropShadow = value; }
 
         public Color FallbackColor { get => _fallbackColor; set => _fallbackColor = value; }
+        public string Text { get; set; }
+        public Vector2 Position { get; set; }
         #endregion
 
         #region Constructors
