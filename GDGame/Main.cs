@@ -135,13 +135,15 @@ namespace GDGame
             DemoOrchestrationSystem();
             #endregion
 
-            #endregion
-
-            // Mouse reticle
-            InitializeUI();
+            #region Menu & UI
+            // DemoMenu(); 
+            //InitializeUI();
 
             // Main menu
             InitializeMenuManager();
+            #endregion
+
+            #endregion
 
             // Set the active scene
             _sceneManager.SetActiveScene(AppData.LEVEL_1_NAME);
@@ -239,44 +241,6 @@ namespace GDGame
    
         }
 
-        private void InitializeCollidableGround(int scale = 500)
-        {
-            GameObject gameObject = null;
-            MeshFilter meshFilter = null;
-            MeshRenderer meshRenderer = null;
-
-            gameObject = new GameObject("ground");
-            meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
-            meshFilter = MeshFilterFactory.CreateQuadGridTexturedUnlit(_graphics.GraphicsDevice,
-                 1,
-                 1,
-                 1,
-                 1,
-                 20,
-                 20);
-
-            gameObject.Transform.ScaleBy(new Vector3(scale, scale, 1));
-            gameObject.Transform.RotateEulerBy(new Vector3(MathHelper.ToRadians(-90), 0, 0), true);
-            gameObject.Transform.TranslateTo(new Vector3(0, -0.5f, 0));
-
-            gameObject.AddComponent(meshFilter);
-            meshRenderer = gameObject.AddComponent<MeshRenderer>();
-            meshRenderer.Material = _matBasicUnlitGround;
-            meshRenderer.Overrides.MainTexture = _textureDictionary.Get("ground_grass");
-
-            // Add a box collider matching the ground size
-            var collider = gameObject.AddComponent<BoxCollider>();
-            collider.Size = new Vector3(scale, scale, 0.025f);
-            collider.Center = new Vector3(0, 0, -0.0125f);
-
-            // Add rigidbody as Static (immovable)
-            var rigidBody = gameObject.AddComponent<RigidBody>();
-            rigidBody.BodyType = BodyType.Static;
-            gameObject.IsStatic = true;
-
-            _sceneManager.ActiveScene.Add(gameObject);
-        }
-
         private void InitializePlayer()
         {
             GameObject player = InitializeModel(new Vector3(0, 5, 10),
@@ -292,7 +256,6 @@ namespace GDGame
             // Adds an inventory to the player
             player.AddComponent<InventoryComponent>();
         }
-
         private void InitializePIPCamera(Vector3 position,
       Viewport viewport, int depth, int index = 0)
         {
@@ -1148,7 +1111,339 @@ namespace GDGame
 
         }
         #endregion
-      
+        #region Demo - Menu
+        private void DemoMenu()
+        {
+            // Define a size for the button on screen
+            Vector2 buttonSize = new Vector2(200f, 64f);
+            Vector2 buttonPosition = new Vector2(100f, 100f); // top-left in UI space
+            //DemoUIButton(_scene, "Click me", buttonPosition, buttonSize);
+
+            //DemoUISlider(_scene);
+
+            DemoMainMenu(_sceneManager.ActiveScene);
+            DemoAudioMenu(_sceneManager.ActiveScene);
+            _audioMenuPanel.IsVisible = false;
+        }
+
+        private void DemoMainMenu(Scene scene)
+        {
+            // Load shared assets
+            Texture2D buttonTexture = _textureDictionary.Get("button_rectangle_10");
+            SpriteFont menuFont = _fontDictionary.Get("menufont");
+
+            GameObject panelObject = new GameObject("MainMenuPanel");
+            scene.Add(panelObject);
+
+            _mainMenuPanel = panelObject.AddComponent<UIMenuPanel>();
+            _mainMenuPanel.PanelPosition = new Vector2(100f, 100f);
+            _mainMenuPanel.ItemSize = new Vector2(220f, 60f);
+            _mainMenuPanel.VerticalSpacing = 12f;
+
+            // PLAY
+            _mainMenuPanel.AddButton(
+                "Play",
+                buttonTexture,
+                menuFont,
+                () =>
+                {
+                    System.Diagnostics.Debug.WriteLine("Play pressed");
+                    // TODO: start game / change state
+                });
+
+            // OPTIONS
+            _mainMenuPanel.AddButton(
+                "Options",
+                buttonTexture,
+                menuFont,
+                () =>
+                {
+                    System.Diagnostics.Debug.WriteLine("Options pressed");
+                    // TODO: later you might show an options panel here
+                });
+
+            // AUDIO -> show audio panel, hide main
+            _mainMenuPanel.AddButton(
+                "Audio",
+                buttonTexture,
+                menuFont,
+                () =>
+                {
+                    System.Diagnostics.Debug.WriteLine("Audio pressed");
+                    _mainMenuPanel.IsVisible = false;
+                    _audioMenuPanel.IsVisible = true;
+                });
+
+            // EXIT
+            _mainMenuPanel.AddButton(
+                "Exit",
+                buttonTexture,
+                menuFont,
+                () =>
+                {
+                    System.Diagnostics.Debug.WriteLine("Exit pressed");
+                    Exit();
+                });
+        }
+
+        private void DemoAudioMenu(Scene scene)
+        {
+            Texture2D buttonTexture = _textureDictionary.Get("button_rectangle_10");
+            Texture2D sliderTrackTex = _textureDictionary.Get("Free Flat Hyphen Icon");
+            Texture2D sliderHandleTex = _textureDictionary.Get("Free Flat Toggle Thumb Centre Icon");
+            SpriteFont menuFont = _fontDictionary.Get("menufont");
+
+            GameObject panelObject = new GameObject("AudioMenuPanel");
+            scene.Add(panelObject);
+
+            _audioMenuPanel = panelObject.AddComponent<UIMenuPanel>();
+            _audioMenuPanel.PanelPosition = new Vector2(100f, 100f);
+            _audioMenuPanel.ItemSize = new Vector2(320f, 60f);
+            _audioMenuPanel.VerticalSpacing = 16f;
+
+            // Music slider
+            _audioMenuPanel.AddSlider(
+                "Music",
+                sliderTrackTex,
+                sliderHandleTex,
+                menuFont,
+                0f,
+                1f,
+                0.7f,
+                v =>
+                {
+                    System.Diagnostics.Debug.WriteLine($"Music volume: {v:0.00}");
+                    // TODO: hook into AudioSystem
+                });
+
+            // SFX slider
+            _audioMenuPanel.AddSlider(
+                "SFX",
+                sliderTrackTex,
+                sliderHandleTex,
+                menuFont,
+                0f,
+                1f,
+                0.9f,
+                v =>
+                {
+                    System.Diagnostics.Debug.WriteLine($"SFX volume: {v:0.00}");
+                });
+
+            // Back button
+            _audioMenuPanel.AddButton(
+                "Back",
+                buttonTexture,
+                menuFont,
+                () =>
+                {
+                    System.Diagnostics.Debug.WriteLine("Back to main menu");
+                    _audioMenuPanel.IsVisible = false;
+                    _mainMenuPanel.IsVisible = true;
+                });
+        }
+
+
+        private void DemoUISlider(Scene scene)
+        {
+            // Load assets
+            Texture2D trackTexture = _textureDictionary.Get("Free Flat Hyphen Icon");
+            Texture2D handleTexture = _textureDictionary.Get("Free Flat Toggle Thumb Centre Icon");
+            SpriteFont sliderFont = _fontDictionary.Get("menufont");
+
+            // Logical slider size and position
+            Vector2 sliderSize = new Vector2(300f, 20f);
+            Vector2 sliderPosition = new Vector2(100f, 220f); // below the button demo
+
+            // Root GameObject for the slider
+            GameObject sliderObject = new GameObject("DemoSlider");
+            scene.Add(sliderObject);
+
+            // Track background texture
+            UITexture trackGraphic = sliderObject.AddComponent<UITexture>();
+            trackGraphic.Texture = trackTexture;
+            trackGraphic.Position = sliderPosition;
+            trackGraphic.Tint = Color.Red;
+            trackGraphic.Size = sliderSize;
+            trackGraphic.LayerDepth = UILayer.Menu;   // behind handle and text
+
+            // Slider logic
+            UISlider slider = sliderObject.AddComponent<UISlider>();
+            slider.TargetGraphic = trackGraphic;
+            slider.Position = sliderPosition;
+            slider.Size = sliderSize;
+            slider.MinValue = 1;
+            slider.MaxValue = 10;
+            slider.WholeNumbers = false;
+            slider.Value = 1;  // start in middle
+
+            // Handle is treated as a child GameObject
+            GameObject handleObject = new GameObject("SliderHandle");
+            scene.Add(handleObject);
+
+            // Attach handle under slider in the transform hierarchy
+            handleObject.Transform.SetParent(sliderObject.Transform);
+
+            // Slider handle texture
+            UITexture handleGraphic = handleObject.AddComponent<UITexture>();
+            handleGraphic.Texture = handleTexture;
+            handleGraphic.Size = new Vector2(20f, 20f); // logical handle size
+            handleGraphic.Tint = Color.Orange;
+            handleGraphic.LayerDepth = UILayer.MenuFront;
+            slider.HandleGraphic = handleGraphic;
+
+            // Label to display current value above the slider
+            UIText valueLabel = sliderObject.AddComponent<UIText>();
+            valueLabel.Font = sliderFont;
+            valueLabel.FallbackColor = Color.White;
+            valueLabel.DropShadow = true;
+            valueLabel.LayerDepth = UILayer.MenuFront;
+
+            valueLabel.TextProvider = () =>
+            {
+                return $"SFX Volume: {slider.Value:0}";
+            };
+
+            // Position the label centered on the slider, slightly above
+            valueLabel.PositionProvider = () =>
+            {
+                Vector2 center = slider.Position + (slider.Size * 0.5f);
+                return center + new Vector2(0f, -30f);
+            };
+            valueLabel.Anchor = TextAnchor.Center;
+            valueLabel.UniformScale = 1f;
+            valueLabel.Offset = Vector2.Zero;
+
+            // Subscribe to slider changes for logging/demo
+            slider.ValueChanged += UpdateSliderValue;
+        }
+
+        private void UpdateSliderValue(float value)
+        {
+            System.Diagnostics.Debug.WriteLine(value);
+        }
+
+        private void DemoUIButton(Scene scene, string buttonText, Vector2 buttonPosition, Vector2 buttonSize)
+        {
+            // Load a simple button texture and font from your Content pipeline
+            Texture2D buttonTexture = _textureDictionary.Get("button_rectangle_10");
+            SpriteFont buttonFont = _fontDictionary.Get("menufont");
+
+            // Create and add GameObject to the scene
+            GameObject buttonObject = new GameObject("DemoButton");
+            scene.Add(buttonObject);
+
+            // UITexture as the target graphic
+            UITexture buttonGraphic = buttonObject.AddComponent<UITexture>();
+            buttonGraphic.Texture = buttonTexture;
+            buttonGraphic.Position = buttonPosition;
+            buttonGraphic.Size = buttonSize;
+            buttonGraphic.Tint = Color.Red;
+            buttonGraphic.LayerDepth = UILayer.Menu;           // background layer for the button
+
+            // UIButton built on UISelectable
+            UIButton button = buttonObject.AddComponent<UIButton>();
+            button.TargetGraphic = buttonGraphic;
+            button.AutoSizeFromTargetGraphic = false;
+            button.Position = buttonPosition;
+            button.Size = buttonSize;
+            button.NormalColor = Color.Black;
+            button.HighlightedColor = Color.LightGray;
+            button.PressedColor = Color.Gray;
+            button.DisabledColor = Color.DarkGray;
+
+            // UIText centered on the button (Unity-style "Text" child)
+            UIText label = buttonObject.AddComponent<UIText>();
+            label.Font = buttonFont;
+            label.FallbackColor = Color.White;
+            label.DropShadow = true;
+            label.LayerDepth = UILayer.MenuFront; // in front of the button background
+
+            // Center the label on the button:
+            // - PositionProvider returns the *center* of the button
+            // - Anchor Center means the text will be centered around that point
+            label.TextProvider = () => buttonText;
+            label.PositionProvider = () =>
+            {
+                return button.Position + (button.Size * 0.5f);
+            };
+            label.Anchor = TextAnchor.Center;
+            label.UniformScale = 1;
+            label.Offset = Vector2.Zero;
+
+            // Hook up events for demo
+            button.PointerEntered += HandlePointEntered;
+
+            button.PointerExited += () =>
+            {
+                System.Diagnostics.Debug.WriteLine("Button: Pointer exited");
+            };
+
+            button.PointerDown += () =>
+            {
+                System.Diagnostics.Debug.WriteLine("Button: Pointer down");
+            };
+
+            button.PointerUp += () =>
+            {
+                System.Diagnostics.Debug.WriteLine("Button: Pointer up");
+            };
+
+            button.Clicked += () =>
+            {
+                System.Diagnostics.Debug.WriteLine("Button: Clicked!");
+            };
+        }
+
+        private void HandlePointEntered()
+        {
+            //play sound
+            //raise/publish event
+            //orchestration
+            //reset the player
+            //consume the cola ++ health
+            System.Diagnostics.Debug.WriteLine("HandlePointEntered");
+        }
+        #endregion
+
+        private void InitializeCollidableGround(int scale = 500)
+        {
+            GameObject gameObject = null;
+            MeshFilter meshFilter = null;
+            MeshRenderer meshRenderer = null;
+
+            gameObject = new GameObject("ground");
+            meshFilter = MeshFilterFactory.CreateQuadTexturedLit(_graphics.GraphicsDevice);
+            meshFilter = MeshFilterFactory.CreateQuadGridTexturedUnlit(_graphics.GraphicsDevice,
+                 1,
+                 1,
+                 1,
+                 1,
+                 20,
+                 20);
+
+            gameObject.Transform.ScaleBy(new Vector3(scale, scale, 1));
+            gameObject.Transform.RotateEulerBy(new Vector3(MathHelper.ToRadians(-90), 0, 0), true);
+            gameObject.Transform.TranslateTo(new Vector3(0, -0.5f, 0));
+
+            gameObject.AddComponent(meshFilter);
+            meshRenderer = gameObject.AddComponent<MeshRenderer>();
+            meshRenderer.Material = _matBasicUnlitGround;
+            meshRenderer.Overrides.MainTexture = _textureDictionary.Get("ground_grass");
+
+            // Add a box collider matching the ground size
+            var collider = gameObject.AddComponent<BoxCollider>();
+            collider.Size = new Vector3(scale, scale, 0.025f);
+            collider.Center = new Vector3(0, 0, -0.0125f);
+
+            // Add rigidbody as Static (immovable)
+            var rigidBody = gameObject.AddComponent<RigidBody>();
+            rigidBody.BodyType = BodyType.Static;
+            gameObject.IsStatic = true;
+
+            _sceneManager.ActiveScene.Add(gameObject);
+        }
+
         private void DemoCollidableModel(Vector3 position, Vector3 eulerRotationDegrees, Vector3 scale)
         {
             var go = new GameObject("test");
@@ -1253,6 +1548,15 @@ namespace GDGame
                     duration,
                     true);
             }
+        }
+
+        private static Vector3 RandomShakeDirection()
+        {
+            float x = (float)(Random.Shared.NextDouble() * 2.0 - 1.0);
+            float y = (float)(Random.Shared.NextDouble() * 2.0 - 1.0);
+
+            // Flat screen-space style shake in X/Y
+            return new Vector3(x, y, 0f);
         }
 
         private void DemoOrchestrationSystem()
