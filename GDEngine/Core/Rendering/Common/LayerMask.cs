@@ -15,6 +15,8 @@
         public static readonly LayerMask Gizmo = new LayerMask(1u << 4);
         public static readonly LayerMask NPC = new LayerMask(1u << 5);
         public static readonly LayerMask Interactables = new LayerMask(1u << 6);
+        public static readonly LayerMask Collectables = new LayerMask(1u << 7);
+        public static readonly LayerMask Ground = new LayerMask(1u << 8);
         public static readonly LayerMask All = new LayerMask(0xFFFFFFFFu);
         //TODO - Students - Add more LayerMasks here to be able to render/ignore in game
         #endregion

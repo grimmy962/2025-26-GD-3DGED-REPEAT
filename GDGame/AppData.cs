@@ -74,8 +74,9 @@ namespace GDGame
         public static readonly string CAMERA_NAME_FIRST_PERSON = "First person";
         public static readonly string CAMERA_NAME_PIP = "PIP";
         public static readonly string CAMERA_NAME_STATIC_BIRDS_EYE = "Static birds-eye";
-
+        public static readonly string CAMERA_NAME_INTRO_CURVE = "Intro curve";
         public static readonly string CAMERA_IMPULSE_CHANNEL = "camera/impulse";
+        public static readonly string CAMERA_NAME_FIRST_PERSON_PARENT = CAMERA_NAME_FIRST_PERSON + "parent";
 
         #endregion
 
@@ -117,7 +118,9 @@ namespace GDGame
 
 
         #region Level
-        public static readonly string LEVEL_1_NAME = "outdoors - level 1"; 
+        public static readonly string LEVEL_1_NAME = "outdoors - level 1";
+       
+
         #endregion
 
     }

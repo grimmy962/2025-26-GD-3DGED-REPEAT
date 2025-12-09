@@ -74,17 +74,145 @@ namespace GDEngine.Core.Rendering
     /// </summary>
     public static class PropertyKeys
     {
+        // ORIGINAL PROPERTY KEYS
+        /// <summary>
+        /// Primary texture for the material (used by BasicEffect, AlphaTestEffect, etc.)
+        /// </summary>
         public const string MainTexture = "MainTexture";
+
+        /// <summary>
+        /// Secondary texture for dual-texture effects (used by DualTextureEffect)
+        /// </summary>
         public const string Texture2 = "Texture2";
+
+        /// <summary>
+        /// Color tint applied to the material (multiplied with texture color)
+        /// </summary>
         public const string Tint = "Tint";
+
+        /// <summary>
+        /// Alpha/opacity value for transparency (0.0 = fully transparent, 1.0 = fully opaque)
+        /// </summary>
         public const string Alpha = "Alpha";
+
+        /// <summary>
+        /// Flag indicating whether to use lighting calculations (for BasicEffect)
+        /// </summary>
         public const string UseLighting = "UseLighting";
+
+        /// <summary>
+        /// Specular power/shininess value for Phong/Blinn-Phong lighting (higher = sharper highlights)
+        /// </summary>
         public const string SpecularPower = "SpecularPower";
+
+        /// <summary>
+        /// Bone transformation matrices for skinned mesh animation
+        /// </summary>
         public const string Bones = "Bones";
+
+        /// <summary>
+        /// Environment/reflection map texture (used by EnvironmentMapEffect)
+        /// </summary>
         public const string EnvironmentMap = "EnvironmentMap";
+
+        /// <summary>
+        /// Amount of environment map reflection to blend (0.0 = none, 1.0 = full reflection)
+        /// </summary>
         public const string EnvAmount = "EnvAmount";
+
+        /// <summary>
+        /// Fresnel effect amount for environment mapping (edge-based reflection intensity)
+        /// </summary>
         public const string Fresnel = "Fresnel";
+
+        /// <summary>
+        /// Reference alpha value for alpha testing (pixels with alpha below this are discarded)
+        /// </summary>
         public const string ReferenceAlpha = "ReferenceAlpha";
+
+        /// <summary>
+        /// Flag indicating whether to use per-vertex color data
+        /// </summary>
         public const string VertexColorEnabled = "VertexColorEnabled";
+
+        // PBR MATERIAL PROPERTIES - New keys added for PBR support
+
+        /// <summary>
+        /// Albedo texture (RGBA: RGB for base color, A for opacity)
+        /// </summary>
+        public const string AlbedoTexture = "AlbedoTexture";
+
+        /// <summary>
+        /// Albedo color multiplier (default: white)
+        /// </summary>
+        public const string AlbedoColor = "AlbedoColor";
+
+        /// <summary>
+        /// Normal map texture (tangent-space)
+        /// </summary>
+        public const string NormalTexture = "NormalTexture";
+
+        /// <summary>
+        /// SRM texture (R=Specular, G=Roughness, B=Metallic)
+        /// </summary>
+        public const string SRMTexture = "SRMTexture";
+
+        /// <summary>
+        /// Emissive texture (RGBA: RGB for color, A for per-pixel strength)
+        /// </summary>
+        public const string EmissiveTexture = "EmissiveTexture";
+
+        /// <summary>
+        /// Emissive color (default: black - no emission)
+        /// </summary>
+        public const string EmissiveColor = "EmissiveColor";
+
+        /// <summary>
+        /// Emissive strength multiplier (default: 1.0)
+        /// </summary>
+        public const string EmissiveStrength = "EmissiveStrength";
+
+        /// <summary>
+        /// Global emissive multiplier for scene-wide emission control (default: 1.0)
+        /// </summary>
+        public const string GlobalEmissiveMultiplier = "GlobalEmissiveMultiplier";
+
+        /// <summary>
+        /// Default specular value when no SRM texture is present (0.0 - 1.0, default: 0.5)
+        /// </summary>
+        public const string DefaultSpecular = "DefaultSpecular";
+
+        /// <summary>
+        /// Default roughness value when no SRM texture is present (0.0 - 1.0, default: 0.5)
+        /// </summary>
+        public const string DefaultRoughness = "DefaultRoughness";
+
+        /// <summary>
+        /// Default metallic value when no SRM texture is present (0.0 - 1.0, default: 0.0)
+        /// </summary>
+        public const string DefaultMetallic = "DefaultMetallic";
+
+        // PBR TEXTURE FLAGS
+        // Flags to enable/disable texture usage in shaders
+
+        /// <summary>
+        /// Flag indicating whether to use the albedo texture
+        /// </summary>
+        public const string UseAlbedoTexture = "UseAlbedoTexture";
+
+        /// <summary>
+        /// Flag indicating whether to use the normal texture
+        /// </summary>
+        public const string UseNormalTexture = "UseNormalTexture";
+
+        /// <summary>
+        /// Flag indicating whether to use the SRM texture
+        /// </summary>
+        public const string UseSRMTexture = "UseSRMTexture";
+
+        /// <summary>
+        /// Flag indicating whether to use the emissive texture
+        /// </summary>
+        public const string UseEmissiveTexture = "UseEmissiveTexture";
     }
 }

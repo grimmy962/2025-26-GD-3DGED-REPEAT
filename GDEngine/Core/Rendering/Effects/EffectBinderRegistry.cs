@@ -13,7 +13,8 @@ namespace GDEngine.Core.Rendering
             new BasicEffectBinder(),
             new AlphaTestEffectBinder(),
             new DualTextureEffectBinder(),
-            new EnvironmentMapEffectBinder()
+            new EnvironmentMapEffectBinder(),
+            new PBREffectBinder()
             //TODO - skinned, custom effect support
         };
         #endregion

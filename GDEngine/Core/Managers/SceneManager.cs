@@ -224,9 +224,10 @@ namespace GDEngine.Core.Managers
         {
             string activeName = _activeSceneName ?? "none";
             yield return "SceneManager  Active=" + activeName;
+            yield return "Active Camera=" + ActiveScene.ActiveCamera.GameObject.Name;
             yield return "  Paused=" + _paused.ToString();
             yield return "Scenes=" + _scenes.Count.ToString();
-
+          
             if (_scenes.Count == 0)
                 yield break;
 

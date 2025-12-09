@@ -114,10 +114,17 @@ namespace GDEngine.Core.Collections
             // Only reload if the content path changed (avoids unnecessary reloads).
             if (!string.Equals(existingPath, path, StringComparison.OrdinalIgnoreCase))
             {
-                var reloaded = _content.Load<T>(path);
-                _items[key] = reloaded;
-                _paths[key] = path;
-                return true;
+                try
+                {
+                    var reloaded = _content.Load<T>(path);
+                    _items[key] = reloaded;
+                    _paths[key] = path;
+                    return true;
+                }
+                catch(Exception e)
+                {
+                    System.Diagnostics.Debug.WriteLine(e.Message);
+                }
             }
 
             // Path hasn't changed → no work needed.

@@ -69,8 +69,8 @@
       "contentPath": "assets/textures/ui/backgrounds/mainmenu_monkey"
     },
     {
-      "name": "audio_background",
-      "contentPath": "assets/textures/ui/backgrounds/controlsmenu"
+      "name": "audiomenu_monkey",
+      "contentPath": "assets/textures/ui/backgrounds/audiomenu_monkey"
     },
     {
       "name": "controlsmenu_monkey",
@@ -176,9 +176,10 @@
       "contentPath": "assets/sounds/ui/SFX_UI_Click_Designed_Pop_Negative_Close_1"
     }
   ],
-  "effects": [ {
-    "name": "ui_test_effect",
-    "contentPath": "assets/effects/ui/ui_test_effect"
-  }
+  "effects": [
+    {
+      "name": "ui_test_effect",
+      "contentPath": "assets/effects/ui_test_effect"
+    }
   ]
 }

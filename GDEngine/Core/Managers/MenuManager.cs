@@ -54,7 +54,6 @@ namespace GDEngine.Core.Managers
         private Texture2D? _buttonTexture;
         private Texture2D? _sliderTrackTexture;
         private Texture2D? _sliderHandleTexture;
-        private Texture2D? _controlsLayout;
         private SpriteFont? _font;
 
         private bool _configured;
@@ -124,7 +123,6 @@ namespace GDEngine.Core.Managers
          Texture2D buttonTexture,
          Texture2D sliderTrackTexture,
          Texture2D sliderHandleTexture,
-         Texture2D controlsLayoutTexture,
          SpriteFont font,
          Texture2D mainPanelBackground,
          Texture2D audioPanelBackground,
@@ -138,8 +136,6 @@ namespace GDEngine.Core.Managers
                 throw new ArgumentNullException(nameof(sliderTrackTexture));
             if (sliderHandleTexture == null)
                 throw new ArgumentNullException(nameof(sliderHandleTexture));
-            if (controlsLayoutTexture == null)
-                throw new ArgumentNullException(nameof(controlsLayoutTexture));
             if (font == null)
                 throw new ArgumentNullException(nameof(font));
             if (mainPanelBackground == null)
@@ -153,7 +149,6 @@ namespace GDEngine.Core.Managers
             _buttonTexture = buttonTexture;
             _sliderTrackTexture = sliderTrackTexture;
             _sliderHandleTexture = sliderHandleTexture;
-            _controlsLayout = controlsLayoutTexture;
             _font = font;
 
             _mainPanelBackground = mainPanelBackground;
@@ -227,7 +222,6 @@ namespace GDEngine.Core.Managers
             if (_buttonTexture == null ||
                 _sliderTrackTexture == null ||
                 _sliderHandleTexture == null ||
-                _controlsLayout == null ||
                 _font == null)
                 return;
 
@@ -276,19 +270,22 @@ namespace GDEngine.Core.Managers
                 "Play",
                 _buttonTexture!,
                 _font!,
-                OnPlayClicked);
+                OnPlayClicked,
+                Color.Red);
 
             _audioButton = _mainMenuPanel.AddButton(
                 "Audio",
                 _buttonTexture!,
                 _font!,
-                OnAudioClicked);
+                OnAudioClicked,
+                Color.LightGreen);
 
             _controlsButton = _mainMenuPanel.AddButton(
                 "Controls",
                 _buttonTexture!,
                 _font!,
-                OnControlsClicked);
+                OnControlsClicked,
+                Color.LightBlue);
 
             _exitButton = _mainMenuPanel.AddButton(
         "Exit",
@@ -331,10 +328,11 @@ namespace GDEngine.Core.Managers
                 _sliderTrackTexture!,
                 _sliderHandleTexture!,
                 _font!,
-                0f,
-                1f,
-                0.8f,
-                OnMusicSliderChanged);
+                1,
+                10,
+                5,
+                OnMusicSliderChanged,
+                Color.Black);
 
             _sfxSlider = _audioMenuPanel.AddSlider(
                 "SFX",
@@ -343,8 +341,9 @@ namespace GDEngine.Core.Managers
                 _font!,
                 0f,
                 1f,
-                0.8f,
-                OnSfxSliderChanged);
+                0.5f,
+                OnSfxSliderChanged,
+                Color.Black);
 
             _audioBackButton = _audioMenuPanel.AddButton(
                 "Back",

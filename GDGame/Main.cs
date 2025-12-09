@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Security.AccessControl;
 using GDEngine.Core;
 using GDEngine.Core.Audio;
 using GDEngine.Core.Collections;
 using GDEngine.Core.Components;
+using GDEngine.Core.Components.Controllers.Physics;
 using GDEngine.Core.Debug;
 using GDEngine.Core.Entities;
 using GDEngine.Core.Events;
@@ -23,11 +25,13 @@ using GDEngine.Core.Services;
 using GDEngine.Core.Systems;
 using GDEngine.Core.Timing;
 using GDEngine.Core.Utilities;
+using GDGame.Demos.Components;
 using GDGame.Demos.Controllers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using SharpDX.Direct2D1.Effects;
 using Color = Microsoft.Xna.Framework.Color;
 
 namespace GDGame
@@ -43,6 +47,7 @@ namespace GDGame
         private ContentDictionary<Effect> _effectsDictionary;
         private bool _disposed = false;
         private Material _matBasicUnlit, _matBasicLit, _matAlphaCutout, _matBasicUnlitGround;
+        private PBRMaterial _matPBR;
         #endregion
 
         #region Demo Fields (remove in the game)
@@ -56,10 +61,10 @@ namespace GDGame
 
         // LayerMask used to filter which collisions we care about in debug
         private LayerMask _collisionDebugMask = LayerMask.All;
-        private UIMenuPanel _mainMenuPanel, _audioMenuPanel;
         private SceneManager _sceneManager;
         private float _currentHealth = 100;
         private MenuManager _menuManager;
+        private UIDebugInfo _debugRenderer;
         #endregion
 
         #region Core Methods (Common to all games)     
@@ -132,22 +137,28 @@ namespace GDGame
             DemoOrchestrationSystem();
             #endregion
 
+            #region PBR Lighting
+            //DemoPBRGameObject(string objectName, string modelName, Vector3 position, Vector3 scale, Vector3 eulerRotationDegrees,
+            //Texture2D albedoTexture, Texture2D normalTexture, Texture2D srmTexture,
+            //Color albedoColor, float roughness, float metallic);
             #endregion
+
+        #endregion
 
             // Mouse reticle
             InitializeUI();
 
             // Main menu
             InitializeMenuManager();
-
-            // Set the active scene
-            _sceneManager.SetActiveScene(AppData.LEVEL_1_NAME);
-
+    
             // Set win/lose conditions
             SetWinConditions();
 
             // Set pause and show menu
             SetPauseShowMenu();
+
+            // Set the active scene
+            _sceneManager.SetActiveScene(AppData.LEVEL_1_NAME);
 
             base.Initialize();
         }
@@ -197,9 +208,9 @@ namespace GDGame
 
             // Wire UIManager to the menu scene
             _menuManager.Initialize(_sceneManager.ActiveScene, 
-                btnTex, trackTex, handleTex, controlsTx, uiFont,
+                btnTex, trackTex, handleTex, uiFont,
                 _textureDictionary.Get("mainmenu_monkey"),
-                 _textureDictionary.Get("controlsmenu_monkey"),
+                 _textureDictionary.Get("audiomenu_monkey"),
                   _textureDictionary.Get("controlsmenu_monkey"));
 
             // Subscribe to high-level events
@@ -270,6 +281,8 @@ namespace GDGame
             var rigidBody = gameObject.AddComponent<RigidBody>();
             rigidBody.BodyType = BodyType.Static;
             gameObject.IsStatic = true;
+
+            gameObject.Layer = LayerMask.Ground;
 
             _sceneManager.ActiveScene.Add(gameObject);
         }
@@ -454,6 +467,14 @@ namespace GDGame
             _matAlphaCutout.SamplerState = SamplerState.LinearClamp;
 
             #endregion
+
+            //#region Lit PBR Effect
+            //// Load effect file
+            //Effect pbrEffect = _effectsDictionary.Get("pbr_effect");
+
+            //// Create a PBR material
+            //_matPBR = new PBRMaterial(pbrEffect, ownsEffect: false);
+            //#endregion
         }
 
         private void InitializeScene()
@@ -471,7 +492,7 @@ namespace GDGame
         private void InitializeSystems()
         {
             InitializePhysicsSystem();
-            InitializePhysicsDebugSystem(false);
+            InitializePhysicsDebugSystem(true);
             InitializeEventSystem();  //propagate events  
             InitializeInputSystem();  //input
             InitializeCameraAndRenderSystems(); //update cameras, draw renderable game objects, draw ui and menu
@@ -480,7 +501,36 @@ namespace GDGame
             InitializeImpulseSystem();    //camera shake, audio duck volumes etc
             InitializeUIEventSystem();
             InitializeGameStateSystem();   //manage and track game state
-          //  InitializeNavMeshSystem();
+                                           //  InitializeNavMeshSystem();
+
+            InitializeDebugInfo(true);
+        }
+
+        private void InitializeDebugInfo(bool showDebug)
+        {
+            if (showDebug)
+            {
+                GameObject debugGO = new GameObject("Perf Stats");
+                _debugRenderer = debugGO.AddComponent<UIDebugInfo>();
+
+                _debugRenderer.Font = _fontDictionary.Get("perf_stats_font");
+                _debugRenderer.ScreenCorner = ScreenCorner.TopLeft;
+                _debugRenderer.Margin = new Vector2(10f, 10f);
+
+                var perfProvider = new PerformanceDebugInfoProvider
+                {
+                    Profile = DisplayProfile.Profiling,
+                    ShowMemoryStats = true
+                };
+
+                //add memory related info
+                _debugRenderer.Providers.Add(perfProvider);
+
+                //add scene related info
+                _debugRenderer.Providers.Add(_sceneManager);
+
+                _sceneManager.ActiveScene.Add(debugGO);
+            }
         }
 
         private void InitializeNavMeshSystem()
@@ -525,15 +575,15 @@ namespace GDGame
             if (debugEnabled)
             {
                 GameObject debugGO = new GameObject("Perf Stats");
-                var debugRenderer = debugGO.AddComponent<UIDebugInfo>();
+                var _debugRenderer = debugGO.AddComponent<UIDebugInfo>();
 
-                debugRenderer.Font = _fontDictionary.Get("perf_stats_font");
-                debugRenderer.ScreenCorner = ScreenCorner.TopLeft;
-                debugRenderer.Margin = new Vector2(10f, 10f);
+                _debugRenderer.Font = _fontDictionary.Get("perf_stats_font");
+                _debugRenderer.ScreenCorner = ScreenCorner.TopLeft;
+                _debugRenderer.Margin = new Vector2(10f, 10f);
 
                 // Register orchestration as a debug provider
                 if (orchestrationSystem != null)
-                    debugRenderer.Providers.Add(orchestrationSystem);
+                    _debugRenderer.Providers.Add(orchestrationSystem);
 
                 var perfProvider = new PerformanceDebugInfoProvider
                 {
@@ -541,7 +591,7 @@ namespace GDGame
                     ShowMemoryStats = true
                 };
 
-                debugRenderer.Providers.Add(perfProvider);
+                _debugRenderer.Providers.Add(perfProvider);
 
                 _sceneManager.ActiveScene.Add(debugGO);
             }
@@ -567,6 +617,7 @@ namespace GDGame
                 physicsDebugRenderer.KinematicColor = Color.Blue;    // Animated objects
                 physicsDebugRenderer.DynamicColor = Color.Yellow;    // Physics-driven objects
                 physicsDebugRenderer.TriggerColor = Color.Red;       // Trigger volumes
+
             }
 
         }
@@ -625,6 +676,7 @@ namespace GDGame
 
             GameObject cameraGO = null;
             Camera camera = null;
+           
             #region Static birds-eye camera
             cameraGO = new GameObject(AppData.CAMERA_NAME_STATIC_BIRDS_EYE);
             camera = cameraGO.AddComponent<Camera>();
@@ -632,13 +684,7 @@ namespace GDGame
             //ISRoT
             cameraGO.Transform.RotateEulerBy(new Vector3(MathHelper.ToRadians(-90), 0, 0));
             cameraGO.Transform.TranslateTo(Vector3.UnitY * 50);
-
-            // _cameraGO.AddComponent<MouseYawPitchController>();
-
             scene.Add(cameraGO);
-
-            // _camera.FieldOfView
-            //TODO - add camera
             #endregion
 
             #region Third-person camera
@@ -654,54 +700,93 @@ namespace GDGame
             scene.Add(cameraGO);
             #endregion
 
-            #region First-person camera
-            var position = new Vector3(0, 5, 25);
+            #region First-person capsule + camera (parent/child)
 
-            //camera GO
+            // PARENT: physics + movement (feet at y = 0 here)
+            var parentGO = new GameObject(AppData.CAMERA_NAME_FIRST_PERSON_PARENT);
+            parentGO.Transform.TranslateTo(new Vector3(0f, 5f, 15f));
+
+            // Capsule + rigidbody controller (kept upright internally)
+            var fpsController = parentGO.AddComponent<FirstPersonCapsuleController>();
+            fpsController.MoveSpeed = 8.0f;
+            fpsController.Acceleration = 50.0f;
+            fpsController.GroundFriction = 10.0f;
+            fpsController.JumpImpulse = 7.0f;
+            fpsController.CapsuleRadius = 0.5f;
+            fpsController.CapsuleHeight = 1.8f;
+            fpsController.GroundCheckDistance = 1f;
+
+            // camera that can pitch + yaw without affecting the collider
             cameraGO = new GameObject(AppData.CAMERA_NAME_FIRST_PERSON);
+            cameraGO.Transform.SetParent(parentGO.Transform);
 
-            //set position 
-            cameraGO.Transform.TranslateTo(position);
-
-            //add camera component to the GO
+            // Local offset from feet → eye height
+            cameraGO.Transform.TranslateTo(new Vector3(0, 0, 0));
             camera = cameraGO.AddComponent<Camera>();
-            camera.FarPlane = 1000;
+            camera.FieldOfView = MathHelper.ToRadians(80.0f);
+            var mouseLook = cameraGO.AddComponent<MouseYawPitchController>();
+   
 
-            //feed off whatever screen dimensions you set InitializeGraphics
-            camera.AspectRatio = (float)_graphics.PreferredBackBufferWidth / _graphics.PreferredBackBufferHeight;
-            cameraGO.AddComponent<KeyboardWASDController>();
-            cameraGO.AddComponent<MouseYawPitchController>();
-            cameraGO.AddComponent<CameraImpulseListener>();
+            // Add both objects to the scene so their components are updated
+            scene.Add(parentGO);
+            scene.Add(cameraGO);
 
-            //var collider = cameraGO.AddComponent<CapsuleCollider>();
-            //collider.Height = 5f;
-            //collider.Radius = 0.25f;
+            // Make this the active camera
+            scene.ActiveCamera = camera;
 
-            //var rb = cameraGO.AddComponent<RigidBody>();
-            //rb.BodyType = BodyType.Dynamic;
-            //rb.Mass = 80f;       // “human-ish”
-            //rb.UseGravity = true;
-            //rb.LinearDamping = 0.0f;      // or a little drag if you prefer
-            //rb.AngularDamping = 0.0f;
+            #endregion
 
-            //var physicsWASDController = cameraGO.AddComponent<PhysicsWASDController>();
-            //physicsWASDController.MoveSpeed = 25f;                     // walk speed
+            #region Curve camera
+            cameraGO = new GameObject(AppData.CAMERA_NAME_INTRO_CURVE);
+            cameraGO.Transform.RotateEulerBy(new Vector3(MathHelper.ToRadians(-90), 0, 0));
+            camera = cameraGO.AddComponent<Camera>();
+            camera.FieldOfView = MathHelper.ToRadians(80);
 
-            //var interComp = cameraGO.AddComponent<InteractionComponent>();
-            //interComp.HitMask = LayerMask.Interactables;
-
-            // Add it to the scene
+            var curveController = cameraGO.AddComponent<CurveController>();
+            curveController.PositionCurve = BuildCameraPositionCurve(CurveLoopType.Oscillate);
+            curveController.TargetCurve = BuildCameraTargetCurve(CurveLoopType.Constant);
+            curveController.Duration = 10;
             scene.Add(cameraGO);
             #endregion
 
-            // Set the active camera by finding and getting its camera component
-            // var theCamera = _scene.Find(go => go.Name.Equals(AppData.CAMERA_NAME_STATIC_BIRDS_EYE)).GetComponent<Camera>();
-            ////Obviously, since we have _camera we could also just use the line below
-            //_scene.SetActiveCamera(theCamera);
 
             //replace with new SetActiveCamera that searches by string
-            scene.SetActiveCamera(AppData.CAMERA_NAME_FIRST_PERSON);
+            scene.SetActiveCamera(AppData.CAMERA_NAME_INTRO_CURVE);
         }
+
+        private AnimationCurve3D BuildCameraPositionCurve(CurveLoopType curveLoopType)
+        {
+            var curve = new AnimationCurve3D(curveLoopType);
+
+            // start
+            curve.AddKey(new Vector3(-20, 10, 40), 0);
+
+            // moving inward, slight rise
+            curve.AddKey(new Vector3(-10, 10, 30), 0.25f);
+
+            // closest to origin (single “turn”)
+            curve.AddKey(new Vector3(0, 10, 30), 0.5f);
+
+            // heading back out
+            curve.AddKey(new Vector3(10, 10, 40), 0.75f);
+
+            // end
+            curve.AddKey(new Vector3(20, 10, 40), 1);
+
+            return curve;
+        }
+
+        private AnimationCurve3D BuildCameraTargetCurve(CurveLoopType curveLoopType)
+        {
+            var curve = new AnimationCurve3D(curveLoopType);
+
+            // All points “in or around” origin, y ≈ 5 so we look slightly down from y=10–12.
+            curve.AddKey(new Vector3(-5,0,0), 0);
+            curve.AddKey(new Vector3(5,0,0), 1);
+
+            return curve;
+        }
+
 
         /// <summary>
         /// Add parent root at origin to rotate the sky
@@ -869,7 +954,7 @@ namespace GDGame
             gameObject.Transform.RotateEulerBy(eulerRotationDegrees * MathHelper.Pi / 180f);
             gameObject.Transform.ScaleTo(scale);
 
-            // gameObject.Layer = LayerMask.Interactables | LayerMask.NPC;  //100000 | 010000 = 110000
+          //  gameObject.Layer = LayerMask.NPC | LayerMask.Collectables;
 
             var model = _modelDictionary.Get(modelName);
             var texture = _textureDictionary.Get(textureName);
@@ -877,7 +962,6 @@ namespace GDGame
             gameObject.AddComponent(meshFilter);
 
             var meshRenderer = gameObject.AddComponent<MeshRenderer>();
-
             meshRenderer.Material = _matBasicLit;
             meshRenderer.Overrides.MainTexture = texture;
 
@@ -978,6 +1062,38 @@ namespace GDGame
         #endregion
 
         #region Demo Methods (remove in the game)
+
+        //#region Demo - PBR Lighting
+        //private void DemoPBRGameObject(string objectName, string modelName, Vector3 position, Vector3 scale, Vector3 eulerRotationDegrees, 
+        //    Texture2D albedoTexture, Texture2D normalTexture, Texture2D srmTexture, 
+        //    Color albedoColor, float roughness, float metallic)
+        //{
+        //    GameObject gameObject = null;
+
+        //    gameObject = new GameObject(objectName);
+        //    gameObject.Transform.TranslateTo(position);
+        //    gameObject.Transform.RotateEulerBy(eulerRotationDegrees * MathHelper.Pi / 180f);
+        //    gameObject.Transform.ScaleTo(scale);
+        //    var model = _modelDictionary.Get(modelName);
+        //    var meshFilter = MeshFilterFactory.CreateFromModel(model, _graphics.GraphicsDevice, 0, 0);
+        //    gameObject.AddComponent(meshFilter);
+        //    var meshRenderer = gameObject.AddComponent<MeshRenderer>();
+
+        //    #region PBR specific material settings
+        //    // Set material properties
+        //    _matPBR.AlbedoTexture = albedoTexture;
+        //    _matPBR.NormalTexture = normalTexture;
+        //    _matPBR.SRMTexture = srmTexture;
+        //    _matPBR.AlbedoColor = albedoColor;
+        //    _matPBR.DefaultRoughness = roughness;
+        //    _matPBR.DefaultMetallic = metallic;
+        //    meshRenderer.Material = _matPBR.Material;
+        //    #endregion
+
+        //    _sceneManager.ActiveScene.Add(gameObject);
+        //} 
+        //#endregion
+
         #region Demo - Game State
         private void SetWinConditions()
         {
@@ -1155,17 +1271,6 @@ namespace GDGame
             bool isPressed = _newKBState.IsKeyDown(Keys.O) && !_oldKBState.IsKeyDown(Keys.O);
             if (isPressed)
             {
-                //orchestrator.Build("my first sequence")
-                //   .Do(() =>
-                //   {
-                //       var textObj = _sceneManager.ActiveScene.Find("init_texture");
-                //       // var textObj = _scene.Find("init_texture");
-                //       textObj.Enabled = false;
-                //   })
-                //   .WaitSeconds(2)
-                //   .Do()
-                //   .Register();
-
                 orchestrator.Build("my first sequence")
                     .WaitSeconds(2)
                     .Publish(new CameraEvent(AppData.CAMERA_NAME_FIRST_PERSON))

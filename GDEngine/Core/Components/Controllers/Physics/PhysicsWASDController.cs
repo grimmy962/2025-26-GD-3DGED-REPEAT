@@ -1,7 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 
-namespace GDEngine.Core.Components
+namespace GDEngine.Core.Components.Controllers.Physics
 {
     /// <summary>
     /// Physics-based WASD controller: drives a dynamic <see cref="RigidBody"/> by
