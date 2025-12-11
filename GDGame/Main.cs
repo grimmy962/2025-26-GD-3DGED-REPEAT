@@ -704,6 +704,7 @@ namespace GDGame
 
             // PARENT: physics + movement (feet at y = 0 here)
             var parentGO = new GameObject(AppData.CAMERA_NAME_FIRST_PERSON_PARENT);
+            parentGO.Layer = LayerMask.IgnoreRaycast;
             parentGO.Transform.TranslateTo(new Vector3(0f, 5f, 15f));
 
             // Capsule + rigidbody controller (kept upright internally)
@@ -714,7 +715,7 @@ namespace GDGame
             fpsController.JumpImpulse = 7.0f;
             fpsController.CapsuleRadius = 0.5f;
             fpsController.CapsuleHeight = 1.8f;
-            fpsController.GroundCheckDistance = 1f;
+            fpsController.GroundCheckDistance = 0.25f;
 
             // camera that can pitch + yaw without affecting the collider
             cameraGO = new GameObject(AppData.CAMERA_NAME_FIRST_PERSON);
@@ -726,14 +727,12 @@ namespace GDGame
             camera.FieldOfView = MathHelper.ToRadians(80.0f);
             var mouseLook = cameraGO.AddComponent<MouseYawPitchController>();
    
-
             // Add both objects to the scene so their components are updated
             scene.Add(parentGO);
             scene.Add(cameraGO);
 
             // Make this the active camera
             scene.ActiveCamera = camera;
-
             #endregion
 
             #region Curve camera
@@ -749,9 +748,8 @@ namespace GDGame
             scene.Add(cameraGO);
             #endregion
 
-
             //replace with new SetActiveCamera that searches by string
-            scene.SetActiveCamera(AppData.CAMERA_NAME_INTRO_CURVE);
+            scene.SetActiveCamera(AppData.CAMERA_NAME_FIRST_PERSON);
         }
 
         private AnimationCurve3D BuildCameraPositionCurve(CurveLoopType curveLoopType)

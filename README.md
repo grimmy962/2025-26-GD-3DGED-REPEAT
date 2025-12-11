@@ -2,22 +2,32 @@
 
 ## Table of Contents
 
-- [1. Overview](#1-overview)
-- [2. Module Notes](#2-module-notes)
-- [3. Required Reading](#3-required-reading)
-- [4. Recommended Reading](#4-recommended-reading)
-- [5. Lab Exercises](#5-lab-exercises)
-- [6. Project Folder Structure](#6-project-folder-structure)
-- [7. Design Prompts](#7-design-prompts)
-- [8. Class Diagrams](#8-class-diagrams)
-  - [Core Context & Services](#core-context--services)
-  - [Scene & Systems](#scene--systems)
-  - [Entities & Rendering](#entities--rendering)
-  - [UI & Overlays](#ui--overlays)
-  - [Input, Animation Curves & Orchestration](#input-animation-curves--orchestration)
-- [9. Design Objectives](#9-design-objectives)
-- [10. Useful Links](#10-useful-links)
-- [11. To Do](#11-to-do)
+- [3DGED — Unity-Modeled ECS Engine on MonoGame](#3dged--unity-modeled-ecs-engine-on-monogame)
+  - [Table of Contents](#table-of-contents)
+  - [1. Overview](#1-overview)
+  - [2. Module Notes](#2-module-notes)
+  - [3. Required Reading](#3-required-reading)
+  - [4. Recommended Reading](#4-recommended-reading)
+  - [5. Lab Exercises](#5-lab-exercises)
+  - [6. Project Folder Structure](#6-project-folder-structure)
+  - [7. Design Prompts](#7-design-prompts)
+    - [Scene \& lifecycle](#scene--lifecycle)
+    - [Components vs Systems](#components-vs-systems)
+    - [Transform \& hierarchy](#transform--hierarchy)
+    - [Camera](#camera)
+    - [Geometry \& rendering](#geometry--rendering)
+    - [Input (devices \& targets)](#input-devices--targets)
+    - [Engine services](#engine-services)
+  - [8. Class Diagrams](#8-class-diagrams)
+    - [Core Context \& Services](#core-context--services)
+    - [Scene \& Systems](#scene--systems)
+    - [Entities \& Rendering](#entities--rendering)
+    - [UI \& Overlays](#ui--overlays)
+    - [Input, Animation Curves \& Orchestration](#input-animation-curves--orchestration)
+  - [9. Design Objectives](#9-design-objectives)
+  - [10. Useful Links](#10-useful-links)
+  - [11. Understanding Personas](#11-understanding-personas)
+  - [12. To Do](#12-to-do)
 
 ## 1. Overview
 This repository contains a minimal-but-structured 3D engine scaffold for MonoGame. It adopts Unity-style names and lifecycles so students can transfer knowledge directly: `Scene`, `GameObject`, `Component`, `Transform`, `Camera`, `MeshFilter`, `MeshRenderer`, `SystemBase`, `RenderingSystem`, `InputSystem`, etc. 
@@ -497,7 +507,10 @@ These systems support gameplay logic: input devices feed into the `InputSystem`;
 - [Design Patterns](https://refactoring.guru/design-patterns)
 - [Game Programming Patterns](https://gameprogrammingpatterns.com/contents.html)  
 
-## 11. To Do 
+## 11. Understanding Personas
+- [Understanding Personas](/Notes/Notes%20-%20Understanding%20Personas.md)
+
+## 12. To Do 
 
 - [Weekly Development Plan](ToDo.md)
 
