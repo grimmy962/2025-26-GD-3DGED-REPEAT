@@ -1,8 +1,13 @@
 # 3DGED — Unity-Modeled ECS Engine on MonoGame
 
+## 3DGED Game Engine Documentation
+
+- [Game Engine Documentation](/Docs/README.md)
+
 ## Table of Contents
 
 - [3DGED — Unity-Modeled ECS Engine on MonoGame](#3dged--unity-modeled-ecs-engine-on-monogame)
+  - [3DGED Game Engine Documentation](#3dged-game-engine-documentation)
   - [Table of Contents](#table-of-contents)
   - [1. Overview](#1-overview)
   - [2. Module Notes](#2-module-notes)
@@ -26,7 +31,7 @@
     - [Input, Animation Curves \& Orchestration](#input-animation-curves--orchestration)
   - [9. Design Objectives](#9-design-objectives)
   - [10. Useful Links](#10-useful-links)
-  - [11. Understanding Personas](#11-understanding-personas)
+  - [11. Team Dynamics \& Personas](#11-team-dynamics--personas)
   - [12. To Do](#12-to-do)
 
 ## 1. Overview
@@ -507,7 +512,7 @@ These systems support gameplay logic: input devices feed into the `InputSystem`;
 - [Design Patterns](https://refactoring.guru/design-patterns)
 - [Game Programming Patterns](https://gameprogrammingpatterns.com/contents.html)  
 
-## 11. Understanding Personas
+## 11. Team Dynamics & Personas
 - [Understanding Personas](/Notes/Notes%20-%20Understanding%20Personas.md)
 
 ## 12. To Do 
