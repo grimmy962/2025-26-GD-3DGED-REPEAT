@@ -62,6 +62,7 @@ namespace GDEngine.Core.Components.Controllers.Physics
         // Ground check
         private float _groundCheckDistance = 0.2f;
         private bool _isGrounded;
+        private bool _rotationLockApplied = false;
 
         // Input mapping
         private Keys _forwardKey = Keys.W;
@@ -241,7 +242,7 @@ namespace GDEngine.Core.Components.Controllers.Physics
             _rigidBody.BodyType = BodyType.Dynamic;
             _rigidBody.UseGravity = true;
             _rigidBody.LinearDamping = 0.0f;
-            _rigidBody.AngularDamping = 0.0f;
+            _rigidBody.AngularDamping = 8.0f;
         }
 
 
@@ -421,18 +422,6 @@ namespace GDEngine.Core.Components.Controllers.Physics
         /// </summary>
         private void ConstrainUpright()
         {
-            if (_rigidBody == null)
-            {
-                return;
-            }
-
-            Vector3 angularVelocity = _rigidBody.AngularVelocity;
-
-            // Only allow spin around Y if any; remove pitch/roll.
-            angularVelocity.X = 0.0f;
-            angularVelocity.Z = 0.0f;
-
-            _rigidBody.AngularVelocity = angularVelocity;
         }
         #endregion
 
@@ -455,6 +444,12 @@ namespace GDEngine.Core.Components.Controllers.Physics
             if (_isInputEnabled == false)
             {
                 return;
+            }
+
+            if(!_rotationLockApplied && _rigidBody != null)
+            {
+                _rigidBody.LockAllRotation();
+                _rotationLockApplied = true;
             }
 
             KeyboardState currentKeyboard = Keyboard.GetState();

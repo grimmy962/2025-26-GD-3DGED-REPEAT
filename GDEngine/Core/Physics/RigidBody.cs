@@ -172,6 +172,7 @@ namespace GDEngine.Core.Components
                 if (_bodyType == BodyType.Dynamic && _bodyHandle.HasValue && _physicsSystem != null)
                 {
                     var bodyRef = _physicsSystem.Simulation.Bodies.GetBodyReference(_bodyHandle.Value);
+                    bodyRef.Awake = true;
                     bodyRef.Velocity.Linear = _linearVelocity.ToBepu();
                 }
             }
@@ -261,6 +262,20 @@ namespace GDEngine.Core.Components
             var bodyRef = _physicsSystem.Simulation.Bodies.GetBodyReference(_bodyHandle.Value);
             bodyRef.Velocity.Angular += torque.ToBepu() * 0.1f;
             _angularVelocity = bodyRef.Velocity.Angular.ToXNA();
+        }
+
+        public void LockAllRotation()
+        {
+            if (_bodyType != BodyType.Dynamic || !_bodyHandle.HasValue || _physicsSystem == null)
+                return;
+
+            var bodyRef = _physicsSystem.Simulation.Bodies.GetBodyReference(_bodyHandle.Value);
+
+            bodyRef.LocalInertia = new BodyInertia
+            {
+                InverseMass = bodyRef.LocalInertia.InverseMass,
+                InverseInertiaTensor = default
+            };
         }
 
         /// <summary>
