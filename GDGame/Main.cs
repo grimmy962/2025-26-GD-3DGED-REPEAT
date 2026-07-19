@@ -33,6 +33,8 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using SharpDX.Direct2D1.Effects;
 using Color = Microsoft.Xna.Framework.Color;
+using GDGame.Zones;
+using GDGame.Zones.Shared;
 
 namespace GDGame
 {
@@ -158,7 +160,7 @@ namespace GDGame
             SetPauseShowMenu();
 
             // Set the active scene
-            _sceneManager.SetActiveScene(AppData.LEVEL_1_NAME);
+            _sceneManager.SetActiveScene(HubSceneBuilder.SCENE_NAME);
 
             base.Initialize();
         }
@@ -479,29 +481,29 @@ namespace GDGame
 
         private void InitializeScene()
         {
-            // Make a scene that will store all drawn objects and systems for that level
-            var scene = new Scene(EngineContext.Instance, "outdoors - level 1");
+            var buildContext = new ZoneBuildContext(
+                EngineContext.Instance,
+                _graphics,
+                _sceneManager,
+                _modelDictionary,
+                _textureDictionary,
+                _fontDictionary,
+                _soundDictionary);
 
-            // Add each new scene into the manager
-            _sceneManager.AddScene(AppData.LEVEL_1_NAME, scene);
+            var hubBuilder = new HubSceneBuilder();
+            var hubScene = hubBuilder.Build(buildContext);
 
-            // Set the active scene before anything that uses ActiveScene
-            _sceneManager.SetActiveScene(AppData.LEVEL_1_NAME);
+            _sceneManager.AddScene(hubBuilder.SceneName, hubScene);
+            _sceneManager.SetActiveScene(hubBuilder.SceneName);
         }
 
         private void InitializeSystems()
         {
-            InitializePhysicsSystem();
+            //physics, event, input, camera, render, ui, audio, impulse and iu event system are added by ZoneSystemFactory
+            //only the systems not yet covered by the zone-builder pattern remain here
             InitializePhysicsDebugSystem(true);
-            InitializeEventSystem();  //propagate events  
-            InitializeInputSystem();  //input
-            InitializeCameraAndRenderSystems(); //update cameras, draw renderable game objects, draw ui and menu
-            InitializeAudioSystem();
-            InitializeOrchestrationSystem(false); //show debugger
-            InitializeImpulseSystem();    //camera shake, audio duck volumes etc
-            InitializeUIEventSystem();
-            InitializeGameStateSystem();   //manage and track game state
-                                           //  InitializeNavMeshSystem();
+            InitializeOrchestrationSystem(false);   //show debugger
+            InitializeGameStateSystem();            //manage and track game state
 
             InitializeDebugInfo(true);
         }
