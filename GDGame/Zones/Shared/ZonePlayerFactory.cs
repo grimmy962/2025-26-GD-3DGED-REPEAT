@@ -1,5 +1,8 @@
-﻿using System;
-
+﻿using GDEngine.Core.Components;
+using GDEngine.Core.Components.Controllers.Physics;
+using GDEngine.Core.Entities;
+using GDEngine.Core.Rendering.Base;
+using Microsoft.Xna.Framework;
 
 namespace GDGame.Zones.Shared
 {
