@@ -33,9 +33,9 @@ namespace GDGame.Zones
 			BuildCrates(scene, buildContext);
 			BuildObservableTrigger(scene);
 			BuildRaycastInteractor(scene);
-			BuildReturnPortal(scene);
+            BuildReturnPortal(scene, buildContext);
 
-			ZoneAnnotationFactory.Create(
+            ZoneAnnotationFactory.Create(
 				scene,
 				buildContext.Graphics.GraphicsDevice,
 				buildContext.Fonts.Get("perf_stats_font"),
@@ -85,7 +85,8 @@ namespace GDGame.Zones
 			foreach (var position in positions)
 			{
 				var crate = new GameObject("crate");
-				crate.Transform.TranslateTo(position);
+                crate.Layer = LayerMask.Interactables;
+                crate.Transform.TranslateTo(position);
 				crate.Transform.ScaleTo(Vector3.One);
 
                 var meshFilter = MeshFilterFactory.CreateCubeTexturedLit(buildContext.Graphics.GraphicsDevice);
@@ -135,15 +136,19 @@ namespace GDGame.Zones
 			var interactorGO = new GameObject("Interactor");
 			var interaction = interactorGO.AddComponent<InteractionComponent>();
 			interaction.MaxDistance = 50f;
-			scene.Add(interactorGO);
+            interaction.HitMask = LayerMask.Interactables;
+            scene.Add(interactorGO);
 		}
 
-		private static void BuildReturnPortal(Scene scene)
+		private static void BuildReturnPortal(Scene scene, ZoneBuildContext buildContext)
 		{
 			var portalGO = new GameObject("Portal To Hub");
 			portalGO.Transform.TranslateTo(new Vector3(0f, 1f, -5f));
+            var renderer = portalGO.AddComponent<MeshRenderer>();
+            renderer.Material = buildContext.MatBasicLit;
+            renderer.Overrides.MainTexture = buildContext.Textures.Get("crate1");
 
-			var collider = portalGO.AddComponent<BoxCollider>();
+            var collider = portalGO.AddComponent<BoxCollider>();
 			collider.Size = new Vector3(2f, 3f, 2f);
 			collider.IsTrigger = true;
 

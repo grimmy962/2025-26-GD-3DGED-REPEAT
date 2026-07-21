@@ -422,6 +422,12 @@ namespace GDEngine.Core.Components.Controllers.Physics
         /// </summary>
         private void ConstrainUpright()
         {
+            if (_rigidBody == null)
+            {
+                return;
+            }
+
+            _rigidBody.ForceUprightYawOnly();
         }
         #endregion
 

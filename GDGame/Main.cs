@@ -101,7 +101,7 @@ namespace GDGame
                 var portal = evt.TriggerBody?.GameObject?.GetComponent<ZonePortal>();
                 if (portal != null)
                 {
-                    _sceneManager.SetActiveScene(portal.TargetSceneName);
+                    _pendingSceneName = portal.TargetSceneName;
                 }
             });
 
@@ -198,6 +198,8 @@ namespace GDGame
             _sceneManager = new SceneManager(this);
             Components.Add(_sceneManager);
         }
+
+        private string _pendingSceneName = null;
 
         private void InitializeCameraManagers()
         {
@@ -986,6 +988,12 @@ namespace GDGame
         }
         protected override void Update(GameTime gameTime)
         {
+            if (_pendingSceneName != null)
+            {
+                _sceneManager.SetActiveScene(_pendingSceneName);
+                _pendingSceneName = null;
+            }
+
             //call time update
             #region Core
             Time.Update(gameTime);
