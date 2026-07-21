@@ -95,6 +95,16 @@ namespace GDGame
             // Create the scene and register it
             InitializeScene();
 
+
+            EngineContext.Instance.Events.Subscribe<GDEngine.Core.Events.TriggerEvent>(evt =>
+            {
+                var portal = evt.TriggerBody?.GameObject?.GetComponent<ZonePortal>();
+                if (portal != null)
+                {
+                    _sceneManager.SetActiveScene(portal.TargetSceneName);
+                }
+            });
+
             // Safe to use _sceneManager.ActiveScene from here on
             InitializeSystems();
             InitializeCameras();
@@ -492,9 +502,12 @@ namespace GDGame
 
             var hubBuilder = new HubSceneBuilder();
             var hubScene = hubBuilder.Build(buildContext);
+            var physicsZoneBuilder = new PhysicsZoneBuilder();
+            var physicsZoneScene = physicsZoneBuilder.Build(buildContext);
 
             _sceneManager.AddScene(hubBuilder.SceneName, hubScene);
             _sceneManager.SetActiveScene(hubBuilder.SceneName);
+            _sceneManager.AddScene(physicsZoneBuilder.SceneName, physicsZoneScene);
         }
 
         private void InitializeSystems()

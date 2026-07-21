@@ -1,6 +1,8 @@
 ﻿using GDEngine.Core.Entities;
 using GDEngine.Core.Services;
 using GDGame.Zones.Shared;
+using GDEngine.Core.Rendering;
+using Microsoft.Xna.Framework;
 
 namespace GDGame.Zones
 {
@@ -20,7 +22,28 @@ namespace GDGame.Zones
                 includePhysics: true,
                 gravity: AppData.GRAVITY);
 
+            BuildPortalToPhysicsZone(scene);
+
             return scene;
+        }
+
+
+        private static void BuildPortalToPhysicsZone(Scene scene)
+        {
+            var portalGO = new GameObject("Portal To PhysicsZone");
+            portalGO.Transform.TranslateTo(new Vector3(10f, 1f, 10f));
+
+            var collider = portalGO.AddComponent<GDEngine.Core.Components.BoxCollider>();
+            collider.Size = new Vector3(2f, 3f, 2f);
+            collider.IsTrigger = true;
+
+            var rigidBody = portalGO.AddComponent<GDEngine.Core.Components.RigidBody>();
+            rigidBody.BodyType = GDEngine.Core.Components.BodyType.Static;
+
+            var portal = portalGO.AddComponent<ZonePortal>();
+            portal.TargetSceneName = PhysicsZoneBuilder.SCENE_NAME;
+
+            scene.Add(portalGO);
         }
     }
 }
