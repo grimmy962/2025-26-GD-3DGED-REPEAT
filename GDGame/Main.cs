@@ -498,7 +498,9 @@ namespace GDGame
                 _modelDictionary,
                 _textureDictionary,
                 _fontDictionary,
-                _soundDictionary);
+                _soundDictionary,
+                _matBasicLit,
+                _matBasicUnlitGround);
 
             var hubBuilder = new HubSceneBuilder();
             var hubScene = hubBuilder.Build(buildContext);
@@ -1279,7 +1281,12 @@ namespace GDGame
 
         private void DemoOrchestrationSystem()
         {
-            var orchestrator = _sceneManager.ActiveScene.GetSystem<OrchestrationSystem>().Orchestrator;
+            var orchestrationSystem = _sceneManager.ActiveScene.GetSystem<OrchestrationSystem>();
+            if (orchestrationSystem == null)
+            {
+                return;
+            }
+            var orchestrator = orchestrationSystem.Orchestrator;
 
             bool isPressed = _newKBState.IsKeyDown(Keys.O) && !_oldKBState.IsKeyDown(Keys.O);
             if (isPressed)

@@ -58,7 +58,8 @@ namespace GDGame.Zones
 
 			ground.AddComponent(meshFilter);
 			var renderer = ground.AddComponent<MeshRenderer>();
-			renderer.Overrides.MainTexture = buildContext.Textures.Get("ground_grass");
+            renderer.Material = buildContext.MatBasicUnlitGround;
+            renderer.Overrides.MainTexture = buildContext.Textures.Get("ground_grass");
 
 			var collider = ground.AddComponent<BoxCollider>();
 			collider.Size = new Vector3(GROUND_SCALE, GROUND_SCALE, 0.025f);
@@ -91,7 +92,8 @@ namespace GDGame.Zones
                 crate.AddComponent(meshFilter);
 
                 var renderer = crate.AddComponent<MeshRenderer>();
-				renderer.Overrides.MainTexture = buildContext.Textures.Get("crate1");
+                renderer.Material = buildContext.MatBasicLit;
+                renderer.Overrides.MainTexture = buildContext.Textures.Get("crate1");
 
 				var collider = crate.AddComponent<BoxCollider>();
 				collider.Size = Vector3.One;
