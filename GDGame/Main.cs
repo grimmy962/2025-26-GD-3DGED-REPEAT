@@ -200,6 +200,7 @@ namespace GDGame
         }
 
         private string _pendingSceneName = null;
+        private PhysicsZoneBuilder _physicsZoneBuilder;
 
         private void InitializeCameraManagers()
         {
@@ -506,12 +507,11 @@ namespace GDGame
 
             var hubBuilder = new HubSceneBuilder();
             var hubScene = hubBuilder.Build(buildContext);
-            var physicsZoneBuilder = new PhysicsZoneBuilder();
-            var physicsZoneScene = physicsZoneBuilder.Build(buildContext);
-
+            _physicsZoneBuilder = new PhysicsZoneBuilder();
+            var physicsZoneScene = _physicsZoneBuilder.Build(buildContext);
+            _sceneManager.AddScene(_physicsZoneBuilder.SceneName, physicsZoneScene);
             _sceneManager.AddScene(hubBuilder.SceneName, hubScene);
             _sceneManager.SetActiveScene(hubBuilder.SceneName);
-            _sceneManager.AddScene(physicsZoneBuilder.SceneName, physicsZoneScene);
         }
 
         private void InitializeSystems()
@@ -990,8 +990,14 @@ namespace GDGame
         {
             if (_pendingSceneName != null)
             {
-                _sceneManager.SetActiveScene(_pendingSceneName);
+                string targetScene = _pendingSceneName;
+                _sceneManager.SetActiveScene(targetScene);
                 _pendingSceneName = null;
+
+                if(targetScene == PhysicsZoneBuilder.SCENE_NAME)
+                {
+                    _physicsZoneBuilder.ResetCrates();
+                }
             }
 
             //call time update

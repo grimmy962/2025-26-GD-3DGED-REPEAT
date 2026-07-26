@@ -8,18 +8,24 @@ using GDGame.Demos.Controllers;
 using GDGame.Zones.Shared;
 using Microsoft.Xna.Framework;
 using GDEngine.Core.Factories;
+using System.Collections.Generic;
 
 namespace GDGame.Zones
 {
 	public sealed class PhysicsZoneBuilder : IZoneBuilder
 	{
 		public const string SCENE_NAME = "PhysicsZone";
-		private const int GROUND_SCALE = 100;
+		private const int GROUND_SCALE = 250;
 		public string SceneName => SCENE_NAME;
+		private Scene? _scene;
+		private ZoneBuildContext? _buildContext;
+		private readonly List<GameObject> _crates = new();
 
 		public Scene Build(ZoneBuildContext buildContext)
 		{
 			var scene = new Scene(buildContext.EngineContext, SCENE_NAME);
+			_scene = scene;
+			_buildContext = buildContext;
 
 			ZoneSystemFactory.AddCoreSystems(
 				scene,
@@ -29,8 +35,7 @@ namespace GDGame.Zones
 				gravity: AppData.GRAVITY);
 
 			BuildGround(scene, buildContext);
-			ZonePlayerFactory.Create(scene, new Vector3(0f, 5f, 0f));
-			BuildCrates(scene, buildContext);
+            ZonePlayerFactory.Create(scene, new Vector3(0f, 1.5f, 0f)); BuildCrates(scene, buildContext);
 			BuildObservableTrigger(scene);
 			BuildRaycastInteractor(scene);
             BuildReturnPortal(scene, buildContext);
@@ -41,9 +46,9 @@ namespace GDGame.Zones
 				buildContext.Fonts.Get("perf_stats_font"),
 				systemName: "Physics System",
 				apiUsed: "RigidBody, BoxCollider, PhysicsSystem.RaycastFromScreen(...)",
-				description: "Crates fall and collide with each other and the floor." +
-							 "Look at a crate and left click to remove it (raycast)." +
-							 "Walk into the glowing trigger to exit the scene (you will hear a sound).");
+				description: "Monkeys fall and collide with each other and the floor.\n" +
+							 "Look at a monkey and left click to remove it (raycast).\n" +
+							 "Walk into the teleport to exit the scene (you will hear a sound).");
 			return scene;
 		}
 
@@ -73,38 +78,57 @@ namespace GDGame.Zones
 			scene.Add(ground);
 		}
 
-		private static void BuildCrates(Scene scene, ZoneBuildContext buildContext)
+		private void BuildCrates(Scene scene, ZoneBuildContext buildContext)
 		{
 			Vector3[] positions =
 			{
-				new Vector3(-3f, 6f, 10f),
-				new Vector3(0f, 8f, 10f),
-				new Vector3(3f, 10f, 10f),
-			};
+                new Vector3(0f, 6f, 10f),
+				new Vector3(0.3f, 7f, 10.2f),
+				new Vector3(-0.2f, 8f, 9.8f),
+            };
+
+			var model = buildContext.Models.Get("monkey1");
 
 			foreach (var position in positions)
 			{
-				var crate = new GameObject("crate");
-                crate.Layer = LayerMask.Interactables;
-                crate.Transform.TranslateTo(position);
-				crate.Transform.ScaleTo(Vector3.One);
+				var fallingObject = new GameObject("falling object");
+                fallingObject.Layer = LayerMask.Interactables;
+                fallingObject.Transform.TranslateTo(position);
+				fallingObject.Transform.ScaleTo(Vector3.One);
 
-                var meshFilter = MeshFilterFactory.CreateCubeTexturedLit(buildContext.Graphics.GraphicsDevice);
-                crate.AddComponent(meshFilter);
+                var meshFilter = MeshFilterFactory.CreateFromModel(model, buildContext.Graphics.GraphicsDevice, 0, 0);
+                fallingObject.AddComponent(meshFilter);
 
-                var renderer = crate.AddComponent<MeshRenderer>();
+                var renderer = fallingObject.AddComponent<MeshRenderer>();
                 renderer.Material = buildContext.MatBasicLit;
-                renderer.Overrides.MainTexture = buildContext.Textures.Get("crate1");
+                renderer.Overrides.MainTexture = buildContext.Textures.Get("mona lisa");
 
-				var collider = crate.AddComponent<BoxCollider>();
-				collider.Size = Vector3.One;
+                var collider = fallingObject.AddComponent<SphereCollider>();
+                collider.Diameter = 1.0f;
 
-				var rigidBody = crate.AddComponent<RigidBody>();
+                var rigidBody = fallingObject.AddComponent<RigidBody>();
 				rigidBody.BodyType = BodyType.Dynamic;
 				rigidBody.Mass = 1.0f;
 
-				scene.Add(crate);
+				scene.Add(fallingObject);
+                _crates.Add(fallingObject);
+            }
+		}
+
+		public void ResetCrates()
+		{
+			if(_scene == null || _buildContext == null)
+			{
+				return;
 			}
+
+			foreach (var crate in _crates)
+			{
+				_scene.Remove(crate);
+			}
+
+			_crates.Clear();
+			BuildCrates(_scene, _buildContext);
 		}
 
 		private static void BuildObservableTrigger(Scene scene)
@@ -142,23 +166,27 @@ namespace GDGame.Zones
 
 		private static void BuildReturnPortal(Scene scene, ZoneBuildContext buildContext)
 		{
-			var portalGO = new GameObject("Portal To Hub");
-			portalGO.Transform.TranslateTo(new Vector3(0f, 1f, -5f));
+            var portalGO = new GameObject("Portal To Hub");
+            portalGO.Transform.TranslateTo(new Vector3(0f, 1f, -5f));
+            portalGO.Transform.ScaleTo(new Vector3(2f, 3f, 0.2f));
+
+            var meshFilter = MeshFilterFactory.CreateCubeTexturedLit(buildContext.Graphics.GraphicsDevice);
+            portalGO.AddComponent(meshFilter);
             var renderer = portalGO.AddComponent<MeshRenderer>();
             renderer.Material = buildContext.MatBasicLit;
             renderer.Overrides.MainTexture = buildContext.Textures.Get("crate1");
 
             var collider = portalGO.AddComponent<BoxCollider>();
-			collider.Size = new Vector3(2f, 3f, 2f);
-			collider.IsTrigger = true;
+            collider.Size = new Vector3(2f, 3f, 2f);
+            collider.IsTrigger = true;
 
-			var rigidBody = portalGO.AddComponent<RigidBody>();
-			rigidBody.BodyType = BodyType.Static;
+            var rigidBody = portalGO.AddComponent<RigidBody>();
+            rigidBody.BodyType = BodyType.Static;
 
-			var portal = portalGO.AddComponent<ZonePortal>();
-			portal.TargetSceneName = HubSceneBuilder.SCENE_NAME;
+            var portal = portalGO.AddComponent<ZonePortal>();
+            portal.TargetSceneName = HubSceneBuilder.SCENE_NAME;
 
-			scene.Add(portalGO);
-		}
+            scene.Add(portalGO);
+        }
 	}
 }
