@@ -634,9 +634,7 @@ namespace GDEngine.Core.Systems
                 // For trigger pairs, disable physical response by zeroing material.
                 if (isTriggerPair)
                 {
-                    props.FrictionCoefficient = 0f;
-                    props.MaximumRecoveryVelocity = 0f;
-                    props.SpringSettings = new SpringSettings(0f, 1f);
+                    return false;
                 }
 
                 return true;

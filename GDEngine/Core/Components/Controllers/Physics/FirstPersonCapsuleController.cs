@@ -427,7 +427,10 @@ namespace GDEngine.Core.Components.Controllers.Physics
                 return;
             }
 
-            _rigidBody.ForceUprightYawOnly();
+            Vector3 angularVelocity = _rigidBody.AngularVelocity;
+            angularVelocity.X = 0f;
+            angularVelocity.Z = 0f;
+            _rigidBody.AngularVelocity = angularVelocity;
         }
         #endregion
 
@@ -452,7 +455,7 @@ namespace GDEngine.Core.Components.Controllers.Physics
                 return;
             }
 
-            if(!_rotationLockApplied && _rigidBody != null)
+            if (!_rotationLockApplied && _rigidBody != null)
             {
                 _rigidBody.LockAllRotation();
                 _rotationLockApplied = true;
