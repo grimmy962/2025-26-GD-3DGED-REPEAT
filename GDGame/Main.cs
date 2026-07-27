@@ -507,11 +507,16 @@ namespace GDGame
 
             var hubBuilder = new HubSceneBuilder();
             var hubScene = hubBuilder.Build(buildContext);
+
             _physicsZoneBuilder = new PhysicsZoneBuilder();
             var physicsZoneScene = _physicsZoneBuilder.Build(buildContext);
             _sceneManager.AddScene(_physicsZoneBuilder.SceneName, physicsZoneScene);
             _sceneManager.AddScene(hubBuilder.SceneName, hubScene);
             _sceneManager.SetActiveScene(hubBuilder.SceneName);
+
+            var audioZoneBuilder = new AudioZoneBuilder();
+            var audioZoneScene = audioZoneBuilder.Build(buildContext);
+            _sceneManager.AddScene(audioZoneBuilder.SceneName, audioZoneScene);
         }
 
         private void InitializeSystems()
