@@ -23,6 +23,7 @@ namespace GDGame.Zones
                 gravity: AppData.GRAVITY);
 
             BuildPortalToPhysicsZone(scene);
+            BuildPortalToAudioZone(scene);
 
             return scene;
         }
@@ -42,6 +43,24 @@ namespace GDGame.Zones
 
             var portal = portalGO.AddComponent<ZonePortal>();
             portal.TargetSceneName = PhysicsZoneBuilder.SCENE_NAME;
+
+            scene.Add(portalGO);
+        }
+
+        private static void BuildPortalToAudioZone(Scene scene)
+        {
+            var portalGO = new GameObject("Portal To AudioZone");
+            portalGO.Transform.TranslateTo(new Vector3(-10f, 1f, 10f));
+
+            var collider = portalGO.AddComponent<GDEngine.Core.Components.BoxCollider>();
+            collider.Size = new Vector3(2f, 3f, 2f);
+            collider.IsTrigger = true;
+
+            var rigidBody = portalGO.AddComponent<GDEngine.Core.Components.RigidBody>();
+            rigidBody.BodyType = GDEngine.Core.Components.BodyType.Static;
+
+            var portal = portalGO.AddComponent<ZonePortal>();
+            portal.TargetSceneName = AudioZoneBuilder.SCENE_NAME;
 
             scene.Add(portalGO);
         }
