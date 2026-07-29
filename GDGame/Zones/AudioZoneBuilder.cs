@@ -17,7 +17,7 @@ namespace GDGame.Zones
 		private const int GROUND_SCALE = 100;
 		public string SceneName => SCENE_NAME;
 
-		public Scene Build(ZoneBuildContext buildContext)
+        public Scene Build(ZoneBuildContext buildContext)
 		{
 			var scene = new Scene(buildContext.EngineContext, SCENE_NAME);
 
@@ -30,12 +30,10 @@ namespace GDGame.Zones
 
 			BuildGround(scene, buildContext);
 			ZonePlayerFactory.Create(scene, new Vector3(0f, 1.5f, 0f));
-			BuildSpatialSoundSource(scene, buildContext, "Gunshot Emitter", new Vector3(-8f, 1f, 10f), "hand_gun1");
-			BuildSpatialSoundSource(scene, buildContext, "Laser Emitter", new Vector3(8f, 1f, 10f), "laser_gun_salve");
-			BuildMusicSwitchTrigger(scene);
+            BuildSpatialSoundSource(scene, buildContext, "Gunshot Emitter", new Vector3(-8f, 0.5f, 10f), "hand_gun1");
+            BuildSpatialSoundSource(scene, buildContext, "Laser Emitter", new Vector3(8f, 0.5f, 10f), "laser_gun_salve");
+            BuildMusicSwitchTrigger(scene);
 			BuildReturnPortal(scene, buildContext);
-
-			EngineContext.Instance.Events.Publish(new PlayMusicEvent("secret_door", 0.5f, 2f));
 
 			ZoneAnnotationFactory.Create(
 				scene,
@@ -90,10 +88,12 @@ namespace GDGame.Zones
 			renderer.Material = buildContext.MatBasicLit;
 			renderer.Overrides.MainTexture = buildContext.Textures.Get("checkerboard");
 
-			scene.Add(emitterGO);
+			var emitter = emitterGO.AddComponent<PeriodicSpatialSfxEmitter>();
+			emitter.ClipName = soundKey;
+			emitter.IntervalSeconds = 2.5f;
+			emitter.Volume = 1f;
 
-			EngineContext.Instance.Events.Publish(
-				new PlaySfxEvent(soundKey, 1f, true, emitterGO.Transform));
+			scene.Add(emitterGO);
 		}
 
 		private static void BuildMusicSwitchTrigger(Scene scene)
@@ -152,6 +152,11 @@ namespace GDGame.Zones
             portal.TargetSceneName = HubSceneBuilder.SCENE_NAME;
 
             scene.Add(portalGO);
+        }
+
+        public void StartAmbience()
+        {
+            EngineContext.Instance.Events.Publish(new PlayMusicEvent("secret_door", 0.5f, 2f));
         }
     }
 }
