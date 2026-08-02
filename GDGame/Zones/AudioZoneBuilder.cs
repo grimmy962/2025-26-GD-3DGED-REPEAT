@@ -8,6 +8,7 @@ using GDEngine.Core.Services;
 using GDGame.Demos.Controllers;
 using GDGame.Zones.Shared;
 using Microsoft.Xna.Framework;
+using GDEngine.Core.Timing;
 
 namespace GDGame.Zones
 {
@@ -110,10 +111,19 @@ namespace GDGame.Zones
 
 			scene.Add(triggerGO);
 
+			float lastTriggeredTime = float.NegativeInfinity;
+			const float COOLDOWN_SECONDS = 3f;
+
             EngineContext.Instance.Events.Subscribe<GDEngine.Core.Events.TriggerEvent>(evt =>
             {
                 if (evt.TriggerBody?.GameObject == triggerGO)
                 {
+                    if (Time.TimeSinceStartupSecs - lastTriggeredTime < COOLDOWN_SECONDS)
+                    {
+						return;
+					}
+					lastTriggeredTime = Time.TimeSinceStartupSecs;
+
                     EngineContext.Instance.Events.Publish(new StopMusicEvent(1f));
                     EngineContext.Instance.Events.Publish(new PlayMusicEvent("explosion1", 0.7f, 1f));
                 }
@@ -156,7 +166,7 @@ namespace GDGame.Zones
 
         public void StartAmbience()
         {
-            EngineContext.Instance.Events.Publish(new PlayMusicEvent("secret_door", 0.5f, 2f));
+            EngineContext.Instance.Events.Publish(new PlayMusicEvent("ambient_audio_zone", 0.015f, 2f));
         }
     }
 }

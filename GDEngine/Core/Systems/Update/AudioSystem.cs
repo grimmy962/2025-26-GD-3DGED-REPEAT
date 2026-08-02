@@ -274,7 +274,6 @@ namespace GDEngine.Core.Systems
 
         private readonly AudioListener _listener = new AudioListener();
         private readonly AudioEmitter _emitter = new AudioEmitter();
-
         private SoundEffectInstance? _musicCurrent;
         private SoundEffectInstance? _musicNext;
 
@@ -304,7 +303,7 @@ namespace GDEngine.Core.Systems
         public AudioSystem(ContentDictionary<SoundEffect> sounds)
           : this(sounds, 0)
         {
-
+            SoundEffect.DistanceScale = 4f;
         }
         public AudioSystem(ContentDictionary<SoundEffect> sounds, int order = 0)
             : base(FrameLifecycle.Update, order)

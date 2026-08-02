@@ -997,15 +997,22 @@ namespace GDGame
             if (_pendingSceneName != null)
             {
                 string targetScene = _pendingSceneName;
-                _sceneManager.SetActiveScene(targetScene);
+                string leavingScene = _sceneManager.ActiveSceneName;
                 _pendingSceneName = null;
 
-                if(targetScene == PhysicsZoneBuilder.SCENE_NAME)
+                if (leavingScene == AudioZoneBuilder.SCENE_NAME && targetScene != AudioZoneBuilder.SCENE_NAME)
+                {
+                    EngineContext.Instance.Events.Publish(new StopMusicEvent(1f));
+                }
+
+                EngineContext.Instance.Events.Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Movement_Open_1", 1f));
+                _sceneManager.SetActiveScene(targetScene);
+
+                if (targetScene == PhysicsZoneBuilder.SCENE_NAME)
                 {
                     _physicsZoneBuilder.ResetCrates();
                 }
-
-                else if(targetScene == AudioZoneBuilder.SCENE_NAME)
+                else if (targetScene == AudioZoneBuilder.SCENE_NAME)
                 {
                     _audioZoneBuilder.StartAmbience();
                 }
