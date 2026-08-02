@@ -31,8 +31,8 @@ namespace GDGame.Zones
 
 			BuildGround(scene, buildContext);
 			ZonePlayerFactory.Create(scene, new Vector3(0f, 1.5f, 0f));
-            BuildSpatialSoundSource(scene, buildContext, "Gunshot Emitter", new Vector3(-8f, 0.5f, 10f), "hand_gun1");
-            BuildSpatialSoundSource(scene, buildContext, "Laser Emitter", new Vector3(8f, 0.5f, 10f), "laser_gun_salve");
+            BuildSpatialSoundSource(scene, buildContext, "Gunshot Emitter", new Vector3(-8f, 0.5f, 10f), "hand_gun1", 1f);
+            BuildSpatialSoundSource(scene, buildContext, "Laser Emitter", new Vector3(8f, 0.5f, 10f), "laser_gun_salve", 0.5f);
             BuildMusicSwitchTrigger(scene);
 			BuildReturnPortal(scene, buildContext);
 
@@ -77,7 +77,7 @@ namespace GDGame.Zones
 		}
 
 		private static void BuildSpatialSoundSource(
-			Scene scene, ZoneBuildContext buildContext, string name, Vector3 position, string soundKey)
+			Scene scene, ZoneBuildContext buildContext, string name, Vector3 position, string soundKey, float volume)
 		{
 			var emitterGO = new GameObject(name);
 			emitterGO.Transform.TranslateTo(position);
@@ -92,7 +92,7 @@ namespace GDGame.Zones
 			var emitter = emitterGO.AddComponent<PeriodicSpatialSfxEmitter>();
 			emitter.ClipName = soundKey;
 			emitter.IntervalSeconds = 2.5f;
-			emitter.Volume = 1f;
+			emitter.Volume = volume;
 
 			scene.Add(emitterGO);
 		}
