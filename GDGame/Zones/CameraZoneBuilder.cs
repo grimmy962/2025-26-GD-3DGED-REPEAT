@@ -84,5 +84,99 @@ namespace GDGame.Zones
 		{
 			ZonePlayerFactory.Create(scene, new Vector3(0f, 1.5f, 0f));
 		}
-	}
+
+        private static void BuildThirdPersonCamera(Scene scene)
+        {
+            var cameraGO = new GameObject(CAMERA_THIRD_PERSON);
+            cameraGO.AddComponent<Camera>();
+
+            var thirdPersonController = new ThirdPersonController();
+            thirdPersonController.TargetName = AppData.CAMERA_NAME_FIRST_PERSON_PARENT;
+            thirdPersonController.ShoulderOffset = 0;
+            thirdPersonController.FollowDistance = 10;
+            thirdPersonController.RotationDamping = 20;
+            cameraGO.AddComponent(thirdPersonController);
+
+            scene.Add(cameraGO);
+        }
+		
+		private static BuildCinematicCamera (Scene scene)
+		{
+			var cameraGO = new GameObject(GAME_CINEMATIC);
+			cameraGO.Transform.ROtationEulerBy(new Vector3(MathHelper.ToRadians(-90), 0, 0), true);
+			cameraGO.AddComponent<Camera>();
+
+			var curveController = cameraGO.AddComponent<CurveController>();
+			curveController.PositionCurve = BuildCinematicPositionCurve();
+			curveController.TargetCurve = BuildCinematic TragetCurve();
+			curveController.Duration = 10;
+
+			scene.Add(cameraGO);
+		}
+		
+		private static AnimationCurve3D BuildCInematicTargetCurve()
+		{
+			var curve = new AnimationCurve3D(CurveLoopType.Constant);
+			curve.AddKey(new Vector3(0, 0, 10), 0f);
+			curve.AddKey(new Vector3(0, 0, 10), 1f);
+			return curve;
+		}
+
+		private static void BuildCameraSwitchTrigger(Scene scene, Vector3 position, string name, string targetCameraName)
+		{
+			var triggerGO = new GameObject(name);
+			triggerGO.Transform.TranslateTo(position);
+
+			var collider = triggerGO.AddComponent<BoxCollider>();
+			collider.Size = new Vector3(2f, 3f, 2f);
+			collider.IsTrigger = true;
+
+			var rigidBody = triggerGO.AddComponent<RigidBody>();
+			rigidBody.BodyType = BodyType.Static;
+
+			scene.Add(triggerGO);
+
+			float lastTriggeredTime = float.NegativeInfinity;
+			const float COOLDOWN_SECONDS = 1.5f;
+
+			EngineContext.Instance.Evenets.Subscribe<GDEngine.Core.Events.TriggerEvent>(evt =>
+			{
+				if (evt.TriggerBody?.GameObject == triggerGO)
+				{
+					if (lastTriggeredTime.TimeSinceStartupSecs - lastTriggeredTime < COOLDOWN_SECONDS)
+					{
+						return;
+					}
+					lastTriggeredTime = lastTriggeredTime.TimeSinceStartupSecs;
+
+					scene.SetActiveCamera(targetCameraName);
+				}
+			});
+		}
+
+        private static void BuildReturnPortal(Scene scene, ZoneBuildContext buildContext)
+        {
+            var portalGO = new GameObject("Portal To Hub");
+            portalGO.Transform.TranslateTo(new Vector3(0f, 1f, -5f));
+            portalGO.Transform.ScaleTo(new Vector3(2f, 3f, 0.2f));
+
+            var meshFilter = MeshFilterFactory.CreateCubeTexturedLit(buildContext.Graphics.GraphicsDevice);
+            portalGO.AddComponent(meshFilter);
+            var renderer = portalGO.AddComponent<MeshRenderer>();
+            renderer.Material = buildContext.MatBasicLit;
+            renderer.Overrides.MainTexture = buildContext.Textures.Get("crate1");
+
+            var collider = portalGO.AddComponent<BoxCollider>();
+            collider.Size = new Vector3(2f, 3f, 2f);
+            collider.IsTrigger = true;
+
+            var rigidBody = portalGO.AddComponent<RigidBody>();
+            rigidBody.BodyType = BodyType.Static;
+
+            var portal = portalGO.AddComponent<ZonePortal>();
+            portal.TargetSceneName = HubSceneBuilder.SCENE_NAME;
+
+            scene.Add(portalGO);
+        }
+    }
 }
