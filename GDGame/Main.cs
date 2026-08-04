@@ -518,6 +518,10 @@ namespace GDGame
             _audioZoneBuilder = new AudioZoneBuilder();
             var audioZoneScene = _audioZoneBuilder.Build(buildContext);
             _sceneManager.AddScene(_audioZoneBuilder.SceneName, audioZoneScene);
+
+            var cameraZoneBuilder = new CameraZoneBuilder();
+            var cameraZoneScene = cameraZoneBuilder.Build(buildContext);
+            _sceneManager.AddScene(cameraZoneBuilder.SceneName, cameraZoneScene);
         }
 
         private void InitializeSystems()

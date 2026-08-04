@@ -10,10 +10,11 @@ using Microsoft.Xna.Framework;
 
 namespace GDGame.Zones
 {
-	public sealed class CameraYoneBuilder : IZoneBuilder
+	public sealed class CameraZoneBuilder : IZoneBuilder
 	{
 		public const string SCENE_NAME = "CameraZone";
-		private const int CAMERA_FIRST_PERSON = "CamZone First Person";
+		private const int GROUND_SCALE = 100;
+		private const string CAMERA_FIRST_PERSON = "CamZone First Person";
 		private const string CAMERA_THIRD_PERSON = "CamZone Third Person";
 		private const string CAMERA_CINEMATIC = "CamZone Cinematic";
 
@@ -47,7 +48,7 @@ namespace GDGame.Zones
 				buildContext.Fonts.Get("perf_stats_font"),
 				systemName: "Camera System",
 				apiUsed: "Scene.SetActiveCamera, ThirdPersonController, CurveController",
-				description: "Walk into a camera mode:\n"
+				description: "Walk into a camera mode:\n"+
 							 "left = first-person, mmiddle = third-person, right = cinematic.\n" +
 							 "Switching is driven by collision triggers, not key presses.");
 
@@ -70,9 +71,9 @@ namespace GDGame.Zones
 
 			var collider = ground.AddComponent<BoxCollider>();
 			collider.Size = new Vector3(GROUND_SCALE, GROUND_SCALE, 0.025f);
-			collider.Center = enw Vector3(0, 0, -0.0125f);
+			collider.Center = new Vector3(0, 0, -0.0125f);
 
-			var rigidBpdy = ground.AddComponent<RigidBody>();
+			var rigidBody = ground.AddComponent<RigidBody>();
 			rigidBody.BodyType = BodyType.Static;
 			ground.IsStatic = true;
 			ground.Layer = LayerMask.Ground;
@@ -100,21 +101,30 @@ namespace GDGame.Zones
             scene.Add(cameraGO);
         }
 		
-		private static BuildCinematicCamera (Scene scene)
+		private static void BuildCinematicCamera (Scene scene)
 		{
-			var cameraGO = new GameObject(GAME_CINEMATIC);
-			cameraGO.Transform.ROtationEulerBy(new Vector3(MathHelper.ToRadians(-90), 0, 0), true);
+			var cameraGO = new GameObject(CAMERA_CINEMATIC);
+			cameraGO.Transform.RotateEulerBy(new Vector3(MathHelper.ToRadians(-90), 0, 0), true);
 			cameraGO.AddComponent<Camera>();
 
 			var curveController = cameraGO.AddComponent<CurveController>();
 			curveController.PositionCurve = BuildCinematicPositionCurve();
-			curveController.TargetCurve = BuildCinematic TragetCurve();
+			curveController.TargetCurve = BuildCinematicTargetCurve();
 			curveController.Duration = 10;
 
 			scene.Add(cameraGO);
 		}
-		
-		private static AnimationCurve3D BuildCInematicTargetCurve()
+
+        private static AnimationCurve3D BuildCinematicPositionCurve()
+        {
+            var curve = new AnimationCurve3D(CurveLoopType.Oscillate);
+            curve.AddKey(new Vector3(-15, 12, 5), 0f);
+            curve.AddKey(new Vector3(0, 12, -5), 0.5f);
+            curve.AddKey(new Vector3(15, 12, 5), 1f);
+            return curve;
+        }
+
+        private static AnimationCurve3D BuildCinematicTargetCurve()
 		{
 			var curve = new AnimationCurve3D(CurveLoopType.Constant);
 			curve.AddKey(new Vector3(0, 0, 10), 0f);
@@ -139,15 +149,15 @@ namespace GDGame.Zones
 			float lastTriggeredTime = float.NegativeInfinity;
 			const float COOLDOWN_SECONDS = 1.5f;
 
-			EngineContext.Instance.Evenets.Subscribe<GDEngine.Core.Events.TriggerEvent>(evt =>
+			EngineContext.Instance.Events.Subscribe<GDEngine.Core.Events.TriggerEvent>(evt =>
 			{
 				if (evt.TriggerBody?.GameObject == triggerGO)
 				{
-					if (lastTriggeredTime.TimeSinceStartupSecs - lastTriggeredTime < COOLDOWN_SECONDS)
+					if (Time.TimeSinceStartupSecs - lastTriggeredTime < COOLDOWN_SECONDS)
 					{
 						return;
 					}
-					lastTriggeredTime = lastTriggeredTime.TimeSinceStartupSecs;
+					lastTriggeredTime = Time.TimeSinceStartupSecs;
 
 					scene.SetActiveCamera(targetCameraName);
 				}
@@ -157,7 +167,7 @@ namespace GDGame.Zones
         private static void BuildReturnPortal(Scene scene, ZoneBuildContext buildContext)
         {
             var portalGO = new GameObject("Portal To Hub");
-            portalGO.Transform.TranslateTo(new Vector3(0f, 1f, -5f));
+            portalGO.Transform.TranslateTo(new Vector3(0f, 1f, 20f));
             portalGO.Transform.ScaleTo(new Vector3(2f, 3f, 0.2f));
 
             var meshFilter = MeshFilterFactory.CreateCubeTexturedLit(buildContext.Graphics.GraphicsDevice);
