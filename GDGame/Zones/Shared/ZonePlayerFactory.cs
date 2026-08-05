@@ -12,12 +12,12 @@ namespace GDGame.Zones.Shared
 		private const float DEFAULT_ACCELERATION = 50.0F;
 		private const float DEFAULT_GROUND_FRICTION = 10.0F;
 		private const float DEFAULT_JUMP_IMPULSE = 7.0f;
-		private const float DEFAULT_CAPSULE_RADIUS = 0.05f;
+		private const float DEFAULT_CAPSULE_RADIUS = 0.5f;
 		private const float DEFAULT_CAPSULE_HEIGHT = 1.8f;
 		private const float DEFAULT_GROUND_CHECK_DISTANCE = 0.25f;
 
-		public static void Create(Scene scene, Vector3 spawnPosition)
-		{
+        public static GameObject Create(Scene scene, Vector3 spawnPosition)
+        {
 			var parentGO = new GameObject(AppData.CAMERA_NAME_FIRST_PERSON_PARENT);
 			parentGO.Layer = LayerMask.IgnoreRaycast;
 			parentGO.Transform.TranslateTo(spawnPosition);
@@ -42,6 +42,8 @@ namespace GDGame.Zones.Shared
 			scene.Add(cameraGO);
 
 			scene.SetActiveCamera(AppData.CAMERA_NAME_FIRST_PERSON);
+
+			return parentGO;
 		}
 	}
 }

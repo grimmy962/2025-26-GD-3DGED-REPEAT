@@ -116,11 +116,7 @@ namespace GDEngine.Core.Components
             var world = Matrix.CreateWorld(position, forward, Vector3.Up);
             var desired = Quaternion.CreateFromRotationMatrix(world);
 
-            var current = _transform.Rotation;
-            var delta = Quaternion.Multiply(desired, Quaternion.Inverse(current));
-            delta = Quaternion.Normalize(delta);
-
-            _transform.RotateBy(delta, worldSpace: true);
+            _transform.RotateToWorld(desired);
         }
         #endregion
 

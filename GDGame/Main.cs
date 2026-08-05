@@ -202,6 +202,7 @@ namespace GDGame
         private string _pendingSceneName = null;
         private PhysicsZoneBuilder _physicsZoneBuilder;
         private AudioZoneBuilder _audioZoneBuilder;
+        private CameraZoneBuilder _cameraZoneBuilder;
 
         private void InitializeCameraManagers()
         {
@@ -519,9 +520,9 @@ namespace GDGame
             var audioZoneScene = _audioZoneBuilder.Build(buildContext);
             _sceneManager.AddScene(_audioZoneBuilder.SceneName, audioZoneScene);
 
-            var cameraZoneBuilder = new CameraZoneBuilder();
-            var cameraZoneScene = cameraZoneBuilder.Build(buildContext);
-            _sceneManager.AddScene(cameraZoneBuilder.SceneName, cameraZoneScene);
+            _cameraZoneBuilder = new CameraZoneBuilder();
+            var cameraZoneScene = _cameraZoneBuilder.Build(buildContext);
+            _sceneManager.AddScene(_cameraZoneBuilder.SceneName, cameraZoneScene);
         }
 
         private void InitializeSystems()
@@ -1016,9 +1017,15 @@ namespace GDGame
                 {
                     _physicsZoneBuilder.ResetCrates();
                 }
+
                 else if (targetScene == AudioZoneBuilder.SCENE_NAME)
                 {
                     _audioZoneBuilder.StartAmbience();
+                }
+
+                else if (targetScene == CameraZoneBuilder.SCENE_NAME)
+                {
+                    _cameraZoneBuilder.ResetCamera();
                 }
             }
 

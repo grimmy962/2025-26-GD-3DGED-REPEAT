@@ -77,7 +77,7 @@ namespace GDGame.Zones
         private static void BuildPortalToCameraZone(Scene scene)
         {
             var portalGO = new GameObject("Portal to CameraZone");
-            portalGO.Transform.TranslateTo(new Vector3(0f, 1f, 15f));
+            portalGO.Transform.TranslateTo(new Vector3(-15f, 1f, 0f));
 
             var collider = portalGO.AddComponent<GDEngine.Core.Components.BoxCollider>();
             collider.IsTrigger = true;

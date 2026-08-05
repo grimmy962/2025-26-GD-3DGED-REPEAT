@@ -19,10 +19,13 @@ namespace GDGame.Zones
 		private const string CAMERA_CINEMATIC = "CamZone Cinematic";
 
 		public string SceneName => SCENE_NAME;
+        private Scene? _scene;
+        private static MeshRenderer? _bodyRenderer;
 
-		public Scene Build(ZoneBuildContext buildContext)
+        public Scene Build(ZoneBuildContext buildContext)
 		{
 			var scene = new Scene(buildContext.EngineContext, SCENE_NAME);
+			_scene = scene;
 
 			ZoneSystemFactory.AddCoreSystems(
 				scene,
@@ -32,13 +35,13 @@ namespace GDGame.Zones
 				gravity: AppData.GRAVITY);
 
 			BuildGround(scene, buildContext);
-			BuildFirstPersonCamera(scene);
-			BuildThirdPersonCamera(scene);
+            BuildFirstPersonCamera(scene, buildContext);
+            BuildThirdPersonCamera(scene);
 			BuildCinematicCamera(scene);
 
-			BuildCameraSwitchTrigger(scene, new Vector3(-6f, 1f, 10f), "Switch to first-person", CAMERA_FIRST_PERSON);
-			BuildCameraSwitchTrigger(scene, new Vector3(0f, 1f, 10f), "Switch to third-person", CAMERA_THIRD_PERSON);
-			BuildCameraSwitchTrigger(scene, new Vector3(6f, 1f, 10f), "Switch to cinematic", CAMERA_CINEMATIC);
+            BuildCameraSwitchTrigger(scene, buildContext, new Vector3(-6f, 1f, 10f), "Switch to first-person", AppData.CAMERA_NAME_FIRST_PERSON); 
+			BuildCameraSwitchTrigger(scene, buildContext, new Vector3(0f, 1f, 10f), "Switch to third-person", CAMERA_THIRD_PERSON);
+			BuildCameraSwitchTrigger(scene, buildContext, new Vector3(6f, 1f, 10f), "Switch to cinematic", CAMERA_CINEMATIC);
 
 			BuildReturnPortal(scene, buildContext);
 
@@ -81,10 +84,26 @@ namespace GDGame.Zones
 			scene.Add(ground);
 		}
 
-		private static void BuildFirstPersonCamera(Scene scene)
-		{
-			ZonePlayerFactory.Create(scene, new Vector3(0f, 1.5f, 0f));
-		}
+        private static void BuildFirstPersonCamera(Scene scene, ZoneBuildContext buildContext)
+        {
+            var parentGO = ZonePlayerFactory.Create(scene, new Vector3(0f, 1.5f, 0f));
+
+            var bodyGO = new GameObject("Player Body");
+            bodyGO.Transform.SetParent(parentGO.Transform);
+            bodyGO.Transform.TranslateTo(new Vector3(0f, 0.5f, 0f));
+            bodyGO.Transform.ScaleTo(new Vector3(0.8f, 0.8f, 0.8f));
+
+            var model = buildContext.Models.Get("monkey1");
+            var meshFilter = MeshFilterFactory.CreateFromModel(model, buildContext.Graphics.GraphicsDevice, 0, 0);
+            bodyGO.AddComponent(meshFilter);
+
+            _bodyRenderer = bodyGO.AddComponent<MeshRenderer>();
+            _bodyRenderer.Material = buildContext.MatBasicLit;
+            _bodyRenderer.Overrides.MainTexture = buildContext.Textures.Get("mona lisa");
+            _bodyRenderer.Enabled = false; // hidden by default (game starts in first-person)
+
+            scene.Add(bodyGO);
+        }
 
         private static void BuildThirdPersonCamera(Scene scene)
         {
@@ -132,37 +151,49 @@ namespace GDGame.Zones
 			return curve;
 		}
 
-		private static void BuildCameraSwitchTrigger(Scene scene, Vector3 position, string name, string targetCameraName)
-		{
-			var triggerGO = new GameObject(name);
-			triggerGO.Transform.TranslateTo(position);
+        private static void BuildCameraSwitchTrigger(Scene scene, ZoneBuildContext buildContext, Vector3 position, string name, string targetCameraName)
+        {
+            var triggerGO = new GameObject(name);
+            triggerGO.Transform.TranslateTo(position);
+            triggerGO.Transform.ScaleTo(new Vector3(1.5f, 3f, 0.2f));
 
-			var collider = triggerGO.AddComponent<BoxCollider>();
-			collider.Size = new Vector3(2f, 3f, 2f);
-			collider.IsTrigger = true;
+            var meshFilter = MeshFilterFactory.CreateCubeTexturedLit(buildContext.Graphics.GraphicsDevice);
+            triggerGO.AddComponent(meshFilter);
+            var renderer = triggerGO.AddComponent<MeshRenderer>();
+            renderer.Material = buildContext.MatBasicLit;
+            renderer.Overrides.MainTexture = buildContext.Textures.Get("checkerboard");
 
-			var rigidBody = triggerGO.AddComponent<RigidBody>();
-			rigidBody.BodyType = BodyType.Static;
+            var collider = triggerGO.AddComponent<BoxCollider>();
+            collider.Size = new Vector3(2f, 3f, 2f);
+            collider.IsTrigger = true;
 
-			scene.Add(triggerGO);
+            var rigidBody = triggerGO.AddComponent<RigidBody>();
+            rigidBody.BodyType = BodyType.Static;
 
-			float lastTriggeredTime = float.NegativeInfinity;
-			const float COOLDOWN_SECONDS = 1.5f;
+            scene.Add(triggerGO);
 
-			EngineContext.Instance.Events.Subscribe<GDEngine.Core.Events.TriggerEvent>(evt =>
-			{
-				if (evt.TriggerBody?.GameObject == triggerGO)
-				{
-					if (Time.TimeSinceStartupSecs - lastTriggeredTime < COOLDOWN_SECONDS)
-					{
-						return;
-					}
-					lastTriggeredTime = Time.TimeSinceStartupSecs;
+            float lastTriggeredTime = float.NegativeInfinity;
+            const float COOLDOWN_SECONDS = 1.5f;
 
-					scene.SetActiveCamera(targetCameraName);
-				}
-			});
-		}
+            EngineContext.Instance.Events.Subscribe<GDEngine.Core.Events.TriggerEvent>(evt =>
+            {
+                if (evt.TriggerBody?.GameObject == triggerGO)
+                {
+                    if (Time.TimeSinceStartupSecs - lastTriggeredTime < COOLDOWN_SECONDS)
+                    {
+                        return;
+                    }
+                    lastTriggeredTime = Time.TimeSinceStartupSecs;
+
+                    scene.SetActiveCamera(targetCameraName);
+
+                    if (_bodyRenderer != null)
+                    {
+                        _bodyRenderer.Enabled = targetCameraName != AppData.CAMERA_NAME_FIRST_PERSON;
+                    }
+                }
+            });
+        }
 
         private static void BuildReturnPortal(Scene scene, ZoneBuildContext buildContext)
         {
@@ -188,5 +219,10 @@ namespace GDGame.Zones
 
             scene.Add(portalGO);
         }
+
+		public void ResetCamera()
+		{
+			_scene?.SetActiveCamera(AppData.CAMERA_NAME_FIRST_PERSON);
+		}
     }
 }
