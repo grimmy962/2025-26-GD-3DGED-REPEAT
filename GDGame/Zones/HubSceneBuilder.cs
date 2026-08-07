@@ -26,6 +26,7 @@ namespace GDGame.Zones
             BuildPortalToPhysicsZone(scene, buildContext);
             BuildPortalToAudioZone(scene);
             BuildPortalToCameraZone(scene);
+            BuildPortalToOrchestrationZone(scene, buildContext);
 
             return scene;
         }
@@ -87,6 +88,31 @@ namespace GDGame.Zones
 
             var portal = portalGO.AddComponent<ZonePortal>();
             portal.TargetSceneName = CameraZoneBuilder.SCENE_NAME;
+
+            scene.Add(portalGO);
+        }
+
+        private static void BuildPortalToOrchestrationZone(Scene scene, ZoneBuildContext buildContext)
+        {
+            var portalGO = new GameObject("Portal to OrchestrationZone");
+            portalGO.Transform.TranslateTo(new Vector3(15f, 1f, 0f));
+            portalGO.Transform.ScaleTo(new Vector3(2f, 3f, 0.2f));
+
+            var meshFilter = MeshFilterFactory.CreateCubeTexturedLit(buildContext.Graphics.GraphicsDevice);
+            portalGO.AddComponent(meshFilter);
+            var renderer = portalGO.AddComponent<MeshRenderer>();
+            renderer.Material = buildContext.MatBasicLit;
+            renderer.Overrides.MainTexture = buildContext.Textures.Get("crate1");
+
+            var collider = portalGO.AddComponent<GDEngine.Core.Components.BoxCollider>();
+            collider.Size = new Vector3(2f, 3f, 2f);
+            collider.IsTrigger = true;
+
+            var rigidBody = portalGO.AddComponent<GDEngine.Core.Components.RigidBody>();
+            rigidBody.BodyType = GDEngine.Core.Components.BodyType.Static;
+
+            var portal = portalGO.AddComponent<ZonePortal>();
+            portal.TargetSceneName = OrchestrationZoneBuilder.SCENE_NAME;
 
             scene.Add(portalGO);
         }

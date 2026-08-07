@@ -523,6 +523,10 @@ namespace GDGame
             _cameraZoneBuilder = new CameraZoneBuilder();
             var cameraZoneScene = _cameraZoneBuilder.Build(buildContext);
             _sceneManager.AddScene(_cameraZoneBuilder.SceneName, cameraZoneScene);
+
+            var orchestrationZoneBuilder = new OrchestrationZoneBuilder();
+            var orchestrationZoneScene = orchestrationZoneBuilder.Build(buildContext);
+            _sceneManager.AddScene(orchestrationZoneBuilder.SceneName, orchestrationZoneScene);
         }
 
         private void InitializeSystems()
