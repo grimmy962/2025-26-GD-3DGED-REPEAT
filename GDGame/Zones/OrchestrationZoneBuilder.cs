@@ -50,7 +50,7 @@ namespace GDGame.Zones
 			var artifactGO = BuildRitualArtifact(scene, buildContext);
 			var statusTextProvider = BuildStatusText(scene, buildContext);
 
-		//	RegisterRitualSequence(orchestrationSystem, artifactGO, statusTextProvider);
+			RegisterRitualSequence(orchestrationSystem, artifactGO, statusTextProvider);
 		//	BuildTrigger(scene, orchestrationSystem);
 
 		//	BuildReturnPortal(scene, buildContext);
@@ -126,6 +126,30 @@ namespace GDGame.Zones
 
 			scene.Add(statusGO);
 			return textHolder;
+		}
+
+		private static void RegisterRitualSequence(
+			OrchestrationSystem orchestrationSystem, GameObject artifactGO, string[] statusText)
+		{
+			var orchestrator = orchestrationSystem.Orchestrator;
+
+			orchestrator.Build(SEQUENCE_NAME)
+				.Do(api => statusText[0] = "Theritual begins...")
+				.WaitSeconds(1.5f)
+				.Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Generic_1", 1f, false, null))
+				.Do(api => statusText[0] = "The artifact begins to rise...")
+				.Do(api => artifactGO.Transform.TranslateBy(new Vector3(0f, ARTIFACT_RISE_TARGET_Y, 0f)))
+				.WaitSeconds(1.5f)
+				.If(
+					ctx => artifactGO.Transform.Position.Y >= ARTIFACT_RISE_TARGET_Y - 0.1f,
+					thenBranch: then => then
+						.Do(api => statusText[0] = "The ritual succeeded!")
+						.Publish(new PlaySfxEvent("explosion1", 1f, false, null)),
+					elseBranch: otherwise => otherwise
+						.Do(api => statusText[0] = "The ritual failed..."))
+				.WaitSeconds(2.5f)
+				.Do(api => statusText[0] = "Walk into the trigger to begin.")
+				.Register();
 		}
     }
 }
