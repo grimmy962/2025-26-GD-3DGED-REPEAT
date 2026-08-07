@@ -48,7 +48,7 @@ namespace GDGame.Zones
 			ZonePlayerFactory.Create(scene, new Vector3(0f, 1.5f, 0f));
 
 			var artifactGO = BuildRitualArtifact(scene, buildContext);
-		//	var statusTextProvider = BuildStatusText(scene, buildContext);
+			var statusTextProvider = BuildStatusText(scene, buildContext);
 
 		//	RegisterRitualSequence(orchestrationSystem, artifactGO, statusTextProvider);
 		//	BuildTrigger(scene, orchestrationSystem);
@@ -108,6 +108,24 @@ namespace GDGame.Zones
 
 			scene.Add(artifactGO);
 			return artifactGO;
+		}
+
+		private static string[] BuildStatusText(Scene scene, ZoneBuildContext buildContext)
+		{
+			var textHolder = new string[] { "Walk into the trigger to begin." };
+
+			var statusGO = new GameObject("Ritual Status Text");
+			var uiText = statusGO.AddComponent<UIText>();
+			uiText.Font = buildContext.Fonts.Get("perf_stats_font");
+			uiText.TextProvider = () => textHolder[0];
+			uiText.PositionProvider = () => new Vector2(
+				buildContext.Graphics.GraphicsDevice.Viewport.Width / 2f, 60f);
+			uiText.Anchor = TextAnchor.Top;
+			uiText.FallbackColor = Color.Gold;
+			uiText.DropShadow = true;
+
+			scene.Add(statusGO);
+			return textHolder;
 		}
     }
 }
