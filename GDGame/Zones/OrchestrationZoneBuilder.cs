@@ -51,7 +51,7 @@ namespace GDGame.Zones
 			var statusTextProvider = BuildStatusText(scene, buildContext);
 
 			RegisterRitualSequence(orchestrationSystem, artifactGO, statusTextProvider);
-		//	BuildTrigger(scene, orchestrationSystem);
+			BuildStartTrigger(scene, orchestrationSystem);
 
 		//	BuildReturnPortal(scene, buildContext);
 
@@ -150,6 +150,42 @@ namespace GDGame.Zones
 				.WaitSeconds(2.5f)
 				.Do(api => statusText[0] = "Walk into the trigger to begin.")
 				.Register();
+		}
+
+		private static void BuildStartTrigger(Scene scene, OrchestrationSystem orchestrationSystem)
+		{
+			var triggerGO = new GameObject("Start Ritual Trigger");
+			triggerGO.Transform.TranslateTo(new Vector3(0f, 1f, 5f));
+
+			var meshFilter = MeshFilterFactory.CreateCubeTexturedLit(EngineContext.Instance.GraphicsDevice);
+			triggerGO.AddComponent(meshFilter);
+			triggerGO.AddComponent<MeshRenderer>();
+
+			var collider = triggerGO.AddComponent<BoxCollider>();
+			collider.Size = new Vector3(2f, 3f, 2f);
+			collider.IsTrigger = true;
+
+			var rigidBody = triggerGO.AddComponent<RigidBody>();
+			rigidBody.BodyType = BodyType.Static;
+
+			scene.Add(triggerGO);
+
+			float lastTriggeredTime = float.NegativeInfinity;
+			const float COOLDOWN_SECONDS = 8f;
+
+			EngineContext.Instance.Events.Subscribe<TriggerEvent>(evt =>
+			{
+                if (evt.TriggerBody?.GameObject == triggerGO)
+                {
+                    if (Time.TimeSinceStartupSecs - lastTriggeredTime < COOLDOWN_SECONDS)
+                    {
+                        return;
+                    }
+                    lastTriggeredTime = Time.TimeSinceStartupSecs;
+
+                    orchestrationSystem.Orchestrator.Start(SEQUENCE_NAME, scene, EngineContext.Instance);
+                }
+            });
 		}
     }
 }
