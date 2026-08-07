@@ -53,17 +53,17 @@ namespace GDGame.Zones
 			RegisterRitualSequence(orchestrationSystem, artifactGO, statusTextProvider);
 			BuildStartTrigger(scene, orchestrationSystem);
 
-		//	BuildReturnPortal(scene, buildContext);
+			BuildReturnPortal(scene, buildContext);
 
-		//	ZoneAnnotationFactory.Create(
-		//		scene,
-		//		buildContext.Graphics.GraphicsDevice,
-		//		buildContext.Fonts.Get("perf_stats_font"),
-		//		systemName: "Orchestration System",
-		//		apiUsed: "OrchestrationSystem, Orchestrator.Builder (WaitSeconds, Publish, Do, If)",
-		//		description: "Walk into the glowing trigger to start the ritual sequence.\n"+
-		//					 "8 steps span UI, Audio, and Transform, including a conditional\n"+
-		//					 "step that changes the outcome message.")
+			ZoneAnnotationFactory.Create(
+				scene,
+				buildContext.Graphics.GraphicsDevice,
+				buildContext.Fonts.Get("perf_stats_font"),
+				systemName: "Orchestration System",
+				apiUsed: "OrchestrationSystem, Orchestrator.Builder (WaitSeconds, Publish, Do, If)",
+				description: "Walk into the glowing trigger to start the ritual sequence.\n" +
+							 "8 steps span UI, Audio, and Transform, including a conditional\n" +
+							 "step that changes the outcome message.");
 			return scene;
 		}
 
@@ -186,6 +186,31 @@ namespace GDGame.Zones
                     orchestrationSystem.Orchestrator.Start(SEQUENCE_NAME, scene, EngineContext.Instance);
                 }
             });
+		}
+
+		private static void BuildReturnPortal(Scene scene, ZoneBuildContext buildContext)
+		{
+			var portalGO = new GameObject("Portal to Hub");
+			portalGO.Transform.TranslateTo(new Vector3(0f, 1f, -5f));
+			portalGO.Transform.ScaleTo(new Vector3(2f, 3f, 0.2f));
+
+			var meshFilter = MeshFilterFactory.CreateCubeTexturedLit(buildContext.Graphics.GraphicsDevice);
+			portalGO.AddComponent(meshFilter);
+			var renderer = portalGO.AddComponent<MeshRenderer>();
+			renderer.Material = buildContext.MatBasicLit;
+			renderer.Overrides.MainTexture = buildContext.Textures.Get("crate1");
+
+			var collider = portalGO.AddComponent<BoxCollider>();
+			collider.Size = new Vector3(2f, 3f, 2f);
+			collider.IsTrigger = true;
+
+			var rigidBody = portalGO.AddComponent<RigidBody>();
+			rigidBody.BodyType = BodyType.Static;
+
+			var portal = portalGO.AddComponent<ZonePortal>();
+			portal.TargetSceneName = HubSceneBuilder.SCENE_NAME;
+
+			scene.Add(portalGO);
 		}
     }
 }
