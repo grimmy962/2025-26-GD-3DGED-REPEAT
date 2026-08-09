@@ -20,6 +20,9 @@ namespace GDGame.Zones
 		private const string SEQUENCE_NAME = "artifact_ritual";
 		private const float ARTIFACT_RISE_TARGET_Y = 3.5f;
         private const int GROUND_SCALE = 100;
+		private GameObject? _artifactGO;
+		private string[]? _statusText;
+		private Vector3 _artifactStartPosition;
 
         public string SceneName => SCENE_NAME;
 
@@ -48,10 +51,14 @@ namespace GDGame.Zones
 			ZonePlayerFactory.Create(scene, new Vector3(0f, 1.5f, 0f));
 
 			var artifactGO = BuildRitualArtifact(scene, buildContext);
-			var statusTextProvider = BuildStatusText(scene, buildContext);
+			_artifactGO = artifactGO;
+			_artifactStartPosition = artifactGO.Transform.Position;
 
-			RegisterRitualSequence(orchestrationSystem, artifactGO, statusTextProvider);
-			BuildStartTrigger(scene, orchestrationSystem);
+			var statusText = BuildStatusText(scene, buildContext);
+			_statusText = statusText;
+
+			RegisterRitualSequence(orchestrationSystem, artifactGO, statusText);
+			BuildStartTrigger(scene, buildContext, orchestrationSystem);
 
 			BuildReturnPortal(scene, buildContext);
 
@@ -152,16 +159,18 @@ namespace GDGame.Zones
 				.Register();
 		}
 
-		private static void BuildStartTrigger(Scene scene, OrchestrationSystem orchestrationSystem)
+		private static void BuildStartTrigger(Scene scene, ZoneBuildContext buildContext, OrchestrationSystem orchestrationSystem)
 		{
 			var triggerGO = new GameObject("Start Ritual Trigger");
-			triggerGO.Transform.TranslateTo(new Vector3(0f, 1f, 5f));
+			triggerGO.Transform.TranslateTo(new Vector3(0f, 1.5f, 5f));
 
-			var meshFilter = MeshFilterFactory.CreateCubeTexturedLit(EngineContext.Instance.GraphicsDevice);
-			triggerGO.AddComponent(meshFilter);
-			triggerGO.AddComponent<MeshRenderer>();
+            var meshFilter = MeshFilterFactory.CreateCubeTexturedLit(buildContext.Graphics.GraphicsDevice);
+            triggerGO.AddComponent(meshFilter);
+            var renderer = triggerGO.AddComponent<MeshRenderer>();
+            renderer.Material = buildContext.MatBasicLit;
+            renderer.Overrides.MainTexture = buildContext.Textures.Get("checkerboard");
 
-			var collider = triggerGO.AddComponent<BoxCollider>();
+            var collider = triggerGO.AddComponent<BoxCollider>();
 			collider.Size = new Vector3(2f, 3f, 2f);
 			collider.IsTrigger = true;
 
@@ -183,6 +192,7 @@ namespace GDGame.Zones
                     }
                     lastTriggeredTime = Time.TimeSinceStartupSecs;
 
+					EngineContext.Instance.Events.Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Movement_Open_1", 1f, false, null));
                     orchestrationSystem.Orchestrator.Start(SEQUENCE_NAME, scene, EngineContext.Instance);
                 }
             });
@@ -191,7 +201,7 @@ namespace GDGame.Zones
 		private static void BuildReturnPortal(Scene scene, ZoneBuildContext buildContext)
 		{
 			var portalGO = new GameObject("Portal to Hub");
-			portalGO.Transform.TranslateTo(new Vector3(0f, 1f, -5f));
+			portalGO.Transform.TranslateTo(new Vector3(0f, 1.5f, -5f));
 			portalGO.Transform.ScaleTo(new Vector3(2f, 3f, 0.2f));
 
 			var meshFilter = MeshFilterFactory.CreateCubeTexturedLit(buildContext.Graphics.GraphicsDevice);
@@ -211,6 +221,19 @@ namespace GDGame.Zones
 			portal.TargetSceneName = HubSceneBuilder.SCENE_NAME;
 
 			scene.Add(portalGO);
+		}
+
+		public void ResetRitual()
+		{
+			if(_artifactGO != null)
+			{
+				_artifactGO.Transform.TranslateTo(_artifactStartPosition);
+			}
+
+			if(_statusText != null)
+			{
+				_statusText[0] = "Walk into the trigger to begin...";
+			}
 		}
     }
 }

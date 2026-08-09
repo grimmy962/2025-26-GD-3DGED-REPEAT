@@ -39,9 +39,9 @@ namespace GDGame.Zones
             BuildThirdPersonCamera(scene);
 			BuildCinematicCamera(scene);
 
-            BuildCameraSwitchTrigger(scene, buildContext, new Vector3(-6f, 1f, 10f), "Switch to first-person", AppData.CAMERA_NAME_FIRST_PERSON); 
-			BuildCameraSwitchTrigger(scene, buildContext, new Vector3(0f, 1f, 10f), "Switch to third-person", CAMERA_THIRD_PERSON);
-			BuildCameraSwitchTrigger(scene, buildContext, new Vector3(6f, 1f, 10f), "Switch to cinematic", CAMERA_CINEMATIC);
+            BuildCameraSwitchTrigger(scene, buildContext, new Vector3(-6f, 1.5f, 10f), "Switch to first-person", AppData.CAMERA_NAME_FIRST_PERSON); 
+			BuildCameraSwitchTrigger(scene, buildContext, new Vector3(0f, 1.5f, 10f), "Switch to third-person", CAMERA_THIRD_PERSON);
+			BuildCameraSwitchTrigger(scene, buildContext, new Vector3(6f, 1.5f, 10f), "Switch to cinematic", CAMERA_CINEMATIC);
 
 			BuildReturnPortal(scene, buildContext);
 
@@ -198,7 +198,7 @@ namespace GDGame.Zones
         private static void BuildReturnPortal(Scene scene, ZoneBuildContext buildContext)
         {
             var portalGO = new GameObject("Portal To Hub");
-            portalGO.Transform.TranslateTo(new Vector3(0f, 1f, 20f));
+            portalGO.Transform.TranslateTo(new Vector3(0f, 1.5f, 20f));
             portalGO.Transform.ScaleTo(new Vector3(2f, 3f, 0.2f));
 
             var meshFilter = MeshFilterFactory.CreateCubeTexturedLit(buildContext.Graphics.GraphicsDevice);

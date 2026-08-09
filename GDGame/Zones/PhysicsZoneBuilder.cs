@@ -134,7 +134,7 @@ namespace GDGame.Zones
 		private static void BuildObservableTrigger(Scene scene)
 		{
 			var triggerGO = new GameObject("Physics Observable Trigger");
-			triggerGO.Transform.TranslateTo(new Vector3(6f, 1f, 5f));
+			triggerGO.Transform.TranslateTo(new Vector3(6f, 1.5f, 5f));
 
 			var collider = triggerGO.AddComponent<BoxCollider>();
 			collider.Size = new Vector3(2f, 3f, 2f);
@@ -167,7 +167,7 @@ namespace GDGame.Zones
 		private static void BuildReturnPortal(Scene scene, ZoneBuildContext buildContext)
 		{
             var portalGO = new GameObject("Portal To Hub");
-            portalGO.Transform.TranslateTo(new Vector3(0f, 1f, -5f));
+            portalGO.Transform.TranslateTo(new Vector3(0f, 1.5f, -5f));
             portalGO.Transform.ScaleTo(new Vector3(2f, 3f, 0.2f));
 
             var meshFilter = MeshFilterFactory.CreateCubeTexturedLit(buildContext.Graphics.GraphicsDevice);

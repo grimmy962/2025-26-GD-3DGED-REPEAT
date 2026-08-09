@@ -35,7 +35,7 @@ namespace GDGame.Zones
         private static void BuildPortalToPhysicsZone(Scene scene, ZoneBuildContext buildContext)
         {
             var portalGO = new GameObject("Portal To PhysicsZone");
-            portalGO.Transform.TranslateTo(new Vector3(10f, 1f, 10f));
+            portalGO.Transform.TranslateTo(new Vector3(20f, 1.5f, 20f));
             portalGO.Transform.ScaleTo(new Vector3(2f, 3f, 0.2f));
 
             var meshFilter = MeshFilterFactory.CreateCubeTexturedLit(buildContext.Graphics.GraphicsDevice);
@@ -60,7 +60,8 @@ namespace GDGame.Zones
         private static void BuildPortalToAudioZone(Scene scene)
         {
             var portalGO = new GameObject("Portal To AudioZone");
-            portalGO.Transform.TranslateTo(new Vector3(-10f, 1f, 10f));
+            portalGO.Transform.TranslateTo(new Vector3(-20f, 1.5f, 20f));
+            portalGO.Transform.ScaleTo(new Vector3(2f, 3f, 0.2f));
 
             var collider = portalGO.AddComponent<GDEngine.Core.Components.BoxCollider>();
             collider.Size = new Vector3(2f, 3f, 2f);
@@ -78,7 +79,8 @@ namespace GDGame.Zones
         private static void BuildPortalToCameraZone(Scene scene)
         {
             var portalGO = new GameObject("Portal to CameraZone");
-            portalGO.Transform.TranslateTo(new Vector3(-15f, 1f, 0f));
+            portalGO.Transform.TranslateTo(new Vector3(-20f, 1.5f, -20f));
+            portalGO.Transform.ScaleTo(new Vector3(2f, 3f, 0.2f));
 
             var collider = portalGO.AddComponent<GDEngine.Core.Components.BoxCollider>();
             collider.IsTrigger = true;
@@ -95,7 +97,7 @@ namespace GDGame.Zones
         private static void BuildPortalToOrchestrationZone(Scene scene, ZoneBuildContext buildContext)
         {
             var portalGO = new GameObject("Portal to OrchestrationZone");
-            portalGO.Transform.TranslateTo(new Vector3(15f, 1f, 0f));
+            portalGO.Transform.TranslateTo(new Vector3(20f, 1.5f, -20f));
             portalGO.Transform.ScaleTo(new Vector3(2f, 3f, 0.2f));
 
             var meshFilter = MeshFilterFactory.CreateCubeTexturedLit(buildContext.Graphics.GraphicsDevice);
