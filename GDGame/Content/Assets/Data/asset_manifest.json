@@ -164,6 +164,14 @@
       "contentPath": "assets/sounds/ambient_audio_zone"
     },
     {
+      "name": "ambient_audio_zone_2",
+      "contentPath": "assets/sounds/ambient_audio_zone_2"
+    },
+    {
+      "name": "ambient_audio_zone_3",
+      "contentPath": "assets/sounds/ambient_audio_zone_3"
+    },
+    {
       "name": "SFX_UI_Click_Designed_Pop_Generic_1",
       "contentPath": "assets/sounds/ui/SFX_UI_Click_Designed_Pop_Generic_1"
     },

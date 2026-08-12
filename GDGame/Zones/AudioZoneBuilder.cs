@@ -33,8 +33,9 @@ namespace GDGame.Zones
 			ZonePlayerFactory.Create(scene, new Vector3(0f, 1.5f, 0f));
             BuildSpatialSoundSource(scene, buildContext, "Gunshot Emitter", new Vector3(-8f, 0.5f, 10f), "hand_gun1", 1f);
             BuildSpatialSoundSource(scene, buildContext, "Laser Emitter", new Vector3(8f, 0.5f, 10f), "laser_gun_salve", 0.5f);
-            BuildMusicSwitchTrigger(scene);
-			BuildReturnPortal(scene, buildContext);
+            BuildMusicSwitchTrigger(scene, buildContext);
+            BuildRaycastInteractor(scene);
+            BuildReturnPortal(scene, buildContext);
 
 			ZoneAnnotationFactory.Create(
 				scene,
@@ -80,7 +81,8 @@ namespace GDGame.Zones
 			Scene scene, ZoneBuildContext buildContext, string name, Vector3 position, string soundKey, float volume)
 		{
 			var emitterGO = new GameObject(name);
-			emitterGO.Transform.TranslateTo(position);
+            emitterGO.Layer = LayerMask.Interactables;
+            emitterGO.Transform.TranslateTo(position);
 			emitterGO.Transform.ScaleTo(Vector3.One);
 
 			var meshFilter = MeshFilterFactory.CreateCubeTexturedLit(buildContext.Graphics.GraphicsDevice);
@@ -97,22 +99,31 @@ namespace GDGame.Zones
 			scene.Add(emitterGO);
 		}
 
-		private static void BuildMusicSwitchTrigger(Scene scene)
-		{
-			var triggerGO = new GameObject("Music Switch Trigger");
-			triggerGO.Transform.TranslateTo(new Vector3(0f, 1.5f, 15f));
+        private static void BuildMusicSwitchTrigger(Scene scene, ZoneBuildContext buildContext)
+        {
+            var triggerGO = new GameObject("Music Switch Trigger");
+            triggerGO.Transform.TranslateTo(new Vector3(0f, 1.5f, 15f));
 
-			var collider = triggerGO.AddComponent<BoxCollider>();
-			collider.Size = new Vector3(2f, 3f, 2f);
-			collider.IsTrigger = true;
+            var meshFilter = MeshFilterFactory.CreateCubeTexturedLit(buildContext.Graphics.GraphicsDevice);
+            triggerGO.AddComponent(meshFilter);
+            var renderer = triggerGO.AddComponent<MeshRenderer>();
+            renderer.Material = buildContext.MatBasicLit;
+            renderer.Overrides.MainTexture = buildContext.Textures.Get("checkerboard");
 
-			var rigidBody = triggerGO.AddComponent<RigidBody>();
-			rigidBody.BodyType = BodyType.Static;
+            var collider = triggerGO.AddComponent<BoxCollider>();
+            collider.Size = new Vector3(2f, 3f, 2f);
+            collider.IsTrigger = true;
 
-			scene.Add(triggerGO);
+            var rigidBody = triggerGO.AddComponent<RigidBody>();
+            rigidBody.BodyType = BodyType.Static;
 
-			float lastTriggeredTime = float.NegativeInfinity;
-			const float COOLDOWN_SECONDS = 3f;
+            scene.Add(triggerGO);
+
+            float lastTriggeredTime = float.NegativeInfinity;
+            const float COOLDOWN_SECONDS = 3f;
+
+            string[] tracks = { "ambient_audio_zone", "ambient_audio_zone_2", "ambient_audio_zone_3" };
+            int[] trackIndex = { 0 };
 
             EngineContext.Instance.Events.Subscribe<GDEngine.Core.Events.TriggerEvent>(evt =>
             {
@@ -120,12 +131,14 @@ namespace GDGame.Zones
                 {
                     if (Time.TimeSinceStartupSecs - lastTriggeredTime < COOLDOWN_SECONDS)
                     {
-						return;
-					}
-					lastTriggeredTime = Time.TimeSinceStartupSecs;
+                        return;
+                    }
+                    lastTriggeredTime = Time.TimeSinceStartupSecs;
 
-                    EngineContext.Instance.Events.Publish(new StopMusicEvent(1f));
-                    EngineContext.Instance.Events.Publish(new PlayMusicEvent("explosion1", 0.7f, 1f));
+                    trackIndex[0] = (trackIndex[0] + 1) % tracks.Length;
+                    System.Diagnostics.Debug.WriteLine($"[MUSIC SWITCH] Now playing: {tracks[trackIndex[0]]}");
+
+                    EngineContext.Instance.Events.Publish(new PlayMusicEvent(tracks[trackIndex[0]], 0.15f, 1f));
                 }
             });
         }
