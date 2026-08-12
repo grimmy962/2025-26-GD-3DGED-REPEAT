@@ -136,7 +136,6 @@ namespace GDGame.Zones
                     lastTriggeredTime = Time.TimeSinceStartupSecs;
 
                     trackIndex[0] = (trackIndex[0] + 1) % tracks.Length;
-                    System.Diagnostics.Debug.WriteLine($"[MUSIC SWITCH] Now playing: {tracks[trackIndex[0]]}");
 
                     EngineContext.Instance.Events.Publish(new PlayMusicEvent(tracks[trackIndex[0]], 0.15f, 1f));
                 }

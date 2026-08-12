@@ -24,8 +24,8 @@ namespace GDGame.Zones
                 gravity: AppData.GRAVITY);
 
             BuildPortalToPhysicsZone(scene, buildContext);
-            BuildPortalToAudioZone(scene);
-            BuildPortalToCameraZone(scene);
+            BuildPortalToAudioZone(scene, buildContext);
+            BuildPortalToCameraZone(scene, buildContext);
             BuildPortalToOrchestrationZone(scene, buildContext);
             BuildPortalToEventsStateZone(scene, buildContext);
 
@@ -58,11 +58,18 @@ namespace GDGame.Zones
             scene.Add(portalGO);
         }
 
-        private static void BuildPortalToAudioZone(Scene scene)
+        private static void BuildPortalToAudioZone(Scene scene, ZoneBuildContext buildContext)
         {
             var portalGO = new GameObject("Portal To AudioZone");
             portalGO.Transform.TranslateTo(new Vector3(8f, 1.5f, 25f));
             portalGO.Transform.ScaleTo(new Vector3(2f, 3f, 0.2f));
+
+            var meshFilter = MeshFilterFactory.CreateCubeTexturedLit(buildContext.Graphics.GraphicsDevice);
+            portalGO.AddComponent(meshFilter);
+            var renderer = portalGO.AddComponent<MeshRenderer>();
+            renderer.Material = buildContext.MatBasicLit;
+            renderer.Overrides.MainTexture = buildContext.Textures.Get("crate1");
+
 
             var collider = portalGO.AddComponent<GDEngine.Core.Components.BoxCollider>();
             collider.Size = new Vector3(2f, 3f, 2f);
@@ -77,11 +84,17 @@ namespace GDGame.Zones
             scene.Add(portalGO);
         }
 
-        private static void BuildPortalToCameraZone(Scene scene)
+        private static void BuildPortalToCameraZone(Scene scene, ZoneBuildContext buildContext)
         {
             var portalGO = new GameObject("Portal to CameraZone");
             portalGO.Transform.TranslateTo(new Vector3(-20f, 1.5f, 15f));
             portalGO.Transform.ScaleTo(new Vector3(2f, 3f, 0.2f));
+
+            var meshFilter = MeshFilterFactory.CreateCubeTexturedLit(buildContext.Graphics.GraphicsDevice);
+            portalGO.AddComponent(meshFilter);
+            var renderer = portalGO.AddComponent<MeshRenderer>();
+            renderer.Material = buildContext.MatBasicLit;
+            renderer.Overrides.MainTexture = buildContext.Textures.Get("crate1");
 
             var collider = portalGO.AddComponent<GDEngine.Core.Components.BoxCollider>();
             collider.IsTrigger = true;
