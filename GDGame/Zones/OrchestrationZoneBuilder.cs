@@ -23,6 +23,7 @@ namespace GDGame.Zones
 		private GameObject? _artifactGO;
 		private string[]? _statusText;
 		private Vector3 _artifactStartPosition;
+		private static readonly System.Random _random = new System.Random();
 
         public string SceneName => SCENE_NAME;
 
@@ -141,11 +142,15 @@ namespace GDGame.Zones
 			var orchestrator = orchestrationSystem.Orchestrator;
 
 			orchestrator.Build(SEQUENCE_NAME)
-				.Do(api => statusText[0] = "Theritual begins...")
+				.Do(api => artifactGO.Transform.TranslateTo(new Vector3(0f, 0.5f, 10f)))
+                .Do(api =>
+				{
+                    float riseAmount = ARTIFACT_RISE_TARGET_Y * (float)(0.7 + _random.NextDouble() * 0.6); 
+					artifactGO.Transform.TranslateBy(new Vector3(0f, riseAmount, 0f));
+				})
 				.WaitSeconds(1.5f)
 				.Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Generic_1", 1f, false, null))
 				.Do(api => statusText[0] = "The artifact begins to rise...")
-				.Do(api => artifactGO.Transform.TranslateBy(new Vector3(0f, ARTIFACT_RISE_TARGET_Y, 0f)))
 				.WaitSeconds(1.5f)
 				.If(
 					ctx => artifactGO.Transform.Position.Y >= ARTIFACT_RISE_TARGET_Y - 0.1f,
@@ -154,6 +159,7 @@ namespace GDGame.Zones
 						.Publish(new PlaySfxEvent("explosion1", 1f, false, null)),
 					elseBranch: otherwise => otherwise
 						.Do(api => statusText[0] = "The ritual failed..."))
+						.Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Negative_Close_1", 1f, false, null))
 				.WaitSeconds(2.5f)
 				.Do(api => statusText[0] = "Walk into the trigger to begin.")
 				.Register();
