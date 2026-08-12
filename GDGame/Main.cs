@@ -204,6 +204,7 @@ namespace GDGame
         private AudioZoneBuilder _audioZoneBuilder;
         private CameraZoneBuilder _cameraZoneBuilder;
         private OrchestrationZoneBuilder _orchestrationZoneBuilder;
+        private EventsStateZoneBuilder _eventsStateZoneBuilder;
 
         private void InitializeCameraManagers()
         {
@@ -528,6 +529,10 @@ namespace GDGame
             _orchestrationZoneBuilder = new OrchestrationZoneBuilder();
             var orchestrationZoneScene = _orchestrationZoneBuilder.Build(buildContext);
             _sceneManager.AddScene(_orchestrationZoneBuilder.SceneName, orchestrationZoneScene);
+
+            _eventsStateZoneBuilder = new EventsStateZoneBuilder();
+            var eventsStateZoneScene = _eventsStateZoneBuilder.Build(buildContext);
+            _sceneManager.AddScene(_eventsStateZoneBuilder.SceneName, eventsStateZoneScene);
         }
 
         private void InitializeSystems()
@@ -1036,6 +1041,11 @@ namespace GDGame
                 else if (targetScene == OrchestrationZoneBuilder.SCENE_NAME)
                 {
                     _orchestrationZoneBuilder.ResetRitual();
+                }
+
+                else if(targetScene == EventsStateZoneBuilder.SCENE_NAME)
+                {
+                    _eventsStateZoneBuilder.ResetEventsState();
                 }
             }
 

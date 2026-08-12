@@ -71,6 +71,18 @@ namespace GDGame.Zones
             BuildSwitchTrigger(scene, buildContext);
             BuildAlarmTrigger(scene, buildContext);
 
+            BuildReturnPortal(scene, buildContext);
+
+            ZoneAnnotationFactory.Create(
+                scene,
+                buildContext.Graphics.GraphicsDevice,
+                buildContext.Fonts.Get("perf_stats_font"),
+                systemName: "EventBus & GameStateSystem",
+                apiUsed: "EventBus.On<T>().WithPriorityPreset(...).Do(...), GameStateSystem, PredicateCondition",
+                description: "Walk into the switch to trigger a win state change.\n" +
+                             "Walk into the danger zone to trigger an alarm event.\n" +
+                             "Two custom event types, two priority presets.");
+
             return scene;
         }
 
@@ -232,6 +244,46 @@ namespace GDGame.Zones
                     EngineContext.Instance.Events.Publish(new AlarmTriggeredEvent("Danger Zone"));
                 }
             });
+        }
+
+        private static  void BuildReturnPortal(Scene scene, ZoneBuildContext buildContext)
+        {
+            var portalGO = new GameObject("Portal To Hub");
+            portalGO.Transform.TranslateTo(new Vector3(0f, 1.5f, -5f));
+            portalGO.Transform.ScaleTo(new Vector3(2f, 3f, 0.2f));
+
+            var meshFilter = MeshFilterFactory.CreateCubeTexturedLit(buildContext.Graphics.GraphicsDevice);
+            portalGO.AddComponent(meshFilter);
+            var renderer = portalGO.AddComponent<MeshRenderer>();
+            renderer.Material = buildContext.MatBasicLit;
+            renderer.Overrides.MainTexture = buildContext.Textures.Get("crate1");
+
+            var collider = portalGO.AddComponent<BoxCollider>();
+            collider.Size = new Vector3(2f, 3f, 2f);
+            collider.IsTrigger = true;
+
+            var rigidBody = portalGO.AddComponent<RigidBody>();
+            rigidBody.BodyType = BodyType.Static;
+
+            var portal = portalGO.AddComponent<ZonePortal>();
+            portal.TargetSceneName = HubSceneBuilder.SCENE_NAME;
+
+            scene.Add(portalGO);
+        }
+
+        public void ResetEventsState()
+        {
+            if(_switchActivated != null)
+            {
+                _switchActivated[0] = false;
+            }
+
+            if(_statusText != null)
+            {
+                _statusText[0] = "Find the switch to activate the goal.";
+            }
+
+            _gameStateSystem?.Reset();
         }
     }
 }
