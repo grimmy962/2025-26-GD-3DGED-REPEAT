@@ -500,7 +500,7 @@ namespace GDGame
         {
             //physics, event, input, camera, render, ui, audio, impulse and iu event system are added by ZoneSystemFactory
             //only the systems not yet covered by the zone-builder pattern remain here
-            InitializePhysicsDebugSystem(false);
+            InitializePhysicsDebugSystem(true);
             InitializeOrchestrationSystem(false);   //show debugger
             InitializeGameStateSystem();            //manage and track game state
 
