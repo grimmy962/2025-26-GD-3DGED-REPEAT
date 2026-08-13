@@ -107,55 +107,13 @@ namespace GDGame
 
             // Safe to use _sceneManager.ActiveScene from here on
             InitializeSystems();
-            InitializeCameras();
             InitializeCameraManagers();
 
             int scale = 500;
             InitializeSkyParent();
             InitializeSkyBox(scale);
             InitializeCollidableGround(scale);
-            InitializePlayer();
             #endregion
-
-            #region Demos
-
-            #region Animation curves
-            // Camera-demos
-            InitializeAnimationCurves();
-            #endregion
-
-            #region Collidables
-            // Demo event listeners on collision
-            InitializeCollisionEventListener();
-
-            // Collidable game object demos
-            DemoCollidablePrimitive(new Vector3(0, 20, 5.1f), Vector3.One * 6, new Vector3(15, 45, 45));
-            DemoCollidablePrimitive(new Vector3(0, 10, 5.2f), Vector3.One * 1, new Vector3(45, 0, 0));
-            DemoCollidablePrimitive(new Vector3(0, 5, 5.3f), Vector3.One * 1, new Vector3(0, 0, 45));
-            DemoCollidableModel(new Vector3(0, 50, 10), Vector3.Zero, new Vector3(2, 1.25f, 2));
-            DemoCollidableModel(new Vector3(0, 40, 11), Vector3.Zero, new Vector3(2, 1.25f, 2));
-            DemoCollidableModel(new Vector3(0, 25, 12), Vector3.Zero, new Vector3(2, 1.25f, 2));
-            #endregion
-
-            #region Alpha effect
-            DemoAlphaCutoutFoliage(new Vector3(0, 10 /*note Y=heightscale/2*/, 0), 12, 20);
-            #endregion
-
-            #region Loading GameObjects from JSON
-            DemoLoadFromJSON();
-            #endregion
-
-            #region Sequencing using Orchestration
-            DemoOrchestrationSystem();
-            #endregion
-
-            #region PBR Lighting
-            //DemoPBRGameObject(string objectName, string modelName, Vector3 position, Vector3 scale, Vector3 eulerRotationDegrees,
-            //Texture2D albedoTexture, Texture2D normalTexture, Texture2D srmTexture,
-            //Color albedoColor, float roughness, float metallic);
-            #endregion
-
-        #endregion
 
             // Mouse reticle
             InitializeUI();
@@ -219,18 +177,7 @@ namespace GDGame
             _menuManager = new MenuManager(this, _sceneManager);
             Components.Add(_menuManager);
 
-            Texture2D btnTex = _textureDictionary.Get("button_rectangle_10");
-            Texture2D trackTex = _textureDictionary.Get("Free Flat Hyphen Icon");
-            Texture2D handleTex = _textureDictionary.Get("Free Flat Toggle Thumb Centre Icon");
-            Texture2D controlsTx = _textureDictionary.Get("mona lisa");
-            SpriteFont uiFont = _fontDictionary.Get("menufont");
-
-            // Wire UIManager to the menu scene
-            _menuManager.Initialize(_sceneManager.ActiveScene, 
-                btnTex, trackTex, handleTex, uiFont,
-                _textureDictionary.Get("mainmenu_monkey"),
-                 _textureDictionary.Get("audiomenu_monkey"),
-                  _textureDictionary.Get("controlsmenu_monkey"));
+            RebindMenuToActiveScene();
 
             // Subscribe to high-level events
             _menuManager.PlayRequested += () =>
@@ -264,6 +211,19 @@ namespace GDGame
             };
 
    
+        }
+
+        private void RebindMenuToActiveScene()
+        {
+            Texture2D btnTex = _textureDictionary.Get("button_rectangle_10");
+            Texture2D trackTex = _textureDictionary.Get("Free Flat Hyphen Icon");
+            Texture2D handleTex = _textureDictionary.Get("Free Flat Toggle Thumb Centre Icon");
+            SpriteFont uiFont = _fontDictionary.Get("menufont");
+
+            _menuManager.Initialize(_sceneManager.ActiveScene, btnTex, trackTex, handleTex, uiFont,
+                _textureDictionary.Get("mainmenu_monkey"),
+                _textureDictionary.Get("audiomenu_monkey"),
+                _textureDictionary.Get("controlsmenu_monkey"));
         }
 
         private void InitializeCollidableGround(int scale = 500)
@@ -543,7 +503,7 @@ namespace GDGame
             InitializeOrchestrationSystem(false);   //show debugger
             InitializeGameStateSystem();            //manage and track game state
 
-            InitializeDebugInfo(true);
+            InitializeDebugInfo(false);
         }
 
         private void InitializeDebugInfo(bool showDebug)
@@ -1022,6 +982,7 @@ namespace GDGame
 
                 EngineContext.Instance.Events.Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Movement_Open_1", 1f));
                 _sceneManager.SetActiveScene(targetScene);
+                RebindMenuToActiveScene();
 
                 if (targetScene == PhysicsZoneBuilder.SCENE_NAME)
                 {
