@@ -107,6 +107,7 @@ namespace GDGame
 
             // Safe to use _sceneManager.ActiveScene from here on
             InitializeSystems();
+            InitializeCameras();
             InitializeCameraManagers();
 
             int scale = 500;
@@ -499,7 +500,7 @@ namespace GDGame
         {
             //physics, event, input, camera, render, ui, audio, impulse and iu event system are added by ZoneSystemFactory
             //only the systems not yet covered by the zone-builder pattern remain here
-            InitializePhysicsDebugSystem(true);
+            InitializePhysicsDebugSystem(false);
             InitializeOrchestrationSystem(false);   //show debugger
             InitializeGameStateSystem();            //manage and track game state
 
@@ -705,7 +706,7 @@ namespace GDGame
             // PARENT: physics + movement (feet at y = 0 here)
             var parentGO = new GameObject(AppData.CAMERA_NAME_FIRST_PERSON_PARENT);
             parentGO.Layer = LayerMask.IgnoreRaycast;
-            parentGO.Transform.TranslateTo(new Vector3(0f, 5f, 15f));
+            parentGO.Transform.TranslateTo(new Vector3(0f, 5f, 0f));
 
             // Capsule + rigidbody controller (kept upright internally)
             var fpsController = parentGO.AddComponent<FirstPersonCapsuleController>();

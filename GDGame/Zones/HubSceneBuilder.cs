@@ -4,6 +4,7 @@ using GDGame.Zones.Shared;
 using GDEngine.Core.Rendering;
 using Microsoft.Xna.Framework;
 using GDEngine.Core.Factories;
+using GDGame.Zones.Shared;
 
 namespace GDGame.Zones
 {
@@ -29,6 +30,12 @@ namespace GDGame.Zones
             BuildPortalToOrchestrationZone(scene, buildContext);
             BuildPortalToEventsStateZone(scene, buildContext);
 
+            WorldSpaceLabelFactory.Create(scene, buildContext.Graphics.GraphicsDevice, buildContext.Fonts.Get("perf_stats_font"), new Vector3(0f, 3f, 20f), "Physics Zone");
+            WorldSpaceLabelFactory.Create(scene, buildContext.Graphics.GraphicsDevice, buildContext.Fonts.Get("perf_stats_font"), new Vector3(19f, 3f, 6f), "Audio Zone");
+            WorldSpaceLabelFactory.Create(scene, buildContext.Graphics.GraphicsDevice, buildContext.Fonts.Get("perf_stats_font"), new Vector3(12f, 3f, -16f), "Camera Zone");
+            WorldSpaceLabelFactory.Create(scene, buildContext.Graphics.GraphicsDevice, buildContext.Fonts.Get("perf_stats_font"), new Vector3(-12f, 3f, -16f), "Orchestration Zone");
+            WorldSpaceLabelFactory.Create(scene, buildContext.Graphics.GraphicsDevice, buildContext.Fonts.Get("perf_stats_font"), new Vector3(-19f, 3f, 6f), "Events & State Zone");
+
             return scene;
         }
 
@@ -36,7 +43,7 @@ namespace GDGame.Zones
         private static void BuildPortalToPhysicsZone(Scene scene, ZoneBuildContext buildContext)
         {
             var portalGO = new GameObject("Portal To PhysicsZone");
-            portalGO.Transform.TranslateTo(new Vector3(25f, 1.5f, 8f));
+            portalGO.Transform.TranslateTo(new Vector3(0f, 1.5f, 20f));
             portalGO.Transform.ScaleTo(new Vector3(2f, 3f, 0.2f));
 
             var meshFilter = MeshFilterFactory.CreateCubeTexturedLit(buildContext.Graphics.GraphicsDevice);
@@ -61,7 +68,7 @@ namespace GDGame.Zones
         private static void BuildPortalToAudioZone(Scene scene, ZoneBuildContext buildContext)
         {
             var portalGO = new GameObject("Portal To AudioZone");
-            portalGO.Transform.TranslateTo(new Vector3(8f, 1.5f, 25f));
+            portalGO.Transform.TranslateTo(new Vector3(19f, 1.5f, 6f));
             portalGO.Transform.ScaleTo(new Vector3(2f, 3f, 0.2f));
 
             var meshFilter = MeshFilterFactory.CreateCubeTexturedLit(buildContext.Graphics.GraphicsDevice);
@@ -87,7 +94,7 @@ namespace GDGame.Zones
         private static void BuildPortalToCameraZone(Scene scene, ZoneBuildContext buildContext)
         {
             var portalGO = new GameObject("Portal to CameraZone");
-            portalGO.Transform.TranslateTo(new Vector3(-20f, 1.5f, 15f));
+            portalGO.Transform.TranslateTo(new Vector3(12f, 1.5f, -16f));
             portalGO.Transform.ScaleTo(new Vector3(2f, 3f, 0.2f));
 
             var meshFilter = MeshFilterFactory.CreateCubeTexturedLit(buildContext.Graphics.GraphicsDevice);
@@ -111,7 +118,7 @@ namespace GDGame.Zones
         private static void BuildPortalToOrchestrationZone(Scene scene, ZoneBuildContext buildContext)
         {
             var portalGO = new GameObject("Portal to OrchestrationZone");
-            portalGO.Transform.TranslateTo(new Vector3(-20f, 1.5f, -15f));
+            portalGO.Transform.TranslateTo(new Vector3(-12f, 1.5f, -16f));
             portalGO.Transform.ScaleTo(new Vector3(2f, 3f, 0.2f));
 
             var meshFilter = MeshFilterFactory.CreateCubeTexturedLit(buildContext.Graphics.GraphicsDevice);
@@ -136,7 +143,7 @@ namespace GDGame.Zones
         private static void BuildPortalToEventsStateZone(Scene scene, ZoneBuildContext buildContext)
         {
             var portalGO = new GameObject("Portal to EventsStateZone");
-            portalGO.Transform.TranslateTo(new Vector3(15f, 1.5f, -20f));
+            portalGO.Transform.TranslateTo(new Vector3(-19f, 1.5f, 6f));
             portalGO.Transform.ScaleTo(new Vector3(2f, 3f, 0.2f));
 
             var meshFilter = MeshFilterFactory.CreateCubeTexturedLit(buildContext.Graphics.GraphicsDevice);
