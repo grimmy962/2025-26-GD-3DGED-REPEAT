@@ -272,14 +272,21 @@ namespace GDEngine.Core.Components.Controllers.Physics
         /// </summary>
         private void GetMovementBasis(out Vector3 forward, out Vector3 right)
         {
-            if (Transform == null)
+            Transform? source = Transform;
+
+            if (GameObject?.Scene?.ActiveCamera?.Transform != null)
+            {
+                source = GameObject.Scene.ActiveCamera.Transform;
+            }
+
+            if(source == null)
             {
                 forward = Vector3.Forward;
                 right = Vector3.Right;
                 return;
             }
 
-            forward = Transform.Forward;
+            forward = source.Forward;
             forward.Y = 0.0f;
 
             if (forward.LengthSquared() < 0.0001f)
@@ -289,7 +296,7 @@ namespace GDEngine.Core.Components.Controllers.Physics
 
             forward.Normalize();
 
-            right = Transform.Right;
+            right = source.Right;
             right.Y = 0.0f;
 
             if (right.LengthSquared() < 0.0001f)

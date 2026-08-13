@@ -44,8 +44,7 @@ namespace GDGame.Zones
 				systemName: "Audio System",
 				apiUsed: "AudioSystem, EventBus.Publish(PlayMusicEvent)",
 				description: "Walk between the two sound sources to hear panning change.\n" +
-							 "Walk into the glowing trigger to switch the music track.\n" +
-							 "Left click any object to remove it (SFX via EventBus).");
+							 "Walk into the glowing trigger to switch the music track.");
 
 			return scene;
 		}
