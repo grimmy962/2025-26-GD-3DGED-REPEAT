@@ -172,6 +172,10 @@
       "contentPath": "assets/sounds/ambient_audio_zone_3"
     },
     {
+      "name": "calm_loop",
+      "contentPath": "assets/sounds/calm_loop"
+    },
+    {
       "name": "SFX_UI_Click_Designed_Pop_Generic_1",
       "contentPath": "assets/sounds/ui/SFX_UI_Click_Designed_Pop_Generic_1"
     },

@@ -164,7 +164,7 @@ namespace GDGame
         private CameraZoneBuilder _cameraZoneBuilder;
         private OrchestrationZoneBuilder _orchestrationZoneBuilder;
         private EventsStateZoneBuilder _eventsStateZoneBuilder;
-
+        private HubSceneBuilder _hubBuilder;
         private void InitializeCameraManagers()
         {
             //inside scene
@@ -470,14 +470,14 @@ namespace GDGame
                 _matBasicLit,
                 _matBasicUnlitGround);
 
-            var hubBuilder = new HubSceneBuilder();
-            var hubScene = hubBuilder.Build(buildContext);
+            _hubBuilder = new HubSceneBuilder();
+            var hubScene = _hubBuilder.Build(buildContext);
 
             _physicsZoneBuilder = new PhysicsZoneBuilder();
             var physicsZoneScene = _physicsZoneBuilder.Build(buildContext);
             _sceneManager.AddScene(_physicsZoneBuilder.SceneName, physicsZoneScene);
-            _sceneManager.AddScene(hubBuilder.SceneName, hubScene);
-            _sceneManager.SetActiveScene(hubBuilder.SceneName);
+            _sceneManager.AddScene(_hubBuilder.SceneName, hubScene);
+            _sceneManager.SetActiveScene(_hubBuilder.SceneName);
 
             _audioZoneBuilder = new AudioZoneBuilder();
             var audioZoneScene = _audioZoneBuilder.Build(buildContext);
@@ -976,7 +976,10 @@ namespace GDGame
                 string leavingScene = _sceneManager.ActiveSceneName;
                 _pendingSceneName = null;
 
-                if (leavingScene == AudioZoneBuilder.SCENE_NAME && targetScene != AudioZoneBuilder.SCENE_NAME)
+                System.Diagnostics.Debug.WriteLine($"[MUSIC DEBUG] leaving={leavingScene}, target={targetScene}, HubName={HubSceneBuilder.SCENE_NAME}");
+
+                if ((leavingScene == AudioZoneBuilder.SCENE_NAME && targetScene != AudioZoneBuilder.SCENE_NAME) ||
+                    (leavingScene == HubSceneBuilder.SCENE_NAME && targetScene != HubSceneBuilder.SCENE_NAME))
                 {
                     EngineContext.Instance.Events.Publish(new StopMusicEvent(1f));
                 }
