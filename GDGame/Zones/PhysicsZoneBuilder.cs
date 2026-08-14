@@ -12,11 +12,18 @@ using System.Collections.Generic;
 
 namespace GDGame.Zones
 {
+	//R1 - Physics Zone
+	//monkeys fall and bounce off each other and the floor
+	//one trigger plays a sound when you walk into it, and you can raycast-remove a monkey by looking at it and clicking
 	public sealed class PhysicsZoneBuilder : IZoneBuilder
 	{
 		public const string SCENE_NAME = "PhysicsZone";
 		private const int GROUND_SCALE = 250;
+
 		public string SceneName => SCENE_NAME;
+
+		//kept around so ResetCrates() can rebuild the falling monkeys
+		//without needing the whole scene rebuilt
 		private Scene? _scene;
 		private ZoneBuildContext? _buildContext;
 		private readonly List<GameObject> _crates = new();
@@ -78,6 +85,8 @@ namespace GDGame.Zones
 			scene.Add(ground);
 		}
 
+		//positions are slightly offset from each other on purpose
+		//if they all spawned at the exact same X/Z, gravity alone wouldn't be enough to make them fall apart and actually collide
 		private void BuildCrates(Scene scene, ZoneBuildContext buildContext)
 		{
 			Vector3[] positions =
@@ -115,6 +124,8 @@ namespace GDGame.Zones
             }
 		}
 
+		//called whenever the player comes back into this zone, so the monkeys are always fresh
+		//instead of staying scattered/deleted from a previous visit
 		public void ResetCrates()
 		{
 			if(_scene == null || _buildContext == null)
@@ -145,6 +156,8 @@ namespace GDGame.Zones
 
 			scene.Add(triggerGO);
 
+			//only reacts to this specific trigger
+			//plays a sound, that's the whole observable consequence for this one
 			EngineContext.Instance.Events.Subscribe<GDEngine.Core.Events.TriggerEvent>(evt =>
 			{
 				if (evt.TriggerBody?.GameObject == triggerGO)
@@ -155,6 +168,9 @@ namespace GDGame.Zones
 			});
 		}
 
+		//reuses the demo InteractionComponent
+		//raycacts from the center of the screen and removes whatever's hit
+		//as long as it's on the Interactable layer (so it can't accidentally hit the ground or portals)
 		private static void BuildRaycastInteractor(Scene scene)
 		{
 			var interactorGO = new GameObject("Interactor");

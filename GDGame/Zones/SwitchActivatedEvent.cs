@@ -14,6 +14,8 @@ using Microsoft.Xna.Framework;
 
 namespace GDGame.Zones
 {
+    // customm event 1)
+    // published when the player activates the switch
     public sealed class SwitchActivatedEvent
     {
         public string SwitchName { get; }
@@ -23,6 +25,8 @@ namespace GDGame.Zones
         }
     }
 
+    // custom event 2)
+    // published when the player walks into the danger zone
     public sealed class AlarmTriggeredEvent
     {
         public string ZoneName { get; }
@@ -32,6 +36,8 @@ namespace GDGame.Zones
         }
     }
 
+    // R6 - Events & State Zone
+    // two custom events, each subscribed with a different priority preset, plus a GameStateSystem win condition tied to the switch
     public sealed class EventsStateZoneBuilder : IZoneBuilder
     {
         public const string SCENE_NAME = "EventsStateZone";
@@ -131,6 +137,9 @@ namespace GDGame.Zones
             return textHolder;
         }
 
+        // the two custom events get hteir own fluent subscription each
+        // with different priority presets (Gameplay vs UI) liek the brief asks for
+        // GameWonEvent is the engine's own event, published automatically once GameStateSystem sees the win condition is met
         private static void RegisterEventSubscription(
             string[] statusText, bool[] switchActivated, GameStateSystem gameStateSystem)
         {
@@ -165,6 +174,8 @@ namespace GDGame.Zones
                         new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Movement_Open_1", 1f, false, null));
                 });
 
+            // win condition is checked live by GameStateSystem overy frame
+            // i never call SetState directly anywhere
             gameStateSystem.ConfigureConditions(
                 winCondition: new PredicateCondition("Switch activated", () => switchActivated[0]),
                 loseCondition: null);
@@ -271,6 +282,8 @@ namespace GDGame.Zones
             scene.Add(portalGO);
         }
 
+        //called on entry so the switch/win state and text reset fresh
+        //GameStateSystem.Reset() puts it back to InProgress so the win condition can trigger again on this visit too
         public void ResetEventsState()
         {
             if(_switchActivated != null)

@@ -10,13 +10,24 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace GDGame.Zones.Shared
 {
+    //adds the same set of systems to a scene
+    //every zone needs the same baseline(render, camera, UI, input, events, audio, physics),
+    //so instead of copying this block into eveery zone builder, i just call this one method
     public static class ZoneSystemFactory
     {
+        #region Constants
+
         private const int RENDER_ORDER = -100;
         private const float DEFAULT_MOUSE_SENSITIVITY = 0.12F;
         private const int DEFAULT_DEBOUNCE_MS = 60;
         private const int DEFAULT_KEY_REPEAT_MS = 300;
 
+        #endregion
+
+        #region Methods
+
+        //physics is optional since not every zone needs rigid bodies, but
+        //any zone with s portal/trigger still needs it to detect them
         public static void AddCoreSystems(
             Scene scene,
             GraphicsDeviceManager graphics,
@@ -44,6 +55,7 @@ namespace GDGame.Zones.Shared
             }
         }
 
+        //same keyboard/mouse/gamepad setup every zone uses
         private static InputSystem BuildInputSystem()
         {
 
@@ -60,5 +72,7 @@ namespace GDGame.Zones.Shared
 
             return inputSystem;
         }
+
+        #endregion
     }
 }

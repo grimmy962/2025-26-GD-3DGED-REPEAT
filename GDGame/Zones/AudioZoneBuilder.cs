@@ -5,13 +5,15 @@ using GDEngine.Core.Factories;
 using GDEngine.Core.Rendering;
 using GDEngine.Core.Rendering.Base;
 using GDEngine.Core.Services;
-using GDGame.Demos.Controllers;
 using GDGame.Zones.Shared;
 using Microsoft.Xna.Framework;
 using GDEngine.Core.Timing;
 
 namespace GDGame.Zones
 {
+    //R2- Audio Zone
+    //two spatial sound sources you can walk between to hear panning
+    //a trigger that cycles through 3 background msuic tracks
 	public sealed class AudioZoneBuilder : IZoneBuilder
 	{
 		public const string SCENE_NAME = "AudioZone";
@@ -34,7 +36,6 @@ namespace GDGame.Zones
             BuildSpatialSoundSource(scene, buildContext, "Gunshot Emitter", new Vector3(-8f, 0.5f, 10f), "hand_gun1", 1f);
             BuildSpatialSoundSource(scene, buildContext, "Laser Emitter", new Vector3(8f, 0.5f, 10f), "laser_gun_salve", 0.5f);
             BuildMusicSwitchTrigger(scene, buildContext);
-            BuildRaycastInteractor(scene);
             BuildReturnPortal(scene, buildContext);
 
 			ZoneAnnotationFactory.Create(
@@ -76,6 +77,8 @@ namespace GDGame.Zones
 			scene.Add(ground);
 		}
 
+        //uses PeriodicSpatialSfxEmitter instead of a real loop (PlaySfxEvent has no loop option)
+        //so it jsut keeps re-triggering itself evvery few seconds instead
 		private static void BuildSpatialSoundSource(
 			Scene scene, ZoneBuildContext buildContext, string name, Vector3 position, string soundKey, float volume)
 		{
@@ -98,6 +101,7 @@ namespace GDGame.Zones
 			scene.Add(emitterGO);
 		}
 
+        //cycles through 3 real music tracks each time you touch it
         private static void BuildMusicSwitchTrigger(Scene scene, ZoneBuildContext buildContext)
         {
             var triggerGO = new GameObject("Music Switch Trigger");
@@ -124,6 +128,8 @@ namespace GDGame.Zones
             string[] tracks = { "ambient_audio_zone", "ambient_audio_zone_2", "ambient_audio_zone_3" };
             int[] trackIndex = { 0 };
 
+            //cooldown so this doesn't fire over and over while standing near the trigger
+            //the engine reports touching every physics step, not just once on entry
             EngineContext.Instance.Events.Subscribe<GDEngine.Core.Events.TriggerEvent>(evt =>
             {
                 if (evt.TriggerBody?.GameObject == triggerGO)
@@ -139,15 +145,6 @@ namespace GDGame.Zones
                     EngineContext.Instance.Events.Publish(new PlayMusicEvent(tracks[trackIndex[0]], 0.15f, 1f));
                 }
             });
-        }
-
-        private static void BuildRaycastInteractor(Scene scene)
-        {
-            var interactorGO = new GameObject("Interactor");
-            var interaction = interactorGO.AddComponent<InteractionComponent>();
-            interaction.MaxDistance = 50f;
-            interaction.HitMask = LayerMask.Interactables;
-            scene.Add(interactorGO);
         }
 
         private static void BuildReturnPortal(Scene scene, ZoneBuildContext buildContext)
@@ -175,6 +172,7 @@ namespace GDGame.Zones
             scene.Add(portalGO);
         }
 
+        //called when the player walks in here from the hub
         public void StartAmbience()
         {
             EngineContext.Instance.Events.Publish(new PlayMusicEvent("ambient_audio_zone", 0.015f, 2f));

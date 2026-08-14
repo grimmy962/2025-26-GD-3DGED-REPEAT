@@ -4,11 +4,12 @@ using GDGame.Zones.Shared;
 using GDEngine.Core.Rendering;
 using Microsoft.Xna.Framework;
 using GDEngine.Core.Factories;
-using GDGame.Zones.Shared;
 using GDEngine.Core.Audio;
 
 namespace GDGame.Zones
 {
+    //the hub is the central space you spawn into and return to between zones
+    //just five portals arranged in a citcle, a floating label above each one, and some ambient sound
     public sealed class HubSceneBuilder : IZoneBuilder
     {
         public const string SCENE_NAME = "Hub";
@@ -32,6 +33,7 @@ namespace GDGame.Zones
             BuildPortalToEventsStateZone(scene, buildContext);
             BuildAmbientEmitter(scene, buildContext);
 
+            //floating name above each portal so you know where it goes before walking in
             WorldSpaceLabelFactory.Create(scene, buildContext.Graphics.GraphicsDevice, buildContext.Fonts.Get("perf_stats_font"), new Vector3(0f, 3f, 20f), "Physics Zone");
             WorldSpaceLabelFactory.Create(scene, buildContext.Graphics.GraphicsDevice, buildContext.Fonts.Get("perf_stats_font"), new Vector3(19f, 3f, 6f), "Audio Zone");
             WorldSpaceLabelFactory.Create(scene, buildContext.Graphics.GraphicsDevice, buildContext.Fonts.Get("perf_stats_font"), new Vector3(12f, 3f, -16f), "Camera Zone");
@@ -116,6 +118,7 @@ namespace GDGame.Zones
             renderer.Overrides.MainTexture = buildContext.Textures.Get("crate1");
 
             var collider = portalGO.AddComponent<GDEngine.Core.Components.BoxCollider>();
+            collider.Size = new Vector3(2f, 3f, 2f);
             collider.IsTrigger = true;
 
             var rigidBody = portalGO.AddComponent<GDEngine.Core.Components.RigidBody>();
@@ -177,6 +180,11 @@ namespace GDGame.Zones
             scene.Add(portalGO);
         }
 
+        //quiet looping-ish ambient sound in the hub
+        //using an sfx emitter instead of PlayMusicEvent on purpose
+        //every zone's AudioSystem listens to the same global music chanel, so real musi here
+        //would keep playing even after elaving the Hub
+        //this way it can't 'bleed' into other zones
         private static void BuildAmbientEmitter(Scene scene, ZoneBuildContext buildContext)
         {
             var emitterGO = new GameObject("Hub Ambient Emitter");

@@ -5,24 +5,28 @@ using Microsoft.Xna.Framework;
 
 namespace GDGame.Zones.Shared
 {
-	public sealed class PeriodicSpatialSfxEmitter : Component
-	{
-		private string _clipName = string.Empty;
-		private float _intervalSeconds = 3f;
-		private float _volume = 1f;
-		private float _timer;
+    //plays a spatial sound over and over on a timer
+    //PlaySfxEvent doesn't have a real loop option (it's always one shot)
+    //so this is how i fake a looping amvient sound
+    //just re-trigger it every so often
+    public sealed class PeriodicSpatialSfxEmitter : Component
+    {
+        private string _clipName = string.Empty;
+        private float _intervalSeconds = 3f;
+        private float _volume = 1f;
+        private float _timer;
 
-		public string ClipName
-		{
-			get => _clipName;
-			set => _clipName = value ?? string.Empty;
-		}
+        public string ClipName
+        {
+            get => _clipName;
+            set => _clipName = value ?? string.Empty;
+        }
 
-		public float IntervalSeconds
-		{
-			get => _intervalSeconds;
+        public float IntervalSeconds
+        {
+            get => _intervalSeconds;
             set => _intervalSeconds = MathHelper.Max(0.1f, value);
-		}
+        }
 
         public float Volume
         {

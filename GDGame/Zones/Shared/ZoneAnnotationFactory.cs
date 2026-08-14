@@ -5,10 +5,19 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace GDGame.Zones.Shared
 {
+    //builds the required annotation overlay
+    //the little ui text in the corner that says which system a zone is showing off
+    //every zone (and the hub) calls this with different text, so it's all in one place instead of copy-pasted six times
     public static class ZoneAnnotationFactory
     {
+        #region Constants
+
         private const string ANNOTATION_GAMEOBJECT_NAME = "Zone Annotation";
         private const float SCREEN_MARGIN_PIXELS = 20F;
+
+        #endregion
+
+        #region Methods
 
         public static GameObject Create(
             Scene scene,
@@ -20,6 +29,7 @@ namespace GDGame.Zones.Shared
         {
             string annotationText = "System: " + systemName + "\nAPI: " + apiUsed + "\n" + description;
 
+            //bottom left corner with a small margin
             Vector2 anchorPosition = new Vector2(
                 SCREEN_MARGIN_PIXELS,
                 graphicsDevice.Viewport.Height - SCREEN_MARGIN_PIXELS);
@@ -36,5 +46,7 @@ namespace GDGame.Zones.Shared
             scene.Add(annotationGO);
             return annotationGO;
         }
+
+        #endregion
     }
 }
