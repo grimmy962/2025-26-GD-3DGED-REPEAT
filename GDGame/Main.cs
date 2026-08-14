@@ -413,7 +413,7 @@ namespace GDGame
         {
             //physics, event, input, camera, render, ui, audio, impulse and iu event system are added by ZoneSystemFactory
             //only the systems not yet covered by the zone-builder pattern remain here
-            InitializePhysicsDebugSystem(true);
+            InitializePhysicsDebugSystem(false);
             InitializeOrchestrationSystem(false);   //show debugger
             InitializeDebugInfo(false);
         }
@@ -744,10 +744,7 @@ namespace GDGame
 
             var textRenderer = uiReticleGO.AddComponent<UIText>();
             textRenderer.Font = uiFont;
-            textRenderer.Offset = new Vector2(0, 30);  // Position text below reticle
-            textRenderer.Color = Color.White;
-            textRenderer.PositionProvider = () => _graphics.GraphicsDevice.Viewport.GetCenter();
-            textRenderer.Anchor = TextAnchor.Center;
+            textRenderer.Color = Color.Transparent;
 
             var picker = uiReticleGO.AddComponent<UIPickerInfo>();
             picker.HitMask = LayerMask.All;
