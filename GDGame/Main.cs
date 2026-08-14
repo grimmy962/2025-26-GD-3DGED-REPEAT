@@ -31,7 +31,8 @@ namespace GDGame
 {
     public class Main : Game
     {
-        #region Core Fields (Common to all games)     
+        #region Core Fields (Common to all games)   
+        
         private GraphicsDeviceManager _graphics;
         private ContentDictionary<Texture2D> _textureDictionary;
         private ContentDictionary<Model> _modelDictionary;
@@ -41,12 +42,15 @@ namespace GDGame
         private bool _disposed = false;
         private Material _matBasicUnlit, _matBasicLit, _matAlphaCutout, _matBasicUnlitGround;
         private PBRMaterial _matPBR;
+
         #endregion
 
         #region Engine & Scene Management Fields
         private SceneManager _sceneManager;
         private MenuManager _menuManager;
         private UIDebugInfo _debugRenderer;
+        private float _lastPortalTriggerTime = float.NegativeInfinity;
+        private const float PORTAL_COOLDOWN_SECONDS = 2f;
         #endregion
 
         #region Core Methods (Common to all games)     
@@ -81,6 +85,12 @@ namespace GDGame
                 var portal = evt.TriggerBody?.GameObject?.GetComponent<ZonePortal>();
                 if (portal != null)
                 {
+                    if (Time.TimeSinceStartupSecs - _lastPortalTriggerTime < PORTAL_COOLDOWN_SECONDS)
+                    {
+                        return;
+                    }
+                    _lastPortalTriggerTime = Time.TimeSinceStartupSecs;
+
                     _pendingSceneName = portal.TargetSceneName;
                 }
             });

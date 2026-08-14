@@ -4,6 +4,7 @@ using GDEngine.Core.Entities;
 using GDEngine.Core.Events;
 using GDEngine.Core.Factories;
 using GDEngine.Core.Gameplay;
+using GDEngine.Core.Orchestration;
 using GDEngine.Core.Rendering;
 using GDEngine.Core.Rendering.Base;
 using GDEngine.Core.Services;
@@ -60,8 +61,18 @@ namespace GDGame.Zones
                 includePhysics: true,
                 gravity: AppData.GRAVITY);
 
+            // OrchestrationSystem is only used here to add a short, visible delay between "switch activated" and "you win"
             var gameStateSystem = scene.AddSystem(new GameStateSystem());
             _gameStateSystem = gameStateSystem;
+
+            var orchestrationSystem = new OrchestrationSystem();
+            orchestrationSystem.Configure(options =>
+            {
+                options.Time = Orchestrator.OrchestrationTime.Unscaled;
+                options.LocalScale = 1;
+                options.Paused = false;
+            });
+            scene.Add(orchestrationSystem);
 
             BuildGround(scene, buildContext);
             ZonePlayerFactory.Create(scene, new Vector3(0f, 1.5f, 0f));
@@ -72,7 +83,7 @@ namespace GDGame.Zones
             var switchActivated = new bool[] { false };
             _switchActivated = switchActivated;
 
-            RegisterEventSubscription(statusText, switchActivated, gameStateSystem);
+            RegisterEventSubscription(scene, orchestrationSystem, statusText, switchActivated, gameStateSystem);
 
             BuildSwitchTrigger(scene, buildContext);
             BuildAlarmTrigger(scene, buildContext);
@@ -141,17 +152,29 @@ namespace GDGame.Zones
         // with different priority presets (Gameplay vs UI) liek the brief asks for
         // GameWonEvent is the engine's own event, published automatically once GameStateSystem sees the win condition is met
         private static void RegisterEventSubscription(
-            string[] statusText, bool[] switchActivated, GameStateSystem gameStateSystem)
+            Scene scene, OrchestrationSystem orchestrationSystem, string[] statusText, bool[] switchActivated, GameStateSystem gameStateSystem)
         {
+            const string REVEAL_SEQUENCE_NAME = "reveal_win_state";
+
+            // without this delay, switchActivated[0] would flip to true in the same frame as the "activated!" text is set, and GameStateSystem
+            // checks its win condition every frame too - so the win state and "YOU WIN!" text would both resolve before the next Draw() call,
+            // meaning "activated!" would be set but never actually rendered
+            // this sequence delays setting the flag itself, so there's a real visible gap between the two messages
+            orchestrationSystem.Orchestrator.Build(REVEAL_SEQUENCE_NAME)
+                .WaitSeconds(1.5f)
+                .Do(api => switchActivated[0] = true)
+                .Register();
+
             EngineContext.Instance.Events
                 .On<SwitchActivatedEvent>()
                 .WithPriorityPreset(EventPriority.Gameplay)
                 .Do(evt =>
                 {
-                    switchActivated[0] = true;
                     statusText[0] = evt.SwitchName + " activated! Something changed...";
                     EngineContext.Instance.Events.Publish(
                         new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Generic_1", 1f, false, null));
+
+                    orchestrationSystem.Orchestrator.Start(REVEAL_SEQUENCE_NAME, scene, EngineContext.Instance);
                 });
 
             EngineContext.Instance.Events
@@ -174,8 +197,8 @@ namespace GDGame.Zones
                         new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Movement_Open_1", 1f, false, null));
                 });
 
-            // win condition is checked live by GameStateSystem overy frame
-            // i never call SetState directly anywhere
+            //win condition is checked live by GameStateSystem every frame
+            //i never call SetState directly anywhere
             gameStateSystem.ConfigureConditions(
                 winCondition: new PredicateCondition("Switch activated", () => switchActivated[0]),
                 loseCondition: null);
