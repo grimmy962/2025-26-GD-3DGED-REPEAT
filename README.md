@@ -4,7 +4,7 @@ This is my Repeat CA for 3D Game Engine Development. This project is a HUB with 
 
 
 ### Screencast ###
-[youtube link here] </br></br>
+https://youtu.be/YXdbco3q7Q4 </br></br>
 
 
 ### Architecture Overview ###
