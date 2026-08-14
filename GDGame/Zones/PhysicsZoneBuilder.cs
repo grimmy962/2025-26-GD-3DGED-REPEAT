@@ -43,8 +43,8 @@ namespace GDGame.Zones
 
 			BuildGround(scene, buildContext);
             ZonePlayerFactory.Create(scene, new Vector3(0f, 1.5f, 0f)); BuildCrates(scene, buildContext);
-			BuildObservableTrigger(scene);
-			BuildRaycastInteractor(scene);
+            BuildObservableTrigger(scene, buildContext);
+            BuildRaycastInteractor(scene);
             BuildReturnPortal(scene, buildContext);
 
             ZoneAnnotationFactory.Create(
@@ -142,36 +142,40 @@ namespace GDGame.Zones
 			BuildCrates(_scene, _buildContext);
 		}
 
-		private static void BuildObservableTrigger(Scene scene)
-		{
-			var triggerGO = new GameObject("Physics Observable Trigger");
-			triggerGO.Transform.TranslateTo(new Vector3(6f, 1.5f, 5f));
+        private static void BuildObservableTrigger(Scene scene, ZoneBuildContext buildContext)
+        {
+            var triggerGO = new GameObject("Physics Observable Trigger");
+            triggerGO.Transform.TranslateTo(new Vector3(6f, 1.5f, 5f));
 
-			var collider = triggerGO.AddComponent<BoxCollider>();
-			collider.Size = new Vector3(2f, 3f, 2f);
-			collider.IsTrigger = true;
+            var meshFilter = MeshFilterFactory.CreateCubeTexturedLit(buildContext.Graphics.GraphicsDevice);
+            triggerGO.AddComponent(meshFilter);
+            var renderer = triggerGO.AddComponent<MeshRenderer>();
+            renderer.Material = buildContext.MatBasicLit;
+            renderer.Overrides.MainTexture = buildContext.Textures.Get("checkerboard");
 
-			var rigidBody = triggerGO.AddComponent<RigidBody>();
-			rigidBody.BodyType = BodyType.Static;
+            var collider = triggerGO.AddComponent<BoxCollider>();
+            collider.Size = new Vector3(2f, 3f, 2f);
+            collider.IsTrigger = true;
 
-			scene.Add(triggerGO);
+            var rigidBody = triggerGO.AddComponent<RigidBody>();
+            rigidBody.BodyType = BodyType.Static;
 
-			//only reacts to this specific trigger
-			//plays a sound, that's the whole observable consequence for this one
-			EngineContext.Instance.Events.Subscribe<GDEngine.Core.Events.TriggerEvent>(evt =>
-			{
-				if (evt.TriggerBody?.GameObject == triggerGO)
-				{
-					EngineContext.Instance.Events.Publish(
-						new GDEngine.Core.Audio.PlaySfxEvent("SFX_UI_Click_Designed_Pop_Generic_1", 1f, false, null));
-				}
-			});
-		}
+            scene.Add(triggerGO);
 
-		//reuses the demo InteractionComponent
-		//raycacts from the center of the screen and removes whatever's hit
-		//as long as it's on the Interactable layer (so it can't accidentally hit the ground or portals)
-		private static void BuildRaycastInteractor(Scene scene)
+            EngineContext.Instance.Events.Subscribe<GDEngine.Core.Events.TriggerEvent>(evt =>
+            {
+                if (evt.TriggerBody?.GameObject == triggerGO)
+                {
+                    EngineContext.Instance.Events.Publish(
+                        new GDEngine.Core.Audio.PlaySfxEvent("SFX_UI_Click_Designed_Pop_Generic_1", 1f, false, null));
+                }
+            });
+        }
+
+        //reuses the demo InteractionComponent
+        //raycacts from the center of the screen and removes whatever's hit
+        //as long as it's on the Interactable layer (so it can't accidentally hit the ground or portals)
+        private static void BuildRaycastInteractor(Scene scene)
 		{
 			var interactorGO = new GameObject("Interactor");
 			var interaction = interactorGO.AddComponent<InteractionComponent>();
