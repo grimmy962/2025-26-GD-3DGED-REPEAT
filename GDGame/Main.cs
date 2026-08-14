@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Security.AccessControl;
-using GDEngine.Core;
+﻿using GDEngine.Core;
 using GDEngine.Core.Audio;
 using GDEngine.Core.Collections;
 using GDEngine.Core.Components;
@@ -10,10 +7,6 @@ using GDEngine.Core.Debug;
 using GDEngine.Core.Entities;
 using GDEngine.Core.Events;
 using GDEngine.Core.Factories;
-using GDEngine.Core.Gameplay;
-using GDEngine.Core.Impulses;
-using GDEngine.Core.Input.Data;
-using GDEngine.Core.Input.Devices;
 using GDEngine.Core.Managers;
 using GDEngine.Core.Orchestration;
 using GDEngine.Core.Rendering;
@@ -25,13 +18,11 @@ using GDEngine.Core.Services;
 using GDEngine.Core.Systems;
 using GDEngine.Core.Timing;
 using GDEngine.Core.Utilities;
-using GDGame.Demos.Components;
 using GDGame.Demos.Controllers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using SharpDX.Direct2D1.Effects;
 using Color = Microsoft.Xna.Framework.Color;
 using GDGame.Zones;
 using GDGame.Zones.Shared;
@@ -52,19 +43,8 @@ namespace GDGame
         private PBRMaterial _matPBR;
         #endregion
 
-        #region Demo Fields (remove in the game)
-        private AnimationCurve3D _animationPositionCurve, _animationRotationCurve;
-        private AnimationCurve _animationCurve;
-        private KeyboardState _newKBState, _oldKBState;
-        private int _damageAmount;
-
-        // Simple debug subscription for collision events
-        private IDisposable _collisionSubscription;
-
-        // LayerMask used to filter which collisions we care about in debug
-        private LayerMask _collisionDebugMask = LayerMask.All;
+        #region Engine & Scene Management Fields
         private SceneManager _sceneManager;
-        private float _currentHealth = 100;
         private MenuManager _menuManager;
         private UIDebugInfo _debugRenderer;
         #endregion
@@ -121,9 +101,6 @@ namespace GDGame
 
             // Main menu
             InitializeMenuManager();
-    
-            // Set win/lose conditions
-            SetWinConditions();
 
             // Set pause and show menu
             SetPauseShowMenu();
@@ -267,70 +244,6 @@ namespace GDGame
             _sceneManager.ActiveScene.Add(gameObject);
         }
 
-        private void InitializePlayer()
-        {
-            GameObject player = InitializeModel(new Vector3(0, 5, 10),
-                new Vector3(0, 0, 0),
-                2 * Vector3.One, "crate1", "monkey1", AppData.PLAYER_NAME);
-
-            var simpleDriveController = new SimpleDriveController();
-            player.AddComponent(simpleDriveController);
-
-            // Listen for damage events on the player
-            player.AddComponent<DamageEventListener>();
-
-            // Adds an inventory to the player
-            player.AddComponent<InventoryComponent>();
-        }
-
-        private void InitializePIPCamera(Vector3 position,
-      Viewport viewport, int depth, int index = 0)
-        {
-            var pipCameraGO = new GameObject("PIP camera");
-            pipCameraGO.Transform.TranslateTo(position);
-            pipCameraGO.Transform.RotateEulerBy(new Vector3(0, MathHelper.ToRadians(-90), 0));
-
-            //if (index == 0)
-            //{
-            //    pipCameraGO.AddComponent<KeyboardWASDController>();
-            //    pipCameraGO.AddComponent<MouseYawPitchController>();
-            //}
-
-            var camera = pipCameraGO.AddComponent<Camera>();
-            camera.StackRole = Camera.StackType.Overlay;
-            camera.ClearFlags = Camera.ClearFlagsType.DepthOnly;
-            camera.Depth = depth; //-100
-
-            camera.Viewport = viewport; // new Viewport(0, 0, 400, 300);
-
-            _sceneManager.ActiveScene.Add(pipCameraGO);
-        }
-
-        private void InitializeAnimationCurves()
-        {
-            //1D animation curve demo (e.g. scale, audio volume, lerp factor for color, etc)
-            _animationCurve = new AnimationCurve(CurveLoopType.Cycle);
-            _animationCurve.AddKey(0f, 10);
-            _animationCurve.AddKey(2f, 11); //up
-            _animationCurve.AddKey(0f, 12); //down
-            _animationCurve.AddKey(8f, 13); //up further
-            _animationCurve.AddKey(0f, 13.5f); //down
-
-            //3D animation curve demo
-            _animationPositionCurve = new AnimationCurve3D(CurveLoopType.Oscillate);
-            _animationPositionCurve.AddKey(new Vector3(0, 4, 0), 0);
-            _animationPositionCurve.AddKey(new Vector3(5, 8, 2), 1);
-            _animationPositionCurve.AddKey(new Vector3(10, 12, 4), 2);
-            _animationPositionCurve.AddKey(new Vector3(0, 4, 0), 3);
-
-            // Absolute yaw/pitch/roll angles (radians) over time
-            _animationRotationCurve = new AnimationCurve3D(CurveLoopType.Oscillate);
-            _animationRotationCurve.AddKey(new Vector3(0, 0, 0), 0);              // yaw, pitch, roll
-            _animationRotationCurve.AddKey(new Vector3(0, MathHelper.PiOver2, 0), 1);
-            _animationRotationCurve.AddKey(new Vector3(0, MathHelper.Pi, 0), 2);
-            _animationRotationCurve.AddKey(new Vector3(0, 0, 0), 3);
-        }
-
         private void InitializeGraphics(Integer2 resolution)
         {
             // Enable per-monitor DPI awareness so the window/UI scales crisply on multi-monitor setups with different DPIs (avoids blurriness when moving between screens).
@@ -346,9 +259,6 @@ namespace GDGame
         private void InitializeMouse()
         {
             Mouse.SetPosition(_graphics.PreferredBackBufferWidth / 2, _graphics.PreferredBackBufferHeight / 2);
-
-            // Set old state at start so its not null for comparison with new state in Update
-            _oldKBState = Keyboard.GetState();
         }
 
         private void InitializeContext()
@@ -448,13 +358,6 @@ namespace GDGame
 
             #endregion
 
-            //#region Lit PBR Effect
-            //// Load effect file
-            //Effect pbrEffect = _effectsDictionary.Get("pbr_effect");
-
-            //// Create a PBR material
-            //_matPBR = new PBRMaterial(pbrEffect, ownsEffect: false);
-            //#endregion
         }
 
         private void InitializeScene()
@@ -502,8 +405,6 @@ namespace GDGame
             //only the systems not yet covered by the zone-builder pattern remain here
             InitializePhysicsDebugSystem(true);
             InitializeOrchestrationSystem(false);   //show debugger
-            InitializeGameStateSystem();            //manage and track game state
-
             InitializeDebugInfo(false);
         }
 
@@ -532,33 +433,6 @@ namespace GDGame
 
                 _sceneManager.ActiveScene.Add(debugGO);
             }
-        }
-
-        private void InitializeNavMeshSystem()
-        {
-            var scene = _sceneManager.ActiveScene;
-
-            // Core navmesh system (implements INavigationService)
-            var navMeshSystem = scene.AddSystem(new NavMeshSystem());
-
-            // Debug overlay (F2 toggle)
-            scene.Add(new NavMeshDebugSystem());
-        }
-
-        private void InitializeGameStateSystem()
-        {
-            // Add game state system
-            _sceneManager.ActiveScene.AddSystem(new GameStateSystem());
-        }
-
-        private void InitializeUIEventSystem()
-        {
-            _sceneManager.ActiveScene.AddSystem(new UIEventSystem());
-        }
-
-        private void InitializeImpulseSystem()
-        {
-            _sceneManager.ActiveScene.Add(new ImpulseSystem(EngineContext.Instance.Impulses));
         }
 
         private void InitializeOrchestrationSystem(bool debugEnabled)
@@ -599,11 +473,6 @@ namespace GDGame
 
         }
 
-        private void InitializeAudioSystem()
-        {
-            _sceneManager.ActiveScene.Add(new AudioSystem(_soundDictionary));
-        }
-
         private void InitializePhysicsDebugSystem(bool isEnabled)
         {
             if (isEnabled)
@@ -621,54 +490,6 @@ namespace GDGame
 
             }
 
-        }
-
-        private void InitializePhysicsSystem()
-        {
-            // 1. add physics
-            var physicsSystem = _sceneManager.ActiveScene.AddSystem(new PhysicsSystem());
-            physicsSystem.Gravity = AppData.GRAVITY;
-        }
-
-        private void InitializeEventSystem()
-        {
-            _sceneManager.ActiveScene.Add(new EventSystem(EngineContext.Instance.Events));
-        }
-
-        private void InitializeCameraAndRenderSystems()
-        {
-            //manages camera
-            var cameraSystem = new CameraSystem(_graphics.GraphicsDevice, -100);
-            _sceneManager.ActiveScene.Add(cameraSystem);
-
-            //3d
-            var renderSystem = new RenderSystem(-100);
-            _sceneManager.ActiveScene.Add(renderSystem);
-
-            //2d
-            var uiRenderSystem = new UIRenderSystem(-100);
-            _sceneManager.ActiveScene.Add(uiRenderSystem); // draws in PostRender after RenderingSystem (order = -100)
-        }
-
-        private void InitializeInputSystem()
-        {
-            //set mouse, keyboard binding keys (e.g. WASD)
-            var bindings = InputBindings.Default;
-            // optional tuning
-            bindings.MouseSensitivity = 0.12f;  // mouse look scale
-            bindings.DebounceMs = 60;           // key/mouse debounce in ms
-            bindings.EnableKeyRepeat = true;    // hold-to-repeat
-            bindings.KeyRepeatMs = 300;         // repeat rate in ms
-
-            // Create the input system 
-            var inputSystem = new InputSystem();
-
-            // Register all the devices, you don't have to, but its for the demo
-            inputSystem.Add(new GDKeyboardInput(bindings));
-            inputSystem.Add(new GDMouseInput(bindings));
-            inputSystem.Add(new GDGamepadInput(PlayerIndex.One, "Gamepad P1"));
-
-            _sceneManager.ActiveScene.Add(inputSystem);
         }
 
         private void InitializeCameras()
@@ -939,35 +760,6 @@ namespace GDGame
             IsMouseVisible = false;
         }
 
-        /// <summary>
-        /// Adds a single-part FBX model into the scene.
-        /// </summary>
-        private GameObject InitializeModel(Vector3 position,
-            Vector3 eulerRotationDegrees, Vector3 scale,
-            string textureName, string modelName, string objectName)
-        {
-            GameObject gameObject = null;
-
-            gameObject = new GameObject(objectName);
-            gameObject.Transform.TranslateTo(position);
-            gameObject.Transform.RotateEulerBy(eulerRotationDegrees * MathHelper.Pi / 180f);
-            gameObject.Transform.ScaleTo(scale);
-
-          //  gameObject.Layer = LayerMask.NPC | LayerMask.Collectables;
-
-            var model = _modelDictionary.Get(modelName);
-            var texture = _textureDictionary.Get(textureName);
-            var meshFilter = MeshFilterFactory.CreateFromModel(model, _graphics.GraphicsDevice, 0, 0);
-            gameObject.AddComponent(meshFilter);
-
-            var meshRenderer = gameObject.AddComponent<MeshRenderer>();
-            meshRenderer.Material = _matBasicLit;
-            meshRenderer.Overrides.MainTexture = texture;
-
-            _sceneManager.ActiveScene.Add(gameObject);
-
-            return gameObject;
-        }
         protected override void Update(GameTime gameTime)
         {
             if (_pendingSceneName != null)
@@ -975,8 +767,6 @@ namespace GDGame
                 string targetScene = _pendingSceneName;
                 string leavingScene = _sceneManager.ActiveSceneName;
                 _pendingSceneName = null;
-
-                System.Diagnostics.Debug.WriteLine($"[MUSIC DEBUG] leaving={leavingScene}, target={targetScene}, HubName={HubSceneBuilder.SCENE_NAME}");
 
                 if ((leavingScene == AudioZoneBuilder.SCENE_NAME && targetScene != AudioZoneBuilder.SCENE_NAME) ||
                     (leavingScene == HubSceneBuilder.SCENE_NAME && targetScene != HubSceneBuilder.SCENE_NAME))
@@ -1018,11 +808,6 @@ namespace GDGame
             #region Core
             Time.Update(gameTime);
             #endregion
-
-            #region Demo
-            DemoStuff();
-            #endregion
-
             base.Update(gameTime);
         }
 
@@ -1082,16 +867,6 @@ namespace GDGame
 
                 // 5. Clear references to help GC
                 System.Diagnostics.Debug.WriteLine("Clearing References");
-                _animationCurve = null;
-                _animationPositionCurve = null;
-                _animationRotationCurve = null;
-
-                // 6. Dispose of collision handlers
-                if (_collisionSubscription != null)
-                {
-                    _collisionSubscription.Dispose();
-                    _collisionSubscription = null;
-                }
 
                 System.Diagnostics.Debug.WriteLine("Main disposal complete");
             }
@@ -1101,459 +876,6 @@ namespace GDGame
             // Always call base.Dispose
             base.Dispose(disposing);
         }
-
-        #endregion
-
-        #region Demo Methods (remove in the game)
-
-        //#region Demo - PBR Lighting
-        //private void DemoPBRGameObject(string objectName, string modelName, Vector3 position, Vector3 scale, Vector3 eulerRotationDegrees, 
-        //    Texture2D albedoTexture, Texture2D normalTexture, Texture2D srmTexture, 
-        //    Color albedoColor, float roughness, float metallic)
-        //{
-        //    GameObject gameObject = null;
-
-        //    gameObject = new GameObject(objectName);
-        //    gameObject.Transform.TranslateTo(position);
-        //    gameObject.Transform.RotateEulerBy(eulerRotationDegrees * MathHelper.Pi / 180f);
-        //    gameObject.Transform.ScaleTo(scale);
-        //    var model = _modelDictionary.Get(modelName);
-        //    var meshFilter = MeshFilterFactory.CreateFromModel(model, _graphics.GraphicsDevice, 0, 0);
-        //    gameObject.AddComponent(meshFilter);
-        //    var meshRenderer = gameObject.AddComponent<MeshRenderer>();
-
-        //    #region PBR specific material settings
-        //    // Set material properties
-        //    _matPBR.AlbedoTexture = albedoTexture;
-        //    _matPBR.NormalTexture = normalTexture;
-        //    _matPBR.SRMTexture = srmTexture;
-        //    _matPBR.AlbedoColor = albedoColor;
-        //    _matPBR.DefaultRoughness = roughness;
-        //    _matPBR.DefaultMetallic = metallic;
-        //    meshRenderer.Material = _matPBR.Material;
-        //    #endregion
-
-        //    _sceneManager.ActiveScene.Add(gameObject);
-        //} 
-        //#endregion
-
-        #region Demo - Game State
-        private void SetWinConditions()
-        {
-            var gameStateSystem = _sceneManager.ActiveScene.GetSystem<GameStateSystem>();
-
-            // Value providers (Strategy pattern via delegates)
-            Func<float> healthProvider = () =>
-            {
-                //get the player and access the player's health/speed/other variable
-                return _currentHealth;
-            };
-
-            // Delegate for time
-            Func<float> timeProvider = () =>
-            {
-                return (float)Time.RealtimeSinceStartupSecs;
-            };
-
-            // Lose condition: health < 10 AND time > 60
-            IGameCondition loseCondition =
-                GameConditions.FromPredicate("all enemies visited", checkEnemiesVisited);
-
-            IGameCondition winCondition =
-            GameConditions.FromPredicate("reached gate", checkReachedGate);
-
-            // Configure GameStateSystem (no win condition yet)
-            gameStateSystem.ConfigureConditions(winCondition, loseCondition);
-            gameStateSystem.StateChanged += HandleGameStateChange;
-        }
-
-        private bool checkReachedGate()
-        {
-            // we could pause the game on a win
-            //Time.TimeScale = 0;
-            return false;
-        }
-
-        private bool checkEnemiesVisited()
-        {
-            //get inventory and eval using boolean if all enemies visited;
-            return false;
-        }
-
-        private void HandleGameStateChange(GameOutcomeState oldState, GameOutcomeState newState)
-        {
-            System.Diagnostics.Debug.WriteLine($"Old state was {oldState} and new state is {newState}");
-
-            if (newState == GameOutcomeState.Lost)
-            {
-                System.Diagnostics.Debug.WriteLine("You lost!");
-                //play sound
-                //reset player
-                //load next level
-                //we decide what losing looks like here!
-                //Exit();
-            }
-            else if (newState == GameOutcomeState.Won)
-            {
-                System.Diagnostics.Debug.WriteLine("You win!");
-            }
-
-        }
-        #endregion
-      
-        private void DemoCollidableModel(Vector3 position, Vector3 eulerRotationDegrees, Vector3 scale)
-        {
-            var go = new GameObject("test");
-            go.Transform.TranslateTo(position);
-            go.Transform.RotateEulerBy(eulerRotationDegrees * MathHelper.Pi / 180f);
-            go.Transform.ScaleTo(scale);
-
-            go.Layer = LayerMask.Interactables;
-
-            var model = _modelDictionary.Get("monkey1");
-            var texture = _textureDictionary.Get("mona lisa");
-            var meshFilter = MeshFilterFactory.CreateFromModel(model, _graphics.GraphicsDevice, 0, 0);
-            go.AddComponent(meshFilter);
-
-            var meshRenderer = go.AddComponent<MeshRenderer>();
-            meshRenderer.Material = _matBasicLit;
-            meshRenderer.Overrides.MainTexture = texture;
-            _sceneManager.ActiveScene.Add(go);
-
-            // Add box collider (1x1x1 cube)
-            var collider = go.AddComponent<SphereCollider>();
-            collider.Diameter = scale.Length();
-
-            // Add rigidbody (Dynamic so it falls)
-            var rigidBody = go.AddComponent<RigidBody>();
-            rigidBody.BodyType = BodyType.Dynamic;
-            rigidBody.Mass = 1.0f;
-        }
-
-        private void DemoStuff()
-        {
-            // Get new state
-            _newKBState = Keyboard.GetState();
-            DemoEventPublish();
-            DemoCameraSwitch();
-            DemoToggleFullscreen();
-            DemoAudioSystem();
-            DemoOrchestrationSystem();
-            DemoImpulsePublish();
-            //a demo relating to GameStateSystem
-            _currentHealth--;
-
-            // Store old state (allows us to do was pressed type checks)
-            _oldKBState = _newKBState;
-        }
-
-        private void DemoImpulsePublish()
-        {
-            var impulses = EngineContext.Instance.Impulses;
-
-            // a simple explosion reaction
-            bool isZPressed = _newKBState.IsKeyDown(Keys.Z) && !_oldKBState.IsKeyDown(Keys.Z);
-            if (isZPressed)
-            {
-                float duration = 0.35f;
-                float amplitude = 0.6f;
-
-                impulses.CreateContinuousSource(
-                    (elapsed, totalDuration) =>
-                    {
-                        // Random 2D screen-space-ish direction
-                        Vector3 dir = MathUtility.RandomShakeXY();
-
-                        // Let Eased3DImpulse use its default easing (e.g. Ease.Linear)
-                        return new Eased3DImpulse(
-                            channel: "camera/impulse",
-                            direction: dir,
-                            amplitude: amplitude,
-                            time: elapsed,
-                            duration: totalDuration);
-                    },
-                    duration,
-                    true);
-            }
-
-            // like a locked door try and fail
-            bool isCPressed = _newKBState.IsKeyDown(Keys.X) && !_oldKBState.IsKeyDown(Keys.X);
-            if (isCPressed)
-            {
-                float duration = 0.2f;
-                float amplitude = 0.1f;
-
-                impulses.CreateContinuousSource(
-                    (elapsed, totalDuration) =>
-                    {
-                        float jitter = 0.05f;
-
-                        // Small random left/right component
-                        float z = (float)(Random.Shared.NextDouble() * 2.0 - 1.0) * jitter;
-
-                        // Backward in world-space 
-                        Vector3 dir = new Vector3(0, 0, z);
-
-                        return new Eased3DImpulse(
-                            channel: "camera/impulse",
-                            direction: dir,
-                            amplitude: amplitude,
-                            time: elapsed,
-                            duration: totalDuration,
-                            ease: Ease.EaseOutQuad); // snappier than cubic, but still smooth
-                    },
-                    duration,
-                    true);
-            }
-        }
-
-        private void DemoOrchestrationSystem()
-        {
-            var orchestrationSystem = _sceneManager.ActiveScene.GetSystem<OrchestrationSystem>();
-            if (orchestrationSystem == null)
-            {
-                return;
-            }
-            var orchestrator = orchestrationSystem.Orchestrator;
-
-            bool isPressed = _newKBState.IsKeyDown(Keys.O) && !_oldKBState.IsKeyDown(Keys.O);
-            if (isPressed)
-            {
-                orchestrator.Build("my first sequence")
-                    .WaitSeconds(2)
-                    .Publish(new CameraEvent(AppData.CAMERA_NAME_FIRST_PERSON))
-                    .WaitSeconds(2)
-                    .Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Generic_1", 1, false, null))
-                    .Register();
-
-                orchestrator.Start("my first sequence", _sceneManager.ActiveScene, EngineContext.Instance);
-            }
-
-            bool isIPressed = _newKBState.IsKeyDown(Keys.I) && !_oldKBState.IsKeyDown(Keys.I);
-            if (isIPressed)
-                orchestrator.Pause("my first sequence");
-
-            bool isPPressed = _newKBState.IsKeyDown(Keys.P) && !_oldKBState.IsKeyDown(Keys.P);
-            if (isPPressed)
-                orchestrator.Resume("my first sequence");
-        }
-
-        private void DemoAudioSystem()
-        {
-            var events = EngineContext.Instance.Events;
-
-            //TODO - Exercise
-            bool isD3Pressed = _newKBState.IsKeyDown(Keys.D3) && !_oldKBState.IsKeyDown(Keys.D3);
-            if (isD3Pressed)
-            {
-                events.Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Generic_1",
-                    1, false, null));
-            }
-
-            bool isD4Pressed = _newKBState.IsKeyDown(Keys.D4) && !_oldKBState.IsKeyDown(Keys.D4);
-            if (isD4Pressed)
-            {
-                events.Publish(new PlayMusicEvent("secret_door", 1, 8));
-            }
-
-            bool isD5Pressed = _newKBState.IsKeyDown(Keys.D5) && !_oldKBState.IsKeyDown(Keys.D5);
-            if (isD5Pressed)
-            {
-                events.Publish(new StopMusicEvent(4));
-            }
-
-            bool isD6Pressed = _newKBState.IsKeyDown(Keys.D6) && !_oldKBState.IsKeyDown(Keys.D6);
-            if (isD6Pressed)
-            {
-                events.Publish(new FadeChannelEvent(AudioMixer.AudioChannel.Master,
-                    0.1f, 4));
-            }
-
-            bool isD7Pressed = _newKBState.IsKeyDown(Keys.D7) && !_oldKBState.IsKeyDown(Keys.D7);
-            if (isD7Pressed)
-            {
-                //expensive and crude => move to Component::Start()
-                var go = _sceneManager.ActiveScene.Find(go => go.Name.Equals(AppData.PLAYER_NAME));
-                Transform emitterTransform = go.Transform;
-
-                events.Publish(new PlaySfxEvent("hand_gun1",
-                    1, true, emitterTransform));
-            }
-        }
-
-        private void DemoToggleFullscreen()
-        {
-            bool togglePressed = _newKBState.IsKeyDown(Keys.F5) && !_oldKBState.IsKeyDown(Keys.F5);
-            if (togglePressed)
-                _graphics.ToggleFullScreen();
-        }
-
-        private void DemoCameraSwitch()
-        {
-            var events = EngineContext.Instance.Events;
-
-            bool isFirst = _newKBState.IsKeyDown(Keys.D1) && !_oldKBState.IsKeyDown(Keys.D1);
-            if (isFirst)
-            {
-                events.Post(new CameraEvent(AppData.CAMERA_NAME_FIRST_PERSON));
-                events.Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Generic_1",
-                  1, false, null));
-            }
-
-            bool isThird = _newKBState.IsKeyDown(Keys.D2) && !_oldKBState.IsKeyDown(Keys.D2);
-            if (isThird)
-            {
-                events.Post(new CameraEvent(AppData.CAMERA_NAME_THIRD_PERSON));
-                events.Publish(new PlaySfxEvent("SFX_UI_Click_Designed_Pop_Mallet_Open_1",
-                1, false, null));
-            }
-        }
-
-        private void DemoEventPublish()
-        {
-            // F2: publish a test DamageEvent
-            if (_newKBState.IsKeyDown(Keys.F6) && !_oldKBState.IsKeyDown(Keys.F6))
-            {
-                // Simple “debug” damage example
-                var hitPos = new Vector3(0, 5, 0); //some fake position
-                _damageAmount++;
-
-                var damageEvent = new DamageEvent(_damageAmount, DamageEvent.DamageType.Strength,
-                    "Plasma rifle", AppData.PLAYER_NAME, hitPos, false);
-
-                EngineContext.Instance.Events.Post(damageEvent);
-            }
-
-            // Raise inventory event
-            if (_newKBState.IsKeyDown(Keys.E) && !_oldKBState.IsKeyDown(Keys.E))
-            {
-                var inventoryEvent = new GDEngine.Core.Components.InventoryEvent();
-                inventoryEvent.ItemType = ItemType.Weapon;
-                inventoryEvent.Value = 10;
-                EngineContext.Instance.Events.Publish(inventoryEvent);
-            }
-
-            if (_newKBState.IsKeyDown(Keys.L) && !_oldKBState.IsKeyDown(Keys.L))
-            {
-                var inventoryEvent = new GDEngine.Core.Components.InventoryEvent();
-                inventoryEvent.ItemType = ItemType.Lore;
-                inventoryEvent.Value = 0;
-                EngineContext.Instance.Events.Publish(inventoryEvent);
-            }
-
-            if (_newKBState.IsKeyDown(Keys.M) && !_oldKBState.IsKeyDown(Keys.M))
-            {
-                // EngineContext.Instance.Messages.Post(new PlayerDamageEvent(45, DamageType.Strength));
-                //EngineContext.Instance.Messages.PublishImmediate(new PlayerDamageEvent(45, DamageType.Strength));
-            }
-        }
-
-        private void DemoLoadFromJSON()
-        {
-            var relativeFilePathAndName = "assets/data/single_model_spawn.json";
-            List<ModelSpawnData> mList = JSONSerializationUtility.LoadData<ModelSpawnData>(Content, relativeFilePathAndName);
-
-            //load a single model
-            foreach (var d in mList)
-                InitializeModel(d.Position, d.RotationDegrees, d.Scale, d.TextureName, d.ModelName, d.ObjectName);
-
-            relativeFilePathAndName = "assets/data/multi_model_spawn.json";
-            //load multiple models
-            foreach (var d in JSONSerializationUtility.LoadData<ModelSpawnData>(Content, relativeFilePathAndName))
-                InitializeModel(d.Position, d.RotationDegrees, d.Scale, d.TextureName, d.ModelName, d.ObjectName);
-        }
-
-        private void DemoCollidablePrimitive(Vector3 position, Vector3 scale, Vector3 rotateDegrees)
-        {
-            GameObject gameObject = null;
-            MeshFilter meshFilter = null;
-            MeshRenderer meshRenderer = null;
-
-            gameObject = new GameObject("test crate textured cube");
-            gameObject.Transform.TranslateTo(position);
-            gameObject.Transform.ScaleTo(scale * 0.5f);
-            gameObject.Transform.RotateEulerBy(rotateDegrees * MathHelper.Pi / 180f);
-
-
-            meshFilter = MeshFilterFactory.CreateCubeTexturedLit(_graphics.GraphicsDevice);
-            gameObject.AddComponent(meshFilter);
-
-            meshRenderer = gameObject.AddComponent<MeshRenderer>();
-            meshRenderer.Material = _matBasicLit; //enable lighting for the crate
-            meshRenderer.Overrides.MainTexture = _textureDictionary.Get("crate1");
-
-            var collider = gameObject.AddComponent<BoxCollider>();
-            collider.Size = scale;  // Collider is FULL size
-            collider.Center = Vector3.Zero;
-
-            var rb = gameObject.AddComponent<RigidBody>();
-            rb.Mass = 1.0f;
-            rb.BodyType = BodyType.Dynamic;
-
-            _sceneManager.ActiveScene.Add(gameObject);
-        }
-
-        private void DemoAlphaCutoutFoliage(Vector3 position, float width, float height)
-        {
-            var go = new GameObject("tree");
-
-            // A unit quad facing +Z (the factory already supplies lit quad with UVs)
-            var mf = MeshFilterFactory.CreateQuadTexturedLit(GraphicsDevice);
-            go.AddComponent(mf);
-
-            var treeRenderer = go.AddComponent<MeshRenderer>();
-            treeRenderer.Material = _matAlphaCutout;
-
-            // Per-object properties via the overrides block
-            treeRenderer.Overrides.MainTexture = _textureDictionary.Get("tree4");
-
-            // AlphaTest: pixels with alpha below ReferenceAlpha are discarded (0–255).
-            // 128–160 is a good starting range for foliage; tweak to taste.
-            treeRenderer.Overrides.SetInt("ReferenceAlpha", 128);
-            treeRenderer.Overrides.Alpha = 1f; // overall alpha multiplier (kept at 1 for cutout)
-
-            // Scale the quad so it looks like a tree (aspect from the PNG)
-            go.Transform.ScaleTo(new Vector3(width, height, 1f));
-
-            go.Transform.TranslateTo(position);
-
-            _sceneManager.ActiveScene.Add(go);
-        }
-
-        /// <summary>
-        /// Subscribes a simple debug listener for physics collision events.
-        /// </summary>
-        private void InitializeCollisionEventListener()
-        {
-            var events = EngineContext.Instance.Events;
-
-            // Lowest friction: just subscribe with default priority & no filter
-            _collisionSubscription = events.Subscribe<CollisionEvent>(OnCollisionEvent);
-        }
-
-        /// <summary>
-        /// Very simple collision debug handler.
-        /// Adjust field names to match your CollisionEvent struct.
-        /// </summary>
-        private void OnCollisionEvent(CollisionEvent evt)
-        {
-            // Early-out if this collision does not involve any layer we care about.
-            if (!evt.Matches(_collisionDebugMask))
-                return;
-
-            var bodyA = evt.BodyA;
-            var bodyB = evt.BodyB;
-
-            var nameA = bodyA?.GameObject?.Name ?? "<null>";
-            var nameB = bodyB?.GameObject?.Name ?? "<null>";
-
-            var layerA = evt.LayerA;
-            var layerB = evt.LayerB;
-
-            //System.Diagnostics.Debug.WriteLine(
-            //    $"[Collision] {nameA} (Layer {layerA}) <-> {nameB} (Layer {layerB})");
-        }
-
 
         #endregion
     }
